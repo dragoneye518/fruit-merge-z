@@ -399,6 +399,17 @@ export class PhysicsEngine {
             minDistance,
             overlap: minDistance - distance
           });
+          
+          // 优化：底部近乎静止且仅存在极小重叠的水果，跳过后续重复碰撞计算，降低抖动与CPU负载
+          // 保留一定重叠阈值，一旦压得更紧仍会进入碰撞处理
+          const settle = GAME_CONFIG.PHYSICS.settleThreshold || 8;
+          const tinyOverlap = (minDistance - distance) < (GAME_CONFIG?.PHYSICS?.tinyOverlapEpsilon || 0.8);
+          if (bodyA.bottomContact && bodyB.bottomContact &&
+              bodyA.velocity.magnitude() < settle && bodyB.velocity.magnitude() < settle &&
+              tinyOverlap) {
+            // 从碰撞对中移除该项以避免重复分离与冲量计算
+            this.collisionPairs.pop();
+          }
         }
       }
     }
