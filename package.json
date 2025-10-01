@@ -1,0 +1,34 @@
+{
+  "name": "fruit-merge-z",
+  "version": "1.0.0",
+  "description": "抖音小游戏 - 合成水果",
+  "main": "game.js",
+  "scripts": {
+    "start": "echo '请使用抖音开发者工具打开项目进行调试'",
+    "build": "echo '构建完成，请使用抖音开发者工具进行发布'",
+    "dev": "echo '开发模式：请使用抖音开发者工具的预览功能'",
+    "test": "echo '测试：请在抖音开发者工具中进行真机调试'"
+  },
+  "keywords": [
+    "douyin",
+    "mini-game",
+    "fruit-merge",
+    "canvas",
+    "physics"
+  ],
+  "author": "Developer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "bugs": {
+    "url": ""
+  },
+  "homepage": ""
+}

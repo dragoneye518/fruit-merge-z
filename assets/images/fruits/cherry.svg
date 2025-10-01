@@ -1,0 +1,25 @@
+<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="cherryGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#FF6B6B"/>
+      <stop offset="70%" stop-color="#E53E3E"/>
+      <stop offset="100%" stop-color="#C53030"/>
+    </radialGradient>
+    <radialGradient id="cherryHighlight" cx="0.25" cy="0.25" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 樱桃主体 -->
+  <circle cx="14" cy="16" r="10" fill="url(#cherryGradient)" stroke="#C53030" stroke-width="0.5"/>
+  
+  <!-- 高光效果 -->
+  <ellipse cx="11" cy="13" rx="3" ry="4" fill="url(#cherryHighlight)"/>
+  
+  <!-- 樱桃柄 -->
+  <path d="M14 6 Q16 4 18 2" stroke="#4A5D23" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  
+  <!-- 小叶子 -->
+  <ellipse cx="17" cy="4" rx="2" ry="1.5" fill="#68D391" transform="rotate(30 17 4)"/>
+</svg>

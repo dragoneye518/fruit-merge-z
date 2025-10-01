@@ -1,0 +1,21 @@
+{
+  "deviceOrientation": "portrait",
+  "showStatusBar": false,
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#fff",
+    "navigationBarTitleText": "合成水果",
+    "navigationBarTextStyle": "black"
+  },
+  "networkTimeout": {
+    "request": 10000,
+    "connectSocket": 10000,
+    "uploadFile": 10000,
+    "downloadFile": 10000
+  },
+  "subpackages": [],
+  "requiredBackgroundModes": [],
+  "plugins": {},
+  "preloadRule": {},
+  "resizable": false
+}

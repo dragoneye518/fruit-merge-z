@@ -1,0 +1,728 @@
+import { UI_THEME, GAME_CONFIG, FRUIT_CONFIG } from '../config/constants.js';
+import { imageLoader } from '../utils/imageLoader.js';
+
+export class GameUI {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.width = canvas.width;
+    this.height = canvas.height;
+    
+    // UI状态
+    this.score = 0;
+    this.highScore = 0;
+    this.nextFruitType = 'CHERRY';
+    this.gameState = 'PLAYING';
+    this.dangerLineFlash = false;
+    this.flashTimer = 0;
+    
+    // 动画相关
+    this.scoreAnimation = {
+      current: 0,
+      target: 0,
+      speed: 0.1
+    };
+    
+    // 按钮区域
+    this.buttons = {
+      pause: { x: 320, y: 30, width: 40, height: 40 },
+      sound: { x: 270, y: 30, width: 40, height: 40 }
+    };
+    
+    // 触摸状态
+    this.touchState = {
+      isDown: false,
+      startX: 0,
+      startY: 0,
+      currentX: 0,
+      currentY: 0
+    };
+  }
+
+  reset() {
+    this.dangerLineFlash = false;
+    this.flashTimer = 0;
+    this.scoreAnimation.current = 0;
+    this.scoreAnimation.target = 0;
+  }
+  
+  // 更新UI状态
+  update(deltaTime) {
+    // 更新分数动画
+    if (this.scoreAnimation.current < this.scoreAnimation.target) {
+      const diff = this.scoreAnimation.target - this.scoreAnimation.current;
+      this.scoreAnimation.current += diff * this.scoreAnimation.speed;
+      
+      if (Math.abs(diff) < 1) {
+        this.scoreAnimation.current = this.scoreAnimation.target;
+      }
+    }
+    
+    // 更新危险线闪烁
+    this.flashTimer += deltaTime;
+    if (this.flashTimer >= GAME_CONFIG.DANGER_LINE.flashDuration) {
+      this.flashTimer = 0;
+      if (this.dangerLineFlash) {
+        this.dangerLineFlash = !this.dangerLineFlash;
+      }
+    }
+  }
+  
+  // 渲染完整UI
+  render() {
+    this.renderBackground();
+    // 改为屏幕底部整幅草地，无圆容器
+    this.renderGrassWorldBottom();
+    this.renderHeader();
+    this.renderDropPreview();
+    this.renderDangerLine();
+    this.renderNextFruitPreview();
+    this.renderButtons();
+  }
+  
+  // 渲染背景
+  renderBackground() {
+    // 创建渐变背景
+    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+    gradient.addColorStop(0, UI_THEME.background.gradient[0]);
+    gradient.addColorStop(0.5, UI_THEME.background.gradient[1]);
+    gradient.addColorStop(1, UI_THEME.background.gradient[2]);
+    
+    this.ctx.fillStyle = gradient;
+    this.ctx.fillRect(0, 0, this.width, this.height);
+    
+    // 添加装饰性图案
+    this.renderBackgroundPattern();
+  }
+  
+  // 渲染背景图案
+  renderBackgroundPattern() {
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.06;
+    this.ctx.fillStyle = UI_THEME.primary.main;
+    
+    // 绘制装饰圆圈（数量与强度降低，整体更柔和）
+    for (let i = 0; i < 6; i++) {
+      const x = (i % 4) * 100 + 50;
+      const y = Math.floor(i / 4) * 200 + 100;
+      const radius = 16 + Math.sin(Date.now() * 0.001 + i) * 4;
+      
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    this.ctx.restore();
+  }
+  
+  // 废弃圆容器，改为渲染屏幕底部草地
+  renderGrassWorldBottom() {
+    const groundHeight = GAME_CONFIG?.GROUND?.height ?? 28;
+    const groundTopY = this.height - groundHeight;
+    const left = 0;
+    const right = this.width;
+
+    this.ctx.save();
+    // 草地主体（柔和绿渐变）
+    const grad = this.ctx.createLinearGradient(0, groundTopY, 0, groundTopY + groundHeight);
+    grad.addColorStop(0, '#A7E56B');
+    grad.addColorStop(1, '#6CC74C');
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(left, groundTopY, right - left, groundHeight);
+
+    // 草地顶边高光（强调“平”的视觉）
+    this.ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(left + 6, groundTopY + 1);
+    this.ctx.lineTo(right - 6, groundTopY + 1);
+    this.ctx.stroke();
+
+    // 简单草叶（少量，避免杂乱）
+    this.ctx.strokeStyle = 'rgba(60,140,60,0.8)';
+    this.ctx.lineWidth = 1.5;
+    const blades = 22;
+    for (let i = 0; i < blades; i++) {
+      const x = left + (i + 0.3 + Math.random() * 0.4) * (right - left) / blades;
+      const h = 8 + Math.random() * 6;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, groundTopY + groundHeight - 2);
+      this.ctx.quadraticCurveTo(x - 2, groundTopY + groundHeight - 6, x, groundTopY + groundHeight - h);
+      this.ctx.stroke();
+    }
+
+    this.ctx.restore();
+  }
+
+  // 贴近截图风格：在容器内添加上下两个装饰圆圈
+  renderDecorativeCircles() {
+    const { centerX, centerY, radius } = GAME_CONFIG.GAME_AREA;
+    const ringRadius = radius * 0.32;
+    const offsetY = radius * 0.55;
+    
+    const drawRing = (x, y) => {
+      this.ctx.save();
+      // 背景白色圆
+      this.ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, ringRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      // 灰色内圈
+      this.ctx.strokeStyle = 'rgba(120,120,120,0.6)';
+      this.ctx.lineWidth = Math.max(3, ringRadius * 0.12);
+      this.ctx.stroke();
+      
+      // 轻微阴影
+      this.ctx.shadowColor = 'rgba(0,0,0,0.15)';
+      this.ctx.shadowBlur = 6;
+      this.ctx.shadowOffsetY = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, ringRadius * 0.9, 0, Math.PI * 2);
+      this.ctx.stroke();
+      
+      this.ctx.restore();
+    };
+    
+    drawRing(centerX, centerY - offsetY);
+    drawRing(centerX, centerY + offsetY);
+  }
+  
+  // 渲染头部信息
+  renderHeader() {
+    // 渲染游戏标题
+    this.renderTitle();
+    
+    // 渲染分数
+    this.renderScore();
+  }
+  
+  // 渲染游戏标题
+  renderTitle() {
+    this.ctx.save();
+    
+    // 标题文字
+    this.ctx.font = 'bold 36px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    // 标题外层阴影
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+    this.ctx.shadowBlur = 8;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 4;
+    
+    // 标题描边 - 外层
+    this.ctx.strokeStyle = '#8B4513';
+    this.ctx.lineWidth = 4;
+    this.ctx.strokeText('合成水果', this.width / 2, 70);
+    
+    // 标题描边 - 内层
+    this.ctx.strokeStyle = '#D2691E';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeText('合成水果', this.width / 2, 70);
+    
+    // 标题渐变填充
+    const titleGradient = this.ctx.createLinearGradient(0, 50, 0, 90);
+    titleGradient.addColorStop(0, '#FFD700');
+    titleGradient.addColorStop(0.3, '#FFA500');
+    titleGradient.addColorStop(0.7, '#FF8C00');
+    titleGradient.addColorStop(1, '#FF6347');
+    
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.fillStyle = titleGradient;
+    this.ctx.fillText('合成水果', this.width / 2, 70);
+    
+    // 标题高光效果
+    const highlightGradient = this.ctx.createLinearGradient(0, 50, 0, 65);
+    highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+    highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+    
+    this.ctx.fillStyle = highlightGradient;
+    this.ctx.fillText('合成水果', this.width / 2, 68);
+    
+    this.ctx.restore();
+  }
+  
+  // 渲染分数
+  renderScore() {
+    this.ctx.save();
+    
+    const displayScore = Math.floor(this.scoreAnimation.current);
+    
+    // 分数背景
+    const scoreX = this.width / 2;
+    const scoreY = 120;
+    const scorePadding = 25;
+    
+    this.ctx.font = 'bold 32px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    const scoreText = displayScore.toString();
+    const textMetrics = this.ctx.measureText(scoreText);
+    const bgWidth = Math.max(textMetrics.width + scorePadding * 2, 120);
+    const bgHeight = 50;
+    
+    // 绘制分数背景 - 增加多层阴影效果
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.25)';
+    this.ctx.shadowBlur = 5;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 4;
+    
+    // 外层阴影
+    const outerGradient = this.ctx.createLinearGradient(
+      scoreX - bgWidth/2 - 2, scoreY - bgHeight/2 - 2,
+      scoreX + bgWidth/2 + 2, scoreY + bgHeight/2 + 2
+    );
+    outerGradient.addColorStop(0, 'rgba(255, 215, 0, 0.6)');
+    outerGradient.addColorStop(0.5, 'rgba(255, 193, 7, 0.65)');
+    outerGradient.addColorStop(1, 'rgba(255, 152, 0, 0.6)');
+    
+    this.ctx.fillStyle = outerGradient;
+    this.roundRect(scoreX - bgWidth/2 - 2, scoreY - bgHeight/2 - 2, bgWidth + 4, bgHeight + 4, 20);
+    this.ctx.fill();
+    
+    // 主背景
+    const bgGradient = this.ctx.createLinearGradient(
+      scoreX - bgWidth/2, scoreY - bgHeight/2,
+      scoreX + bgWidth/2, scoreY + bgHeight/2
+    );
+    bgGradient.addColorStop(0, '#FFF9E8');
+    bgGradient.addColorStop(0.3, '#FFEFD0');
+    bgGradient.addColorStop(0.7, '#FFDFA6');
+    bgGradient.addColorStop(1, '#FFCC80');
+    
+    this.ctx.fillStyle = bgGradient;
+    this.roundRect(scoreX - bgWidth/2, scoreY - bgHeight/2, bgWidth, bgHeight, 22);
+    this.ctx.fill();
+    
+    // 内层高光
+    const highlightGradient = this.ctx.createLinearGradient(
+      scoreX - bgWidth/2, scoreY - bgHeight/2,
+      scoreX + bgWidth/2, scoreY - bgHeight/2 + 15
+    );
+    highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.25)');
+    highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.08)');
+    
+    this.ctx.fillStyle = highlightGradient;
+    this.roundRect(scoreX - bgWidth/2, scoreY - bgHeight/2, bgWidth, 15, 22);
+    this.ctx.fill();
+    
+    // 分数文字 - 增加文字阴影和描边
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.shadowBlur = 2;
+    this.ctx.shadowOffsetX = 1;
+    this.ctx.shadowOffsetY = 2;
+    
+    // 文字描边
+    this.ctx.strokeStyle = '#A0522D';
+    this.ctx.lineWidth = 2;
+    this.ctx.textBaseline = 'middle';
+    this.ctx.strokeText(scoreText, scoreX, scoreY);
+    
+    // 文字填充
+    const textGradient = this.ctx.createLinearGradient(
+      scoreX, scoreY - 16,
+      scoreX, scoreY + 16
+    );
+    textGradient.addColorStop(0, '#FFFFFF');
+    textGradient.addColorStop(0.5, '#FFF2D6');
+    textGradient.addColorStop(1, '#FFE8A8');
+    
+    this.ctx.fillStyle = textGradient;
+    this.ctx.fillText(scoreText, scoreX, scoreY);
+    
+    // 最高分显示 - 优化样式
+    if (this.highScore > 0) {
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      this.ctx.shadowBlur = 2;
+      this.ctx.shadowOffsetX = 1;
+      this.ctx.shadowOffsetY = 1;
+      
+      this.ctx.font = 'bold 16px Arial, sans-serif';
+      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeText(`最高: ${this.highScore}`, scoreX, scoreY + 35);
+      
+      this.ctx.fillStyle = UI_THEME.text.secondary;
+      this.ctx.fillText(`最高: ${this.highScore}`, scoreX, scoreY + 35);
+    }
+    
+    this.ctx.restore();
+  }
+  
+  // 渲染投放预览
+  renderDropPreview() {
+    if (!this.touchState.isDown) return;
+    
+    const fruitRadius = FRUIT_CONFIG[this.nextFruitType].radius;
+    const x = this.touchState.currentX;
+    const y = GAME_CONFIG.DROP_LINE_Y;
+    
+    this.ctx.save();
+    // 贴图预览（半透明幽灵效果），无贴图时回退至渐变圆
+    const texturePath = FRUIT_CONFIG[this.nextFruitType]?.texture;
+    const img = texturePath ? imageLoader.getImage(texturePath) : null;
+    if (img) {
+      this.ctx.globalAlpha = 0.75;
+      const size = fruitRadius * 2;
+      this.ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+      this.ctx.globalAlpha = 1.0;
+    } else {
+      const previewGrad = this.ctx.createRadialGradient(
+        x - fruitRadius * 0.3, y - fruitRadius * 0.3, 0,
+        x, y, fruitRadius
+      );
+      previewGrad.addColorStop(0, 'rgba(255,255,255,0.5)');
+      previewGrad.addColorStop(1, 'rgba(255,255,255,0.2)');
+      this.ctx.fillStyle = previewGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, fruitRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(x, y);
+    this.ctx.lineTo(x, this.height);
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    this.ctx.setLineDash([5, 5]);
+    this.ctx.stroke();
+    
+    this.ctx.restore();
+  }
+  
+  // 渲染危险警示线
+  renderDangerLine() {
+    if (!this.dangerLineFlash) return;
+    
+    this.ctx.save();
+    
+    const dangerY = GAME_CONFIG.DANGER_LINE.y;
+    const centerX = GAME_CONFIG.GAME_AREA.centerX;
+    const radius = GAME_CONFIG.GAME_AREA.radius;
+    
+    // 计算闪烁透明度
+    const flashAlpha = 0.6 + 0.4 * Math.sin(Date.now() * 0.01);
+    
+    // 危险线背景光晕
+    const glowGradient = this.ctx.createRadialGradient(
+      centerX, dangerY, 0,
+      centerX, dangerY, radius + 20
+    );
+    glowGradient.addColorStop(0, `rgba(255, 68, 68, ${flashAlpha * 0.3})`);
+    glowGradient.addColorStop(0.7, `rgba(255, 68, 68, ${flashAlpha * 0.1})`);
+    glowGradient.addColorStop(1, 'rgba(255, 68, 68, 0)');
+    
+    this.ctx.fillStyle = glowGradient;
+    this.ctx.fillRect(0, dangerY - 30, this.width, 60);
+    
+    // 主危险线
+    this.ctx.strokeStyle = `rgba(255, 68, 68, ${flashAlpha})`;
+    this.ctx.lineWidth = 4;
+    this.ctx.setLineDash([10, 5]);
+    this.ctx.lineDashOffset = -Date.now() * 0.05;
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(centerX - radius, dangerY);
+    this.ctx.lineTo(centerX + radius, dangerY);
+    this.ctx.stroke();
+    
+    // 危险线上方高亮
+    this.ctx.strokeStyle = `rgba(255, 255, 255, ${flashAlpha * 0.8})`;
+    this.ctx.lineWidth = 2;
+    this.ctx.setLineDash([8, 4]);
+    this.ctx.lineDashOffset = -Date.now() * 0.03;
+    
+    this.ctx.beginPath();
+    this.ctx.moveTo(centerX - radius, dangerY - 1);
+    this.ctx.lineTo(centerX + radius, dangerY - 1);
+    this.ctx.stroke();
+    
+    // 重置线条样式
+    this.ctx.setLineDash([]);
+    this.ctx.lineDashOffset = 0;
+    
+    this.ctx.restore();
+  }
+  
+  // 渲染下一个水果预览
+  renderNextFruitPreview() {
+    if (!this.nextFruitType || !FRUIT_CONFIG[this.nextFruitType]) return;
+    
+    this.ctx.save();
+    
+    const fruit = FRUIT_CONFIG[this.nextFruitType];
+    const previewX = this.width - 60;
+    const previewY = 120;
+    const previewRadius = 25;
+    
+    // 预览背景圆形
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.shadowBlur = 6;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 3;
+    
+    // 外层背景
+    const outerGradient = this.ctx.createRadialGradient(
+      previewX, previewY, 0,
+      previewX, previewY, previewRadius + 8
+    );
+    outerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    outerGradient.addColorStop(0.7, 'rgba(240, 240, 240, 0.8)');
+    outerGradient.addColorStop(1, 'rgba(200, 200, 200, 0.6)');
+    
+    this.ctx.fillStyle = outerGradient;
+    this.ctx.beginPath();
+    this.ctx.arc(previewX, previewY, previewRadius + 8, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // 内层背景
+    const innerGradient = this.ctx.createRadialGradient(
+      previewX, previewY, 0,
+      previewX, previewY, previewRadius + 3
+    );
+    innerGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+    innerGradient.addColorStop(1, 'rgba(245, 245, 245, 0.9)');
+    
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.fillStyle = innerGradient;
+    this.ctx.beginPath();
+    this.ctx.arc(previewX, previewY, previewRadius + 3, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // 边框
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+    
+    // 内边框高光
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    this.ctx.lineWidth = 1;
+    this.ctx.beginPath();
+    this.ctx.arc(previewX, previewY, previewRadius + 2, 0, Math.PI * 2);
+    this.ctx.stroke();
+    
+    // 水果图像
+    if (fruit.texture && imageLoader.hasImage(fruit.texture)) {
+      const img = imageLoader.getImage(fruit.texture);
+      const size = previewRadius * 1.6;
+      this.ctx.drawImage(
+        img,
+        previewX - size/2,
+        previewY - size/2,
+        size,
+        size
+      );
+    } else {
+      // 备用圆形显示
+      const fruitGradient = this.ctx.createRadialGradient(
+        previewX - previewRadius * 0.3, previewY - previewRadius * 0.3, 0,
+        previewX, previewY, previewRadius
+      );
+      fruitGradient.addColorStop(0, fruit.gradient[0]);
+      fruitGradient.addColorStop(1, fruit.gradient[1]);
+      
+      this.ctx.fillStyle = fruitGradient;
+      this.ctx.beginPath();
+      this.ctx.arc(previewX, previewY, previewRadius, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    // "下一个" 标签
+    this.ctx.font = 'bold 12px Arial, sans-serif';
+    this.ctx.fillStyle = UI_THEME.text.secondary;
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    this.ctx.shadowBlur = 1;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 1;
+    this.ctx.fillText('下一个', previewX, previewY + previewRadius + 20);
+    
+    this.ctx.restore();
+  }
+  
+  // 渲染按钮
+  renderButtons() {
+    // 暂停按钮
+    this.renderButton(this.buttons.pause, '⏸️', UI_THEME.primary.main, '暂停');
+    
+    // 音效按钮
+    this.renderButton(this.buttons.sound, '🔊', UI_THEME.secondary.main, '音效');
+  }
+  
+  // 渲染单个按钮
+  renderButton(button, icon, color, tooltip) {
+    this.ctx.save();
+    
+    // 按钮阴影
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    this.ctx.shadowBlur = 6;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 3;
+    
+    // 按钮背景渐变
+    const gradient = this.ctx.createRadialGradient(
+      button.x + button.width/2, button.y + button.height/3,
+      0,
+      button.x + button.width/2, button.y + button.height/2,
+      button.width/2
+    );
+    gradient.addColorStop(0, this.lightenColor(color, 0.3));
+    gradient.addColorStop(0.7, color);
+    gradient.addColorStop(1, this.darkenColor(color, 0.2));
+    
+    this.ctx.fillStyle = gradient;
+    this.roundRect(button.x, button.y, button.width, button.height, 12);
+    this.ctx.fill();
+    
+    // 按钮高光
+    const highlightGradient = this.ctx.createLinearGradient(
+      button.x, button.y,
+      button.x, button.y + button.height/2
+    );
+    highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+    highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
+    
+    this.ctx.fillStyle = highlightGradient;
+    this.roundRect(button.x, button.y, button.width, button.height/2, 12);
+    this.ctx.fill();
+    
+    // 按钮边框
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.strokeStyle = this.darkenColor(color, 0.4);
+    this.ctx.lineWidth = 2;
+    this.ctx.stroke();
+    
+    // 内边框高光
+    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    this.ctx.lineWidth = 1;
+    this.roundRect(button.x + 1, button.y + 1, button.width - 2, button.height - 2, 11);
+    this.ctx.stroke();
+    
+    // 按钮图标
+    this.ctx.font = '22px Arial, sans-serif';
+    this.ctx.fillStyle = 'white';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.shadowBlur = 2;
+    this.ctx.shadowOffsetX = 1;
+    this.ctx.shadowOffsetY = 1;
+    this.ctx.fillText(icon, button.x + button.width/2, button.y + button.height/2);
+    
+    this.ctx.restore();
+  }
+  
+  // 更新分数
+  setScore(score) {
+    this.scoreAnimation.target = score;
+  }
+  
+  // 设置最高分
+  setHighScore(highScore) {
+    this.highScore = highScore;
+  }
+  
+  // 设置下一个水果类型
+  setNextFruitType(type) {
+    this.nextFruitType = type;
+  }
+  
+  // 设置危险线闪烁
+  setDangerLineFlash(flash) {
+    this.dangerLineFlash = flash;
+  }
+  
+  // 处理触摸开始
+  onTouchStart(x, y) {
+    this.touchState.isDown = true;
+    this.touchState.startX = x;
+    this.touchState.startY = y;
+    this.touchState.currentX = x;
+    this.touchState.currentY = y;
+    
+    // 检查按钮点击
+    return this.checkButtonClick(x, y);
+  }
+  
+  // 处理触摸移动
+  onTouchMove(x, y) {
+    if (this.touchState.isDown) {
+      this.touchState.currentX = x;
+      this.touchState.currentY = y;
+    }
+  }
+  
+  // 处理触摸结束
+  onTouchEnd(x, y) {
+    if (!this.touchState.isDown) return null;
+    this.touchState.isDown = false;
+    
+    // 直接在投放线处投放水果，无需限制释放位置
+    return { type: 'drop', x: this.touchState.currentX, y: GAME_CONFIG.DROP_LINE_Y };
+  }
+  
+  // 检查按钮点击
+  checkButtonClick(x, y) {
+    for (const [name, button] of Object.entries(this.buttons)) {
+      if (x >= button.x && x <= button.x + button.width &&
+          y >= button.y && y <= button.y + button.height) {
+        return { type: 'button', name: name };
+      }
+    }
+    return null;
+  }
+  
+  // 工具函数：绘制圆角矩形
+  roundRect(x, y, width, height, radius) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + radius, y);
+    this.ctx.lineTo(x + width - radius, y);
+    this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    this.ctx.lineTo(x + width, y + height - radius);
+    this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    this.ctx.lineTo(x + radius, y + height);
+    this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    this.ctx.lineTo(x, y + radius);
+    this.ctx.quadraticCurveTo(x, y, x + radius, y);
+    this.ctx.closePath();
+  }
+
+  // 保留工具函数：圆角矩形
+  
+  // 工具函数：颜色加深
+  darkenColor(color, factor) {
+    const hex = color.replace('#', '');
+    const r = Math.max(0, parseInt(hex.substr(0, 2), 16) * (1 - factor));
+    const g = Math.max(0, parseInt(hex.substr(2, 2), 16) * (1 - factor));
+    const b = Math.max(0, parseInt(hex.substr(4, 2), 16) * (1 - factor));
+    
+    return `rgb(${Math.floor(r)}, ${Math.floor(g)}, ${Math.floor(b)})`;
+  }
+  
+  // 辅助方法：颜色变暗
+  darkenColor(color, factor) {
+    const usePound = color[0] === '#';
+    const col = usePound ? color.slice(1) : color;
+    const num = parseInt(col, 16);
+    const amt = Math.round(255 * factor);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return (usePound ? '#' : '') + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  }
+
+  // 辅助方法：颜色变亮
+  lightenColor(color, amount) {
+    const usePound = color[0] === '#';
+    const col = usePound ? color.slice(1) : color;
+    const num = parseInt(col, 16);
+    let r = (num >> 16) + Math.round(255 * amount);
+    let g = (num >> 8 & 0x00FF) + Math.round(255 * amount);
+    let b = (num & 0x0000FF) + Math.round(255 * amount);
+    r = r > 255 ? 255 : r;
+    g = g > 255 ? 255 : g;
+    b = b > 255 ? 255 : b;
+    return (usePound ? '#' : '') + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  }
+}
