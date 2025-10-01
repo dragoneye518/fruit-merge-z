@@ -67,6 +67,8 @@ class RigidBody {
     // 冲击源标记与计时：用于控制冲量传播与底部抑制
     this.isImpactSource = false;
     this.impactSourceTimer = 0;
+    // 底部接触持续时间（用于稳定接触的阻尼与早退判断）
+    this.bottomContactDuration = 0;
   }
   
   // 应用力
@@ -160,6 +162,13 @@ class RigidBody {
       }
     } else if (this.bottomContact) {
       this.isImpactSource = false;
+    }
+
+    // 底部接触持续时间累计/重置
+    if (this.bottomContact) {
+      this.bottomContactDuration += deltaTime;
+    } else {
+      this.bottomContactDuration = 0;
     }
 
     // 睡眠判定：底部持续低速一段时间则进入睡眠
@@ -357,6 +366,7 @@ export class PhysicsEngine {
     } else {
       // 离开地面则清除底部接触标记，避免半空静止与误判
       body.bottomContact = false;
+      body.bottomContactDuration = 0;
     }
   }
 
@@ -514,11 +524,15 @@ export class PhysicsEngine {
       
       // 计算碰撞法向量
       const normal = bodyB.position.subtract(bodyA.position).normalize();
+      // 稳定接触判定（用于底部堆叠的更小分离与传播抑制）
+      const stableSec = (GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.6);
+      const stableA = bodyA.bottomContact && (bodyA.bottomContactDuration >= stableSec);
+      const stableB = bodyB.bottomContact && (bodyB.bottomContactDuration >= stableSec);
       
       // 分离物体：对底部堆叠减小位置修正，降低连锁抖动
       const sepScale = (bodyA.isImpactSource || bodyB.isImpactSource)
         ? 0.5
-        : ((bodyA.bottomContact && bodyB.bottomContact) ? 0.15 : 0.5);
+        : ((bodyA.bottomContact && bodyB.bottomContact) ? (stableA && stableB ? 0.10 : 0.15) : 0.5);
       const separation = normal.multiply(overlap * sepScale);
       if (!bodyA.isStatic) {
         bodyA.position = bodyA.position.subtract(separation);
@@ -534,11 +548,32 @@ export class PhysicsEngine {
       if (velocityAlongNormal > 0) return; // 物体正在分离
       
       // 计算碰撞冲量，并对非冲击源/底部堆叠对进行传播阻尼
-      const restitution = Math.min(bodyA.restitution, bodyB.restitution);
+      let restitution = Math.min(bodyA.restitution, bodyB.restitution);
+      // 地面稳定接触时降低回弹（更贴近真实的“压住不弹”）
+      const aStableGround = stableA;
+      const bStableGround = stableB;
+      if (aStableGround || bStableGround) {
+        restitution *= (GAME_CONFIG?.PHYSICS?.groundRestitutionScale ?? 0.4);
+      }
       let impulseScalar = -(1 + restitution) * velocityAlongNormal;
-      const damping = (bodyA.isImpactSource || bodyB.isImpactSource)
-        ? 1.0
-        : ((bodyA.bottomContact && bodyB.bottomContact) ? (GAME_CONFIG?.PHYSICS?.propagationDamping ?? 0.25) : 0.5);
+      let damping;
+      if (bodyA.isImpactSource || bodyB.isImpactSource) {
+        damping = 1.0;
+      } else if (bodyA.bottomContact && bodyB.bottomContact) {
+        const base = (GAME_CONFIG?.PHYSICS?.propagationDamping ?? 0.25);
+        const stableFactor = Math.min(1,
+          ((bodyA.bottomContactDuration + bodyB.bottomContactDuration) / 2) / stableSec
+        );
+        // 随接触时间增加逐步降低传播（最小约0.08）
+        damping = Math.max(0.08, base * (1 - 0.6 * stableFactor));
+      } else {
+        damping = 0.5;
+      }
+      // 地面稳定接触吸收一部分法向冲击，避免底层持续强烈传播
+      const groundAbsorb = (GAME_CONFIG?.PHYSICS?.groundAbsorbFactor ?? 0.35);
+      if (aStableGround || bStableGround) {
+        impulseScalar *= (1 - groundAbsorb);
+      }
       impulseScalar *= damping;
       const totalMass = bodyA.isStatic ? bodyB.mass : 
                        bodyB.isStatic ? bodyA.mass : 
@@ -554,11 +589,18 @@ export class PhysicsEngine {
         bodyB.velocity = bodyB.velocity.add(impulse.multiply(bodyA.mass));
       }
 
+      // 静摩擦近似：地面稳定接触时切向低速直接归零，防止“挤-分离-再挤”
+      const staticFricVth = (GAME_CONFIG?.PHYSICS?.staticFrictionVelThreshold ?? 18);
+      if (aStableGround || bStableGround) {
+        if (Math.abs(bodyA.velocity.x) < staticFricVth) bodyA.velocity.x = 0;
+        if (Math.abs(bodyB.velocity.x) < staticFricVth) bodyB.velocity.x = 0;
+      }
+
       // 触发碰撞冲击事件（根据法向速度估算强度，含传播阻尼）
       let impactStrength = Math.max(0, -velocityAlongNormal) * restitution * damping;
       // 底部堆叠的非冲击源对：限制最大冲击强度，避免深层持续“巨烈碰撞”
       if ((bodyA.bottomContact && bodyB.bottomContact) && !(bodyA.isImpactSource || bodyB.isImpactSource)) {
-        const clampMax = (GAME_CONFIG?.PHYSICS?.bottomStackImpulseClamp ?? 28);
+        const clampMax = (GAME_CONFIG?.PHYSICS?.bottomStackImpulseClamp ?? 20);
         if (impactStrength > clampMax) impactStrength = clampMax;
       }
       if (impactStrength > 45) {

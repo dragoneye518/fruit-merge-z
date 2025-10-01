@@ -70,8 +70,13 @@ export const GAME_CONFIG = {
     // 冲击传播参数（新增，可调）
     impactSourceVelY: 160,         // 下落体垂直速度超过该值标为冲击源
     impactSourceDurationSec: 0.6,  // 冲击源标记持续时间（秒）
-    propagationDamping: 0.25,      // 底部非冲击源对的传播阻尼（越小越弱）
-    bottomStackImpulseClamp: 26    // 底部堆叠非冲击源最大冲击强度上限
+    propagationDamping: 0.22,      // 底部非冲击源对的传播阻尼（越小越弱）
+    bottomStackImpulseClamp: 20,   // 底部堆叠非冲击源最大冲击强度上限
+    stableContactSec: 0.6,         // 底部接触判定为“稳定”的时间阈值
+    // 地面-接触物理（新增）
+    staticFrictionVelThreshold: 18, // 低于该切向速度，稳定接触启用静摩擦（vx归零）
+    groundAbsorbFactor: 0.35,       // 地面吸收法向冲击比例（越大越不弹）
+    groundRestitutionScale: 0.4     // 地面接触时的回弹系数缩放（降低弹跳）
   },
   
   // 性能限制
