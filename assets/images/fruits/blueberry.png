@@ -1,0 +1,49 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 蓝莓主体渐变 -->
+    <radialGradient id="blueberryGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#6B9EFF"/>
+      <stop offset="40%" stop-color="#4A90E2"/>
+      <stop offset="80%" stop-color="#357ABD"/>
+      <stop offset="100%" stop-color="#2C5F8F"/>
+    </radialGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="blueberryHighlight" cx="0.25" cy="0.25" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 阴影渐变 -->
+    <radialGradient id="blueberryShadow" cx="0.5" cy="0.8" r="0.3">
+      <stop offset="0%" stop-color="#1A365D" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#1A365D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 阴影 -->
+  <ellipse cx="32" cy="58" rx="12" ry="4" fill="url(#blueberryShadow)"/>
+  
+  <!-- 蓝莓主体 -->
+  <circle cx="32" cy="32" r="26" fill="url(#blueberryGradient)"/>
+  
+  <!-- 蓝莓表面纹理线条 -->
+  <path d="M32 8 L32 56" stroke="#2C5F8F" stroke-width="0.5" opacity="0.3"/>
+  <path d="M18 18 L46 46" stroke="#2C5F8F" stroke-width="0.5" opacity="0.3"/>
+  <path d="M46 18 L18 46" stroke="#2C5F8F" stroke-width="0.5" opacity="0.3"/>
+  <path d="M8 32 L56 32" stroke="#2C5F8F" stroke-width="0.5" opacity="0.3"/>
+  
+  <!-- 蓝莓顶部花萼 -->
+  <g transform="translate(32, 8)">
+    <path d="M-3 0 L-1 -4 L1 -4 L3 0 L1 -2 L-1 -2 Z" fill="#4A7C59"/>
+    <path d="M-2 -1 L0 -3 L2 -1" stroke="#68D391" stroke-width="0.5" fill="none"/>
+  </g>
+  
+  <!-- 主高光 -->
+  <ellipse cx="26" cy="22" rx="8" ry="12" fill="url(#blueberryHighlight)"/>
+  
+  <!-- 小高光点 -->
+  <circle cx="24" cy="20" r="2" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="28" cy="26" r="1" fill="#FFFFFF" opacity="0.4"/>
+</svg>

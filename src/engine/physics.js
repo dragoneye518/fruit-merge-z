@@ -61,6 +61,12 @@ class RigidBody {
     this.hasBottomImpactTriggered = false; // 兼容旧逻辑
     // 限制落地震动次数（最多两次）
     this.bottomImpactCount = 0;
+    // 睡眠/唤醒（底部长期稳定后进入睡眠）
+    this.sleepTimer = 0;
+    this.isSleeping = false;
+    // 冲击源标记与计时：用于控制冲量传播与底部抑制
+    this.isImpactSource = false;
+    this.impactSourceTimer = 0;
   }
   
   // 应用力
@@ -73,6 +79,25 @@ class RigidBody {
   // 更新物理状态
   update(deltaTime) {
     if (this.isStatic || this.isMarkedForRemoval) return;
+
+    // 睡眠状态：保持静止，仍然消化冷却/计时器
+    if (this.isSleeping) {
+      this.acceleration = new Vector2(0, 0);
+      this.velocity = new Vector2(0, 0);
+      // 冷却计时（落地冲击）
+      if (this.bottomImpactCooldown > 0) {
+        this.bottomImpactCooldown -= deltaTime;
+        if (this.bottomImpactCooldown < 0) this.bottomImpactCooldown = 0;
+      }
+      // 合成计时器
+      if (this.mergeTimer > 0) {
+        this.mergeTimer -= deltaTime;
+        if (this.mergeTimer <= 0) {
+          this.canMerge = true;
+        }
+      }
+      return;
+    }
     
     // 应用重力
     this.applyForce(new Vector2(0, GAME_CONFIG.PHYSICS.gravity * this.mass));
@@ -82,6 +107,14 @@ class RigidBody {
     
     // 应用空气阻力
     this.velocity = this.velocity.multiply(GAME_CONFIG.PHYSICS.airResistance);
+
+    // 标记冲击源：非底部接触且垂直下落速度超过阈值
+    const impactVth = (GAME_CONFIG?.PHYSICS?.impactSourceVelY ?? 160);
+    const impactDuration = (GAME_CONFIG?.PHYSICS?.impactSourceDurationSec ?? 0.6);
+    if (!this.bottomContact && this.velocity.y > impactVth) {
+      this.isImpactSource = true;
+      this.impactSourceTimer = impactDuration;
+    }
     
     // 静止判定：仅在接触地面时对极小速度进行夹紧，避免自由下落阶段被误判为静止
     const settleThreshold = GAME_CONFIG.PHYSICS.settleThreshold || 8;
@@ -116,6 +149,36 @@ class RigidBody {
     const settleY = (GAME_CONFIG?.DANGER?.settleSpeedY ?? 32);
     if (this.bottomContact && Math.abs(this.velocity.y) < settleY) {
       this.velocity.y = 0;
+    }
+
+    // 冲击源计时器衰减与接触底部时重置
+    if (this.impactSourceTimer > 0) {
+      this.impactSourceTimer -= deltaTime;
+      if (this.impactSourceTimer <= 0) {
+        this.isImpactSource = false;
+        this.impactSourceTimer = 0;
+      }
+    } else if (this.bottomContact) {
+      this.isImpactSource = false;
+    }
+
+    // 睡眠判定：底部持续低速一段时间则进入睡眠
+    const sleepEnabled = !!(GAME_CONFIG?.PHYSICS?.sleepEnabled);
+    if (sleepEnabled && this.bottomContact) {
+      const vth = GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6;
+      const tth = GAME_CONFIG?.PHYSICS?.sleepTimeoutSec ?? 0.9;
+      if (Math.abs(this.velocity.x) < vth && Math.abs(this.velocity.y) < vth) {
+        this.sleepTimer += deltaTime;
+        if (this.sleepTimer >= tth) {
+          this.isSleeping = true;
+          this.velocity.x = 0;
+          this.velocity.y = 0;
+        }
+      } else {
+        this.sleepTimer = 0;
+      }
+    } else {
+      this.sleepTimer = 0;
     }
     
     // 更新合成计时器
@@ -289,6 +352,11 @@ export class PhysicsEngine {
         }
       }
       body.bottomContact = true;
+      // 接触地面后清除冲击源标记，防止深层堆叠误判为冲击源
+      body.isImpactSource = false;
+    } else {
+      // 离开地面则清除底部接触标记，避免半空静止与误判
+      body.bottomContact = false;
     }
   }
 
@@ -399,7 +467,7 @@ export class PhysicsEngine {
             minDistance,
             overlap: minDistance - distance
           });
-          
+
           // 优化：底部近乎静止且仅存在极小重叠的水果，跳过后续重复碰撞计算，降低抖动与CPU负载
           // 保留一定重叠阈值，一旦压得更紧仍会进入碰撞处理
           const settle = GAME_CONFIG.PHYSICS.settleThreshold || 8;
@@ -410,6 +478,15 @@ export class PhysicsEngine {
             // 从碰撞对中移除该项以避免重复分离与冲量计算
             this.collisionPairs.pop();
           }
+
+          // 睡眠对：若两者均处于睡眠且重叠小于唤醒阈值，则不纳入碰撞
+          const wakeOverlap = (GAME_CONFIG?.PHYSICS?.wakeOverlapPx || 2.0);
+          if (bodyA.isSleeping && bodyB.isSleeping) {
+            const overlap = minDistance - distance;
+            if (overlap < wakeOverlap) {
+              this.collisionPairs.pop();
+            }
+          }
         }
       }
     }
@@ -419,14 +496,30 @@ export class PhysicsEngine {
   resolveCollisions() {
     this.collisionPairs.forEach(collision => {
       const { bodyA, bodyB, overlap } = collision;
-      
+
       if (bodyA.isStatic && bodyB.isStatic) return;
+
+      // 底部低速且仅有微重叠的水果对：直接跳过，避免持续分离与冲量导致连锁抖动
+      const vth = (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6);
+      const tinyOverlapEps = (GAME_CONFIG?.PHYSICS?.tinyOverlapEpsilon ?? 0.8);
+      if (bodyA.bottomContact && bodyB.bottomContact &&
+          bodyA.velocity.magnitude() < vth && bodyB.velocity.magnitude() < vth &&
+          overlap < tinyOverlapEps * 1.5) {
+        return;
+      }
+
+      // 睡眠对在极小重叠情况下直接跳过
+      const wakeOverlap = (GAME_CONFIG?.PHYSICS?.wakeOverlapPx || 2.0);
+      if (bodyA.isSleeping && bodyB.isSleeping && overlap < wakeOverlap) return;
       
       // 计算碰撞法向量
       const normal = bodyB.position.subtract(bodyA.position).normalize();
       
-      // 分离物体
-      const separation = normal.multiply(overlap * 0.5);
+      // 分离物体：对底部堆叠减小位置修正，降低连锁抖动
+      const sepScale = (bodyA.isImpactSource || bodyB.isImpactSource)
+        ? 0.5
+        : ((bodyA.bottomContact && bodyB.bottomContact) ? 0.15 : 0.5);
+      const separation = normal.multiply(overlap * sepScale);
       if (!bodyA.isStatic) {
         bodyA.position = bodyA.position.subtract(separation);
       }
@@ -440,9 +533,13 @@ export class PhysicsEngine {
       
       if (velocityAlongNormal > 0) return; // 物体正在分离
       
-      // 计算碰撞冲量
+      // 计算碰撞冲量，并对非冲击源/底部堆叠对进行传播阻尼
       const restitution = Math.min(bodyA.restitution, bodyB.restitution);
-      const impulseScalar = -(1 + restitution) * velocityAlongNormal;
+      let impulseScalar = -(1 + restitution) * velocityAlongNormal;
+      const damping = (bodyA.isImpactSource || bodyB.isImpactSource)
+        ? 1.0
+        : ((bodyA.bottomContact && bodyB.bottomContact) ? (GAME_CONFIG?.PHYSICS?.propagationDamping ?? 0.25) : 0.5);
+      impulseScalar *= damping;
       const totalMass = bodyA.isStatic ? bodyB.mass : 
                        bodyB.isStatic ? bodyA.mass : 
                        bodyA.mass + bodyB.mass;
@@ -457,8 +554,13 @@ export class PhysicsEngine {
         bodyB.velocity = bodyB.velocity.add(impulse.multiply(bodyA.mass));
       }
 
-      // 触发碰撞冲击事件（根据法向速度估算强度）
-      const impactStrength = Math.max(0, -velocityAlongNormal) * restitution;
+      // 触发碰撞冲击事件（根据法向速度估算强度，含传播阻尼）
+      let impactStrength = Math.max(0, -velocityAlongNormal) * restitution * damping;
+      // 底部堆叠的非冲击源对：限制最大冲击强度，避免深层持续“巨烈碰撞”
+      if ((bodyA.bottomContact && bodyB.bottomContact) && !(bodyA.isImpactSource || bodyB.isImpactSource)) {
+        const clampMax = (GAME_CONFIG?.PHYSICS?.bottomStackImpulseClamp ?? 28);
+        if (impactStrength > clampMax) impactStrength = clampMax;
+      }
       if (impactStrength > 45) {
         const contactX = (bodyA.position.x + bodyB.position.x) * 0.5;
         const contactY = (bodyA.position.y + bodyB.position.y) * 0.5;
@@ -469,6 +571,13 @@ export class PhysicsEngine {
           bodyA,
           bodyB
         });
+      }
+
+      // 唤醒判定：明显冲击或重叠超过阈值时唤醒两者
+      const wakeImpulse = (GAME_CONFIG?.PHYSICS?.wakeImpulse || 24);
+      if (impactStrength > wakeImpulse || overlap > wakeOverlap) {
+        if (bodyA.isSleeping) { bodyA.isSleeping = false; bodyA.sleepTimer = 0; }
+        if (bodyB.isSleeping) { bodyB.isSleeping = false; bodyB.sleepTimer = 0; }
       }
     });
   }

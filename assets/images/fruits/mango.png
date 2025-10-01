@@ -1,0 +1,70 @@
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 芒果主体渐变 -->
+    <radialGradient id="mangoGradient" cx="0.3" cy="0.35" r="0.8">
+      <stop offset="0%" stop-color="#FFE066"/>
+      <stop offset="30%" stop-color="#FFC04D"/>
+      <stop offset="70%" stop-color="#FFA72B"/>
+      <stop offset="100%" stop-color="#E8890B"/>
+    </radialGradient>
+    
+    <!-- 芒果红色调渐变 -->
+    <radialGradient id="mangoRed" cx="0.7" cy="0.3" r="0.5">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#FF4757" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#FF4757" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="mangoHighlight" cx="0.25" cy="0.3" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 阴影渐变 -->
+    <radialGradient id="mangoShadow" cx="0.5" cy="0.85" r="0.4">
+      <stop offset="0%" stop-color="#B8860B" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#B8860B" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- 阴影 -->
+  <ellipse cx="64" cy="115" rx="24" ry="6" fill="url(#mangoShadow)"/>
+  
+  <!-- 芒果主体 -->
+  <path d="M64 15 C45 15, 30 30, 30 50 C30 70, 35 85, 45 95 C55 105, 64 110, 64 110 C64 110, 73 105, 83 95 C93 85, 98 70, 98 50 C98 30, 83 15, 64 15 Z" 
+        fill="url(#mangoGradient)"/>
+  
+  <!-- 芒果红色调 -->
+  <ellipse cx="75" cy="45" rx="15" ry="25" fill="url(#mangoRed)"/>
+  
+  <!-- 芒果表面纹理 -->
+  <g opacity="0.2">
+    <path d="M40 40 Q50 35, 60 40" stroke="#E8890B" stroke-width="1"/>
+    <path d="M45 55 Q55 50, 65 55" stroke="#E8890B" stroke-width="1"/>
+    <path d="M50 70 Q60 65, 70 70" stroke="#E8890B" stroke-width="1"/>
+    <path d="M55 85 Q65 80, 75 85" stroke="#E8890B" stroke-width="1"/>
+  </g>
+  
+  <!-- 芒果茎部 -->
+  <g transform="translate(64, 15)">
+    <ellipse cx="0" cy="-3" rx="3" ry="2" fill="#4A7C59"/>
+    <rect x="-1" y="-5" width="2" height="5" fill="#8B4513" rx="1"/>
+  </g>
+  
+  <!-- 芒果小叶子 -->
+  <g transform="translate(64, 12)">
+    <path d="M-3 -3 Q-6 -8, -2 -10 Q2 -8, 0 -3" fill="#4A7C59"/>
+    <path d="M3 -3 Q6 -8, 2 -10 Q-2 -8, 0 -3" fill="#4A7C59"/>
+    <path d="M-2 -6 L2 -6" stroke="#68D391" stroke-width="0.5"/>
+  </g>
+  
+  <!-- 主高光 -->
+  <ellipse cx="52" cy="40" rx="12" ry="18" fill="url(#mangoHighlight)"/>
+  
+  <!-- 小高光点 -->
+  <circle cx="50" cy="35" r="3" fill="#FFFFFF" opacity="0.6"/>
+  <circle cx="58" cy="50" r="2" fill="#FFFFFF" opacity="0.4"/>
+  <circle cx="55" cy="65" r="1.5" fill="#FFFFFF" opacity="0.3"/>
+</svg>

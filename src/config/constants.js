@@ -58,7 +58,20 @@ export const GAME_CONFIG = {
     maxVelocity: 480,      // 最大速度限制
     mergeDistance: 1.0,    // 合成距离阈值
     bounceDamping: 0.3,    // 新增：落地弹跳额外阻尼
-    settleThreshold: 8     // 新增：静止判定速度阈值
+    settleThreshold: 8,    // 新增：静止判定速度阈值
+    // 底部微重叠过滤阈值（像素）：小于该值且近静止时不参与重复碰撞
+    tinyOverlapEpsilon: 1.2,
+    // 睡眠/唤醒机制（底部长期稳定后进入睡眠，受较大冲量或明显压紧时唤醒）
+    sleepEnabled: true,
+    sleepVelThreshold: 6,      // 速度低于该值（px/s）计入睡眠判定
+    sleepTimeoutSec: 0.9,      // 持续低速超过该秒数进入睡眠
+    wakeImpulse: 24,           // 冲量强度超过该值时唤醒
+    wakeOverlapPx: 2.0,        // 重叠超过该像素时唤醒/参与碰撞
+    // 冲击传播参数（新增，可调）
+    impactSourceVelY: 160,         // 下落体垂直速度超过该值标为冲击源
+    impactSourceDurationSec: 0.6,  // 冲击源标记持续时间（秒）
+    propagationDamping: 0.25,      // 底部非冲击源对的传播阻尼（越小越弱）
+    bottomStackImpulseClamp: 26    // 底部堆叠非冲击源最大冲击强度上限
   },
   
   // 性能限制
@@ -83,7 +96,7 @@ export const GAME_CONFIG = {
     // 改为“碰撞即消除”的模式：同类型水果发生碰撞且形成团簇则消除
     MERGE_BEHAVIOR: 'eliminate',
     // 物理模式/自由投放的可生成水果列表（扩展为十种）
-    STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON'],
+    STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON','BLUEBERRY','PEACH','PEAR','MANGO','PINEAPPLE'],
     // 消除得分倍率（相对该水果基础分）
     ELIMINATE_SCORE_MULTIPLIER: 1.0,
     // 是否因消除增加连击
@@ -99,7 +112,7 @@ export const GAME_CONFIG = {
       minMatch: 3,             // 至少三个消除
       scoreMultiplier: 1.0,    // 三消模式额外分数倍率
       // 可生成的水果类型（十种常见水果）
-      types: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON']
+      types: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON','BLUEBERRY','PEACH','PEAR','MANGO','PINEAPPLE']
     },
     // 模式与道具配置
     MODES: {
@@ -290,6 +303,62 @@ export const FRUIT_CONFIG = {
     nextLevel: null
   }
   ,
+  // 新增：5种常见水果（参考Fruit Ninja并按现有尺寸比例）
+  BLUEBERRY: {
+    id: 11,
+    name: '蓝莓',
+    radius: 16,                 // 比樱桃更小的微型果
+    color: '#4A90E2',
+    gradient: ['#4A90E2', '#357ABD'],
+    texture: 'assets/images/fruits/blueberry.png',
+    score: 2,
+    mass: 0.7,
+    nextLevel: null
+  },
+  PEACH: {
+    id: 12,
+    name: '桃子',
+    radius: 38,                 // 介于橙子与苹果之间
+    color: '#FFA07A',
+    gradient: ['#FFA07A', '#FF7F50'],
+    texture: 'assets/images/fruits/peach.png',
+    score: 18,
+    mass: 2.2,
+    nextLevel: null
+  },
+  PEAR: {
+    id: 13,
+    name: '梨子',
+    radius: 42,                 // 接近猕猴桃大小
+    color: '#A3D170',
+    gradient: ['#A3D170', '#7FBF3F'],
+    texture: 'assets/images/fruits/pear.png',
+    score: 22,
+    mass: 2.8,
+    nextLevel: null
+  },
+  MANGO: {
+    id: 14,
+    name: '芒果',
+    radius: 44,                 // 略大于梨子
+    color: '#FFC04D',
+    gradient: ['#FFC04D', '#FFA72B'],
+    texture: 'assets/images/fruits/mango.png',
+    score: 26,
+    mass: 3.0,
+    nextLevel: null
+  },
+  PINEAPPLE: {
+    id: 15,
+    name: '菠萝',
+    radius: 68,                 // 接近椰子/次于西瓜的大型果
+    color: '#FFCC00',
+    gradient: ['#FFCC00', '#E0B000'],
+    texture: 'assets/images/fruits/pineapple.png',
+    score: 48,
+    mass: 5.4,
+    nextLevel: null
+  },
   // 特殊道具：炸弹与彩虹（不参与十种水果计数）
   BOMB: {
     id: 101,
