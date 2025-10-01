@@ -83,6 +83,17 @@ class RigidBody {
     // 应用空气阻力
     this.velocity = this.velocity.multiply(GAME_CONFIG.PHYSICS.airResistance);
     
+    // 静止判定：仅在接触地面时对极小速度进行夹紧，避免自由下落阶段被误判为静止
+    const settleThreshold = GAME_CONFIG.PHYSICS.settleThreshold || 8;
+    if (this.bottomContact) {
+      if (Math.abs(this.velocity.x) < settleThreshold) {
+        this.velocity.x = 0;
+      }
+      if (Math.abs(this.velocity.y) < settleThreshold) {
+        this.velocity.y = 0;
+      }
+    }
+    
     // 限制最大速度
     const speed = this.velocity.magnitude();
     if (speed > GAME_CONFIG.PHYSICS.maxVelocity) {
@@ -263,14 +274,18 @@ export class PhysicsEngine {
     if (body.position.y + body.radius > bottomY) {
       body.position.y = bottomY - body.radius;
       if (body.velocity.y > 0) {
-        const damp = (GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.6);
-        body.velocity.y = -body.velocity.y * body.restitution * damp;
+        const bounceDamping = GAME_CONFIG.PHYSICS.bounceDamping || 0.3;
+        body.velocity.y = -body.velocity.y * body.restitution * bounceDamping;
         // X方向摩擦阻尼，模拟落地减速
         body.velocity.x *= body.friction;
-        // 低速阈值以下直接静止，避免“连续小跳”
-        const settleY = (GAME_CONFIG?.DANGER?.settleSpeedY ?? 32);
-        if (Math.abs(body.velocity.y) < settleY) {
+        
+        // 强化静止判定：落地后速度过小直接置零
+        const settleThreshold = GAME_CONFIG.PHYSICS.settleThreshold || 8;
+        if (Math.abs(body.velocity.y) < settleThreshold) {
           body.velocity.y = 0;
+        }
+        if (Math.abs(body.velocity.x) < settleThreshold) {
+          body.velocity.x = 0;
         }
       }
       body.bottomContact = true;

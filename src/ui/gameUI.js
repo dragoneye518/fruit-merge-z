@@ -82,35 +82,202 @@ export class GameUI {
   
   // 渲染背景
   renderBackground() {
-    // 创建渐变背景
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
-    gradient.addColorStop(0, UI_THEME.background.gradient[0]);
-    gradient.addColorStop(0.5, UI_THEME.background.gradient[1]);
-    gradient.addColorStop(1, UI_THEME.background.gradient[2]);
+    // 主背景渐变 - 增强版
+    const mainGradient = this.ctx.createRadialGradient(
+      this.width * 0.3, this.height * 0.2, 0,
+      this.width * 0.5, this.height * 0.5, Math.max(this.width, this.height) * 0.8
+    );
     
-    this.ctx.fillStyle = gradient;
+    // 更丰富的渐变色彩，模仿水果忍者的暖色调
+    mainGradient.addColorStop(0, '#FFE0B2');    // 温暖的桃色
+    mainGradient.addColorStop(0.2, '#FFCC80');  // 浅橙色
+    mainGradient.addColorStop(0.4, '#FFB74D');  // 中橙色
+    mainGradient.addColorStop(0.6, '#FF9800');  // 深橙色
+    mainGradient.addColorStop(0.8, '#F57C00');  // 暗橙色
+    mainGradient.addColorStop(1, '#E65100');    // 深红橙色
+    
+    this.ctx.fillStyle = mainGradient;
     this.ctx.fillRect(0, 0, this.width, this.height);
+    
+    // 添加顶部光晕效果
+    const topGlow = this.ctx.createRadialGradient(
+      this.width * 0.5, 0, 0,
+      this.width * 0.5, this.height * 0.3, this.width * 0.6
+    );
+    topGlow.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+    topGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
+    topGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    this.ctx.fillStyle = topGlow;
+    this.ctx.fillRect(0, 0, this.width, this.height * 0.4);
+    
+    // 添加底部阴影效果
+    const bottomShadow = this.ctx.createLinearGradient(0, this.height * 0.7, 0, this.height);
+    bottomShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    bottomShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.1)');
+    bottomShadow.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
+    
+    this.ctx.fillStyle = bottomShadow;
+    this.ctx.fillRect(0, this.height * 0.7, this.width, this.height * 0.3);
+    
+    // 添加木质纹理效果
+    this.renderWoodTexture();
+    
+    // 添加动态光影效果
+    this.renderDynamicLighting(Date.now() * 0.001);
     
     // 添加装饰性图案
     this.renderBackgroundPattern();
+    
+    // 添加飘落的叶子效果
+    this.renderFloatingLeaves(Date.now() * 0.001);
+    
+    // 添加忍者刀光轨迹
+    this.renderNinjaSlashes(Date.now());
   }
   
   // 渲染背景图案
   renderBackgroundPattern() {
     this.ctx.save();
-    this.ctx.globalAlpha = 0.06;
-    this.ctx.fillStyle = UI_THEME.primary.main;
+    this.ctx.globalAlpha = 0.08;
     
-    // 绘制装饰圆圈（数量与强度降低，整体更柔和）
-    for (let i = 0; i < 6; i++) {
-      const x = (i % 4) * 100 + 50;
-      const y = Math.floor(i / 4) * 200 + 100;
-      const radius = 16 + Math.sin(Date.now() * 0.001 + i) * 4;
+    // 绘制水果忍者风格的装饰元素
+    const time = Date.now() * 0.0005;
+    
+    // 绘制旋转的水果轮廓
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + time;
+      const x = this.width * 0.5 + Math.cos(angle) * 120;
+      const y = this.height * 0.4 + Math.sin(angle) * 80;
+      const size = 20 + Math.sin(time * 2 + i) * 5;
       
+      this.ctx.fillStyle = i % 2 === 0 ? '#FF6B35' : '#4ECDC4';
       this.ctx.beginPath();
-      this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+      this.ctx.arc(x, y, size, 0, Math.PI * 2);
       this.ctx.fill();
     }
+    
+    // 绘制忍者刀光效果
+    this.ctx.strokeStyle = '#FFFFFF';
+    this.ctx.lineWidth = 3;
+    this.ctx.globalAlpha = 0.15;
+    
+    for (let i = 0; i < 3; i++) {
+      const slashAngle = time * 0.5 + i * Math.PI * 0.7;
+      const centerX = this.width * (0.2 + i * 0.3);
+      const centerY = this.height * (0.3 + i * 0.2);
+      const length = 60;
+      
+      this.ctx.beginPath();
+      this.ctx.moveTo(
+        centerX - Math.cos(slashAngle) * length,
+        centerY - Math.sin(slashAngle) * length
+      );
+      this.ctx.lineTo(
+        centerX + Math.cos(slashAngle) * length,
+        centerY + Math.sin(slashAngle) * length
+      );
+      this.ctx.stroke();
+    }
+    
+    this.ctx.restore();
+  }
+
+  // 渲染动态光影效果
+  renderDynamicLighting(time) {
+    this.ctx.save();
+    
+    // 主光源效果
+    const lightX = this.width * (0.5 + Math.sin(time * 0.3) * 0.2);
+    const lightY = this.height * (0.3 + Math.cos(time * 0.2) * 0.1);
+    
+    const lightGradient = this.ctx.createRadialGradient(
+      lightX, lightY, 0,
+      lightX, lightY, 200
+    );
+    lightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+    lightGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.08)');
+    lightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    
+    this.ctx.fillStyle = lightGradient;
+    this.ctx.fillRect(0, 0, this.width, this.height);
+    
+    // 次光源效果
+    const light2X = this.width * (0.8 + Math.cos(time * 0.4) * 0.1);
+    const light2Y = this.height * (0.7 + Math.sin(time * 0.3) * 0.1);
+    
+    const light2Gradient = this.ctx.createRadialGradient(
+      light2X, light2Y, 0,
+      light2X, light2Y, 150
+    );
+    light2Gradient.addColorStop(0, 'rgba(255, 193, 7, 0.12)');
+    light2Gradient.addColorStop(0.6, 'rgba(255, 193, 7, 0.06)');
+    light2Gradient.addColorStop(1, 'rgba(255, 193, 7, 0)');
+    
+    this.ctx.fillStyle = light2Gradient;
+    this.ctx.fillRect(0, 0, this.width, this.height);
+    
+    this.ctx.restore();
+  }
+
+  // 渲染飘落的叶子效果
+  renderFloatingLeaves(time) {
+    this.ctx.save();
+    
+    // 初始化叶子数据（如果不存在）
+    if (!this.floatingLeaves) {
+      this.floatingLeaves = [];
+      for (let i = 0; i < 12; i++) {
+        this.floatingLeaves.push({
+          x: Math.random() * this.width,
+          y: Math.random() * this.height,
+          size: 8 + Math.random() * 12,
+          rotation: Math.random() * Math.PI * 2,
+          speed: 0.5 + Math.random() * 1.5,
+          swayAmplitude: 20 + Math.random() * 30,
+          swayFreq: 0.5 + Math.random() * 1.0
+        });
+      }
+    }
+    
+    // 更新和绘制叶子
+    this.ctx.globalAlpha = 0.3;
+    
+    this.floatingLeaves.forEach((leaf, index) => {
+      // 更新位置
+      leaf.y += leaf.speed;
+      leaf.x += Math.sin(time * leaf.swayFreq + index) * 0.5;
+      leaf.rotation += 0.02;
+      
+      // 重置超出屏幕的叶子
+      if (leaf.y > this.height + leaf.size) {
+        leaf.y = -leaf.size;
+        leaf.x = Math.random() * this.width;
+      }
+      
+      // 绘制叶子
+      this.ctx.save();
+      this.ctx.translate(leaf.x, leaf.y);
+      this.ctx.rotate(leaf.rotation);
+      
+      // 叶子形状
+      this.ctx.fillStyle = index % 3 === 0 ? '#4CAF50' : 
+                          index % 3 === 1 ? '#66BB6A' : '#81C784';
+      
+      this.ctx.beginPath();
+      this.ctx.ellipse(0, 0, leaf.size * 0.6, leaf.size, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      
+      // 叶子纹理
+      this.ctx.strokeStyle = '#2E7D32';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -leaf.size);
+      this.ctx.lineTo(0, leaf.size);
+      this.ctx.stroke();
+      
+      this.ctx.restore();
+    });
     
     this.ctx.restore();
   }
@@ -713,6 +880,137 @@ export class GameUI {
   }
 
   // 辅助方法：颜色变亮
+  lightenColor(color, amount) {
+    const usePound = color[0] === '#';
+    const col = usePound ? color.slice(1) : color;
+    const num = parseInt(col, 16);
+    let r = (num >> 16) + Math.round(255 * amount);
+    let g = (num >> 8 & 0x00FF) + Math.round(255 * amount);
+    let b = (num & 0x0000FF) + Math.round(255 * amount);
+    r = r > 255 ? 255 : r;
+    g = g > 255 ? 255 : g;
+    b = b > 255 ? 255 : b;
+    return (usePound ? '#' : '') + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  }
+
+  // 渲染木质纹理效果
+  renderWoodTexture() {
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.08;
+    
+    // 创建木纹效果
+    const woodLines = 15;
+    for (let i = 0; i < woodLines; i++) {
+      const y = (i / woodLines) * this.height;
+      const waveAmplitude = 8 + Math.sin(i * 0.5) * 4;
+      
+      this.ctx.strokeStyle = i % 2 === 0 ? '#8D6E63' : '#A1887F';
+      this.ctx.lineWidth = 2 + Math.random() * 2;
+      this.ctx.globalAlpha = 0.06 + Math.random() * 0.04;
+      
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, y);
+      
+      for (let x = 0; x <= this.width; x += 10) {
+        const waveY = y + Math.sin(x * 0.02 + i) * waveAmplitude;
+        this.ctx.lineTo(x, waveY);
+      }
+      
+      this.ctx.stroke();
+    }
+    
+    this.ctx.restore();
+  }
+
+  // 渲染忍者刀光轨迹
+  renderNinjaSlashes(time) {
+    this.ctx.save();
+    
+    // 初始化刀光数据
+    if (!this.ninjaSlashes) {
+      this.ninjaSlashes = [];
+      for (let i = 0; i < 5; i++) {
+        this.ninjaSlashes.push({
+          startX: Math.random() * this.width,
+          startY: Math.random() * this.height,
+          endX: Math.random() * this.width,
+          endY: Math.random() * this.height,
+          life: Math.random(),
+          maxLife: 2 + Math.random() * 3,
+          speed: 0.3 + Math.random() * 0.4,
+          width: 2 + Math.random() * 3
+        });
+      }
+    }
+    
+    // 更新和绘制刀光
+    this.ninjaSlashes.forEach((slash, index) => {
+      slash.life += slash.speed * 0.016; // 假设60fps
+      
+      if (slash.life > slash.maxLife) {
+        // 重新生成刀光
+        slash.startX = Math.random() * this.width;
+        slash.startY = Math.random() * this.height;
+        slash.endX = Math.random() * this.width;
+        slash.endY = Math.random() * this.height;
+        slash.life = 0;
+        slash.maxLife = 2 + Math.random() * 3;
+      }
+      
+      // 计算透明度
+      const alpha = Math.max(0, 1 - (slash.life / slash.maxLife));
+      if (alpha <= 0) return;
+      
+      // 绘制刀光
+      this.ctx.globalAlpha = alpha * 0.15;
+      this.ctx.strokeStyle = '#FFFFFF';
+      this.ctx.lineWidth = slash.width;
+      this.ctx.lineCap = 'round';
+      
+      // 添加发光效果
+      this.ctx.shadowColor = '#FFFFFF';
+      this.ctx.shadowBlur = 8;
+      
+      this.ctx.beginPath();
+      this.ctx.moveTo(slash.startX, slash.startY);
+      this.ctx.lineTo(slash.endX, slash.endY);
+      this.ctx.stroke();
+      
+      // 重置阴影
+      this.ctx.shadowBlur = 0;
+    });
+    
+    this.ctx.restore();
+  }
+
+  // 工具函数：绘制圆角矩形
+  roundRect(x, y, width, height, radius) {
+    this.ctx.beginPath();
+    this.ctx.moveTo(x + radius, y);
+    this.ctx.lineTo(x + width - radius, y);
+    this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    this.ctx.lineTo(x + width, y + height - radius);
+    this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    this.ctx.lineTo(x + radius, y + height);
+    this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    this.ctx.lineTo(x, y + radius);
+    this.ctx.quadraticCurveTo(x, y, x + radius, y);
+    this.ctx.closePath();
+  }
+
+  // 工具函数：颜色加深
+  darkenColor(color, factor) {
+    const usePound = color[0] === '#';
+    const col = usePound ? color.slice(1) : color;
+    const num = parseInt(col, 16);
+    const amt = Math.round(255 * factor);
+    const R = (num >> 16) - amt;
+    const G = (num >> 8 & 0x00FF) - amt;
+    const B = (num & 0x0000FF) - amt;
+    return (usePound ? '#' : '') + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 + (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 + (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  }
+
+  // 工具函数：颜色变亮
   lightenColor(color, amount) {
     const usePound = color[0] === '#';
     const col = usePound ? color.slice(1) : color;

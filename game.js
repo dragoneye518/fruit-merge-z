@@ -36,7 +36,17 @@ class FruitMergeZGame {
       await this.initDouyinAPI();
       
       // 预加载图片资源
-      await this.preloadImages();
+      // 预加载图片资源（加超时兜底，避免真机环境卡住）
+      await Promise.race([
+        // 捕获预加载错误，避免导致初始化直接失败
+        this.preloadImages().catch((err) => {
+          console.warn('Image preload error (ignored for init):', err?.message || err);
+        }),
+        new Promise(resolve => setTimeout(() => {
+          console.warn('Image preload taking too long, continuing initialization...');
+          resolve();
+        }, 2000))
+      ]);
       
       // 初始化游戏系统
       this.initGameSystems();
@@ -138,19 +148,31 @@ class FruitMergeZGame {
       tt.onTouchStart((e) => {
         if (this.gameLogic) {
           const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-          if (touch) this.gameLogic.handleTouchStart(touch.clientX, touch.clientY);
+          if (touch) {
+            const x = (touch.x ?? touch.clientX ?? touch.pageX);
+            const y = (touch.y ?? touch.clientY ?? touch.pageY);
+            this.gameLogic.handleTouchStart(x, y);
+          }
         }
       });
       tt.onTouchMove((e) => {
         if (this.gameLogic) {
           const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-          if (touch) this.gameLogic.handleTouchMove(touch.clientX, touch.clientY);
+          if (touch) {
+            const x = (touch.x ?? touch.clientX ?? touch.pageX);
+            const y = (touch.y ?? touch.clientY ?? touch.pageY);
+            this.gameLogic.handleTouchMove(x, y);
+          }
         }
       });
       tt.onTouchEnd((e) => {
         if (this.gameLogic) {
           const touch = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
-          if (touch) this.gameLogic.handleTouchEnd(touch.clientX, touch.clientY);
+          if (touch) {
+            const x = (touch.x ?? touch.clientX ?? touch.pageX);
+            const y = (touch.y ?? touch.clientY ?? touch.pageY);
+            this.gameLogic.handleTouchEnd(x, y);
+          }
         }
       });
     } else if (this.canvas && typeof this.canvas.addEventListener === 'function') {

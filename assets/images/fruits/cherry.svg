@@ -1,25 +1,80 @@
-<svg width="28" height="28" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg">
+<svg width="48" height="48" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="cherryGradient" cx="0.3" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#FF6B6B"/>
-      <stop offset="70%" stop-color="#E53E3E"/>
-      <stop offset="100%" stop-color="#C53030"/>
+    <!-- 樱桃主体渐变 -->
+    <radialGradient id="cherryGradient" cx="0.35" cy="0.25" r="0.9">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="30%" stop-color="#FF5252"/>
+      <stop offset="70%" stop-color="#E53935"/>
+      <stop offset="100%" stop-color="#C62828"/>
     </radialGradient>
-    <radialGradient id="cherryHighlight" cx="0.25" cy="0.25" r="0.4">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="cherryHighlight" cx="0.3" cy="0.2" r="0.5">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.4"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
+    
+    <!-- 阴影渐变 -->
+    <radialGradient id="cherryShadow" cx="0.7" cy="0.8" r="0.4">
+      <stop offset="0%" stop-color="#B71C1C" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#B71C1C" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 叶子渐变 -->
+    <linearGradient id="leafGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#81C784"/>
+      <stop offset="50%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    
+    <!-- 阴影滤镜 -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
+    </filter>
   </defs>
   
   <!-- 樱桃主体 -->
-  <circle cx="14" cy="16" r="10" fill="url(#cherryGradient)" stroke="#C53030" stroke-width="0.5"/>
+  <circle cx="24" cy="28" r="16" 
+          fill="url(#cherryGradient)" 
+          stroke="#B71C1C" 
+          stroke-width="0.8"
+          filter="url(#dropShadow)"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="11" cy="13" rx="3" ry="4" fill="url(#cherryHighlight)"/>
+  <!-- 樱桃阴影部分 -->
+  <ellipse cx="30" cy="34" rx="8" ry="6" fill="url(#cherryShadow)"/>
+  
+  <!-- 主高光 -->
+  <ellipse cx="19" cy="22" rx="5" ry="7" fill="url(#cherryHighlight)"/>
+  
+  <!-- 次高光 -->
+  <ellipse cx="16" cy="26" rx="2" ry="3" fill="#FFFFFF" opacity="0.6"/>
   
   <!-- 樱桃柄 -->
-  <path d="M14 6 Q16 4 18 2" stroke="#4A5D23" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  <path d="M24 12 Q26 8 28 4 Q30 2 32 1" 
+        stroke="#5D4037" 
+        stroke-width="2.5" 
+        fill="none" 
+        stroke-linecap="round"
+        filter="url(#dropShadow)"/>
   
-  <!-- 小叶子 -->
-  <ellipse cx="17" cy="4" rx="2" ry="1.5" fill="#68D391" transform="rotate(30 17 4)"/>
+  <!-- 叶子 -->
+  <path d="M28 8 Q34 6 36 12 Q34 16 28 14 Q26 12 28 8" 
+        fill="url(#leafGradient)"
+        stroke="#2E7D32"
+        stroke-width="0.5"/>
+  
+  <!-- 叶子纹理 -->
+  <path d="M29 10 Q32 9 34 12" 
+        stroke="#1B5E20" 
+        stroke-width="0.8" 
+        fill="none" 
+        opacity="0.7"/>
+  
+  <!-- 樱桃表面光泽 -->
+  <path d="M12 24 Q24 20 36 26" 
+        stroke="#FFCDD2" 
+        stroke-width="1.2" 
+        fill="none" 
+        opacity="0.4"/>
 </svg>

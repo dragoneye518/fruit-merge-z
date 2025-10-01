@@ -53,9 +53,21 @@ export class ImageLoader {
         reject(new Error('No image constructor available in current environment'));
         return;
       }
+      // 单张图片加载超时兜底，避免长时间挂起
+      const timeoutMs = 1500;
+      const timeoutId = setTimeout(() => {
+        console.warn(`Image load timeout: ${src}`);
+        reject(new Error(`Image timeout: ${src}`));
+      }, timeoutMs);
 
-      img.onload = () => resolve(img);
-      img.onerror = () => reject(new Error(`Image onerror: ${src}`));
+      img.onload = () => {
+        clearTimeout(timeoutId);
+        resolve(img);
+      };
+      img.onerror = () => {
+        clearTimeout(timeoutId);
+        reject(new Error(`Image onerror: ${src}`));
+      };
       img.src = src;
     });
   }
@@ -63,7 +75,12 @@ export class ImageLoader {
   // 预加载多个图片
   async preloadImages(srcList) {
     const promises = srcList.map(src => this.loadImage(src));
-    return Promise.all(promises);
+    const results = await Promise.allSettled(promises);
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length) {
+      console.warn(`预加载失败 ${failed.length} 张图片`);
+    }
+    return results;
   }
   
   // 获取已加载的图片

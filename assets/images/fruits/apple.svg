@@ -1,31 +1,108 @@
-<svg width="52" height="52" viewBox="0 0 52 52" xmlns="http://www.w3.org/2000/svg">
+<svg width="70" height="70" viewBox="0 0 70 70" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="appleGradient" cx="0.3" cy="0.4" r="0.8">
-      <stop offset="0%" stop-color="#FFAB91"/>
-      <stop offset="50%" stop-color="#FF6B6B"/>
-      <stop offset="100%" stop-color="#EE5A52"/>
+    <!-- 苹果主体渐变 -->
+    <radialGradient id="appleGradient" cx="0.25" cy="0.3" r="0.9">
+      <stop offset="0%" stop-color="#FFCDD2"/>
+      <stop offset="20%" stop-color="#EF5350"/>
+      <stop offset="50%" stop-color="#F44336"/>
+      <stop offset="80%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
     </radialGradient>
-    <radialGradient id="appleHighlight" cx="0.25" cy="0.3" r="0.4">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="appleHighlight" cx="0.2" cy="0.2" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.4"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
+    
+    <!-- 阴影渐变 -->
+    <radialGradient id="appleShadow" cx="0.8" cy="0.8" r="0.5">
+      <stop offset="0%" stop-color="#8C1A1A" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#8C1A1A" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 叶子渐变 -->
+    <linearGradient id="leafGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A5D6A7"/>
+      <stop offset="50%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    
+    <!-- 阴影滤镜 -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="3" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
   </defs>
   
   <!-- 苹果主体 -->
-  <path d="M26 12 Q35 15 38 25 Q38 35 32 40 Q26 44 26 44 Q26 44 20 40 Q14 35 14 25 Q17 15 26 12 Z" fill="url(#appleGradient)" stroke="#EE5A52" stroke-width="0.5"/>
+  <path d="M35 18 Q45 20 50 32 Q52 45 48 55 Q42 62 35 64 Q28 62 22 55 Q18 45 20 32 Q25 20 35 18 Z" 
+        fill="url(#appleGradient)" 
+        stroke="#8C1A1A" 
+        stroke-width="1"
+        filter="url(#dropShadow)"/>
   
   <!-- 苹果顶部凹陷 -->
-  <path d="M22 12 Q26 8 30 12" stroke="#C62828" stroke-width="1.5" fill="none"/>
+  <path d="M28 18 Q35 12 42 18" 
+        stroke="#B71C1C" 
+        stroke-width="2" 
+        fill="none"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="21" cy="20" rx="4" ry="6" fill="url(#appleHighlight)"/>
+  <!-- 苹果阴影部分 -->
+  <ellipse cx="44" cy="48" rx="8" ry="12" fill="url(#appleShadow)"/>
+  
+  <!-- 主高光 -->
+  <ellipse cx="28" cy="28" rx="6" ry="9" fill="url(#appleHighlight)"/>
+  
+  <!-- 次高光 -->
+  <ellipse cx="25" cy="35" rx="3" ry="4" fill="#FFFFFF" opacity="0.5"/>
+  
+  <!-- 小高光点 -->
+  <ellipse cx="22" cy="42" rx="1.5" ry="2" fill="#FFFFFF" opacity="0.7"/>
   
   <!-- 苹果柄 -->
-  <path d="M26 8 Q26 6 26 4" stroke="#5D4037" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M35 12 Q35 8 35 4" 
+        stroke="#5D4037" 
+        stroke-width="3" 
+        fill="none" 
+        stroke-linecap="round"
+        filter="url(#dropShadow)"/>
   
   <!-- 叶子 -->
-  <path d="M28 8 Q32 6 34 10 Q32 12 28 10" fill="#4CAF50"/>
+  <path d="M38 12 Q44 8 48 14 Q46 20 38 18 Q36 15 38 12" 
+        fill="url(#leafGradient)"
+        stroke="#1B5E20"
+        stroke-width="0.5"
+        filter="url(#dropShadow)"/>
   
-  <!-- 苹果表面光泽 -->
-  <path d="M18 22 Q26 20 34 24" stroke="#FFCDD2" stroke-width="1" fill="none" opacity="0.5"/>
+  <!-- 叶子纹理 -->
+  <path d="M40 14 Q43 12 46 16" 
+        stroke="#1B5E20" 
+        stroke-width="1" 
+        fill="none" 
+        opacity="0.7"/>
+  
+  <!-- 苹果表面光泽线 -->
+  <g opacity="0.3">
+    <path d="M22 30 Q35 25 48 32" 
+          stroke="#FFCDD2" 
+          stroke-width="1.5" 
+          fill="none"/>
+    <path d="M25 45 Q35 40 45 47" 
+          stroke="#FFCDD2" 
+          stroke-width="1.2" 
+          fill="none"/>
+  </g>
+  
+  <!-- 苹果表面细节纹理 -->
+  <g opacity="0.2">
+    <path d="M30 35 Q35 33 40 37" 
+          stroke="#D32F2F" 
+          stroke-width="0.8" 
+          fill="none"/>
+    <path d="M26 50 Q35 48 44 52" 
+          stroke="#D32F2F" 
+          stroke-width="0.8" 
+          fill="none"/>
+  </g>
 </svg>

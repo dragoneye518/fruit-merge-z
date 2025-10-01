@@ -42,21 +42,23 @@ export const GAME_CONFIG = {
   // 危险判定参数
   DANGER: {
     // 新生成水果的危险判定宽限时间（秒），避免顶部生成瞬间被判定危险
-    spawnGraceSec: 0.6,
+    spawnGraceSec: 0.3,
     // 仅在顶部接近停滞时才计入危险（垂直速度阈值，px/s）
-    settleSpeedY: 28,
+    settleSpeedY: 20,
     // 顶部危险线的判定边距（像素），小幅越线不立即计入
-    marginPx: 6
+    marginPx: 3
   },
   
   // 物理参数
   PHYSICS: {
-    gravity: 360,          // 降低重力，减弱落地冲击与弹跳
-    friction: 0.8,
-    restitution: 0.22,     // 进一步降低弹性，减少过度弹跳
-    airResistance: 0.985,  // 降低阻尼，保持自然下落
-    maxVelocity: 480,      // 降低最大速度，上限更温和
-    mergeDistance: 1.0     // 放宽底部同类消除接触阈值：任意重叠即可视为接触
+    gravity: 360,          // 重力保持适中
+    friction: 0.92,        // 增强摩擦力，快速消除水平震动
+    restitution: 0.08,     // 大幅降低弹性，几乎无弹跳
+    airResistance: 0.96,   // 增强空气阻力，快速衰减速度
+    maxVelocity: 480,      // 最大速度限制
+    mergeDistance: 1.0,    // 合成距离阈值
+    bounceDamping: 0.3,    // 新增：落地弹跳额外阻尼
+    settleThreshold: 8     // 新增：静止判定速度阈值
   },
   
   // 性能限制
@@ -163,8 +165,8 @@ export const GAME_CONFIG = {
     maxEffects: 120
   },
   
-  // 危险状态持续时间（秒），超过则判定游戏结束（抖音手机节奏更紧凑）
-  DANGER_TIMEOUT: 2.5,
+  // 危险状态持续时间（秒），超过则判定游戏结束（抖音手机节奏更紧凑）- 减少到1.5秒，更快触发游戏结束
+  DANGER_TIMEOUT: 1.5,
 
   // 画质与性能档位（含自动回退）
   QUALITY: {
@@ -180,7 +182,7 @@ export const FRUIT_CONFIG = {
   CHERRY: {
     id: 1,
     name: '樱桃',
-    radius: 16,
+    radius: 20,  // 从16增加到20
     color: '#E53E3E', // 深红色
     gradient: ['#E53E3E', '#C53030'],
     texture: 'assets/images/fruits/cherry.png',
@@ -191,7 +193,7 @@ export const FRUIT_CONFIG = {
   STRAWBERRY: {
     id: 2,
     name: '草莓',
-    radius: 20,
+    radius: 25,  // 从20增加到25
     color: '#F56565', // 亮红色
     gradient: ['#F56565', '#E53E3E'],
     texture: 'assets/images/fruits/strawberry.png',
@@ -202,7 +204,7 @@ export const FRUIT_CONFIG = {
   GRAPE: {
     id: 3,
     name: '葡萄',
-    radius: 24,
+    radius: 30,  // 从24增加到30
     color: '#9F7AEA', // 紫色
     gradient: ['#9F7AEA', '#805AD5'],
     texture: 'assets/images/fruits/grape.png',
@@ -213,7 +215,7 @@ export const FRUIT_CONFIG = {
   LEMON: {
     id: 4,
     name: '柠檬',
-    radius: 28,
+    radius: 35,  // 从28增加到35
     color: '#F6E05E', // 柠檬黄
     gradient: ['#F6E05E', '#ECC94B'],
     texture: 'assets/images/fruits/lemon.png',
@@ -224,7 +226,7 @@ export const FRUIT_CONFIG = {
   ORANGE: {
     id: 5,
     name: '橙子',
-    radius: 33,
+    radius: 41,  // 从33增加到41
     color: '#FF8C00', // 橙色
     gradient: ['#FF8C00', '#FF7F00'],
     texture: 'assets/images/fruits/orange.png',
@@ -235,7 +237,7 @@ export const FRUIT_CONFIG = {
   APPLE: {
     id: 6,
     name: '苹果',
-    radius: 37,
+    radius: 46,  // 从37增加到46
     color: '#FF6B6B', // 苹果红
     gradient: ['#FF6B6B', '#EE5A52'],
     texture: 'assets/images/fruits/apple.png',
@@ -246,7 +248,7 @@ export const FRUIT_CONFIG = {
   KIWI: {
     id: 7,
     name: '猕猴桃',
-    radius: 43,
+    radius: 54,  // 从43增加到54
     color: '#68D391', // 猕猴桃绿
     gradient: ['#68D391', '#48BB78'],
     texture: 'assets/images/fruits/kiwi.png',
@@ -257,7 +259,7 @@ export const FRUIT_CONFIG = {
   TOMATO: {
     id: 8,
     name: '番茄',
-    radius: 48,
+    radius: 60,  // 从48增加到60
     color: '#FC8181', // 番茄红
     gradient: ['#FC8181', '#F56565'],
     texture: 'assets/images/fruits/tomato.png',
@@ -268,7 +270,7 @@ export const FRUIT_CONFIG = {
   COCONUT: {
     id: 9,
     name: '椰子',
-    radius: 53,
+    radius: 66,  // 从53增加到66
     color: '#A0522D', // 椰子棕
     gradient: ['#A0522D', '#8B4513'],
     texture: 'assets/images/fruits/coconut.png',
@@ -279,7 +281,7 @@ export const FRUIT_CONFIG = {
   WATERMELON: {
     id: 10,
     name: '西瓜',
-    radius: 60,
+    radius: 75,  // 从60增加到75
     color: '#38A169', // 西瓜绿
     gradient: ['#38A169', '#2F855A'],
     texture: 'assets/images/fruits/watermelon.png',

@@ -109,7 +109,8 @@
     </div>
 
     <!-- Three.js（浏览器开发环境加载；抖音环境走内置WebGL适配） -->
-    <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+    <!-- 使用 defer 避免阻塞首屏与游戏初始化 -->
+    <script src="https://unpkg.com/three@0.158.0/build/three.min.js" defer></script>
     
     <!-- iOS兼容性测试脚本 -->
     <script src="ios_canvas_test.js"></script>
@@ -135,17 +136,22 @@
                 
                 loadingEl.textContent = '游戏初始化中...';
                 
-                // 等待游戏初始化完成
-                await new Promise(resolve => {
-                    const checkInit = () => {
-                        if (game && game.gameLogic) {
-                            resolve();
-                        } else {
-                            setTimeout(checkInit, 100);
-                        }
-                    };
-                    checkInit();
-                });
+                // 等待游戏初始化完成（增加超时兜底，避免真机环境卡住）
+                await Promise.race([
+                    new Promise(resolve => {
+                        const checkInit = () => {
+                            if (game && game.gameLogic && game.isInitialized) {
+                                resolve();
+                            } else {
+                                setTimeout(checkInit, 100);
+                            }
+                        };
+                        checkInit();
+                    }),
+                    new Promise((_, reject) => setTimeout(() => {
+                        reject(new Error('初始化超时，请稍后重试或刷新页面。'));
+                    }, 5000))
+                ]);
                 
                 loadingEl.style.display = 'none';
                 console.log('游戏加载完成！');
