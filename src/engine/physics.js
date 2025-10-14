@@ -192,8 +192,10 @@ export class PhysicsEngine {
               body.impactCooldown = cooldownMs;
             }
           } catch (_) {}
-          if (isDouyinEnv) {
-            console.log('[DouyinPhysics] Body contacted ground:', body.id, 'at y:', body.position.y.toFixed(1));
+          // 避免在抖音环境产生高频日志导致卡顿，仅在显式开启调试时输出
+          if (!isDouyinEnv || (GAME_CONFIG?.DEBUG?.dyGroundLogs === true)) {
+            // eslint-disable-next-line no-console
+            console.log('[Physics] Body contacted ground:', body.id, 'y:', body.position.y.toFixed(1));
           }
         } else {
           body.bottomContactDuration += (this.lastDt || 0);

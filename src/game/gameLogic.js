@@ -518,6 +518,10 @@ export class GameLogic {
       // 播放音效
       audioManager.playSound('DROP');
 
+      // 设置投放冷却，防止高频触发导致的状态错乱
+      const cd = (GAME_CONFIG?.LIMITS?.DROP_COOLDOWN ?? GAME_CONFIG?.DROP_COOLDOWN ?? 0.35);
+      this.dropCooldown = Math.max(0, Number(cd) || 0);
+
       // 准备下一个水果
       this.prepareNextFruit();
       
@@ -764,57 +768,85 @@ export class GameLogic {
     }
   }
   
-  // 检查游戏结束：融合主动体宽限与速度阈值，避免误判
+  // 检查游戏结束：仅在世界稳定时评估高度，并以“下一颗水果”作为占位
   checkGameOver() {
     const bootGraceSec = GAME_CONFIG?.GAMEPLAY?.BOOT_GRACE_SEC ?? 1.5;
     if ((this.gameTime || 0) < bootGraceSec) return;
 
-    // 使用物理引擎的稳定性检查：若存在当前下落的活动水果，世界未稳定时不累计危险计时
+    // 仅在世界完全稳定时才进行高度评估，避免“看起来还没到线却被判结束”
     const worldSettled = this.physicsEngine ? this.physicsEngine.isWorldSettled() : true;
     if (!worldSettled) {
-      const active = this.currentDroppingFruit || this.physicsEngine?.activeBody || null;
-      const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.6;
-      const activeAgeSec = active ? (((Date.now() - (active.dropTime || 0)) / 1000) || 0) : 0;
-      const activeUnstable = !!(active && (!active.bottomContact || (active.bottomContactDuration || 0) < stableSec));
-      // 平滑降低危险计时
-      this.dangerTimer = Math.max(0, (this.dangerTimer || 0) - this.deltaTime * 0.5);
-      // 若有活动水果且仍未稳定，则直接返回，避免在下落过程中触发结束
-      if (activeUnstable || activeAgeSec < 0.8) {
-        if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-          this.gameUI.setDangerLineFlash(false);
-        }
-        return;
+      // 未稳定时不进行危险累计，直接重置并关闭闪烁，避免空中缓慢经过投放线导致的误判
+      this.dangerTimer = 0;
+      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
+        this.gameUI.setDangerLineFlash(false);
       }
-      // 若没有活动水果，仅因轻微抖动导致未稳定，则继续执行高度判定（保留之前的结算修复）
+      return;
     }
 
     // 新规则：从草地位置开始计算，堆叠水果垂直高度 + 投放位置水果高度
     // 若高于投放位置（投放线），则判定为游戏结束（带容差与持续时间）
     const groundTopY = this.physicsEngine.getGroundTopY();
-    const stackTopY = this.physicsEngine.getStackTopY();
+    // 仅统计“已触地或稳定接触”的水果，忽略仍在空中的当前下落体，防止误算堆高
+    let stackTopY = groundTopY;
+    try {
+      const bodies = (this.physicsEngine?.bodies || []);
+      for (const b of bodies) {
+        if (!b || b.isMarkedForRemoval) continue;
+        const groundedOrStable = !!(b.bottomContact || (b.bottomContactDuration || 0) > 0.12);
+        if (!groundedOrStable) continue;
+        const yTop = (b.position?.y || 0) - (b.radius || 0);
+        if (yTop < stackTopY) stackTopY = yTop;
+      }
+    } catch (_) { /* ignore stack scan errors */ }
     const stackHeight = Math.max(0, groundTopY - stackTopY);
 
-    // 若当前没有下落中的水果，使用“下一颗水果”的高度进行评估
-    let currentFruitHeight = 0;
-    if (this.currentDroppingFruit) {
-      currentFruitHeight = this.currentDroppingFruit.radius * 2;
-    } else if (this.nextFruitType && FRUIT_CONFIG?.[this.nextFruitType]) {
+    // 始终以“下一颗水果”的高度评估是否还有投放空间（与用户心智一致）
+    let nextFruitHeight = 0;
+    if (this.nextFruitType && FRUIT_CONFIG?.[this.nextFruitType]) {
       const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
       const nextRadius = Math.round((FRUIT_CONFIG[this.nextFruitType].radius || 0) * radiusScale);
-      currentFruitHeight = nextRadius * 2;
+      nextFruitHeight = nextRadius * 2;
+    } else {
+      try {
+        // 保守取可投放水果中的最小半径，避免配置异常导致误判
+        const starters = GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES || Object.keys(FRUIT_CONFIG || {});
+        const minR = starters.reduce((m, t) => Math.min(m, (FRUIT_CONFIG?.[t]?.radius || m)), Infinity);
+        const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
+        nextFruitHeight = isFinite(minR) ? Math.round(minR * radiusScale) * 2 : 0;
+      } catch (_) { nextFruitHeight = 0; }
     }
     const dropLineY = (GAME_CONFIG?.DROP_LINE_Y ?? GAME_CONFIG?.DROP_AREA?.y ?? 200);
     // 正确的阈值为“地面到投放线的垂直距离”：groundTopY - dropLineY（应为正值）
-    const dropThresholdHeight = Math.max(0, groundTopY - dropLineY);
+    let dropThresholdHeight = Math.max(0, groundTopY - dropLineY);
+    // 若阈值过小（配置错误：投放线低于地面），直接跳过结束判定
+    if (dropThresholdHeight < 20) {
+      if (process?.env?.NODE_ENV !== 'production') {
+        console.warn('[GameOverCheck] dropThresholdHeight too small:', dropThresholdHeight, 'groundTopY=', groundTopY, 'dropLineY=', dropLineY);
+      }
+      this.dangerTimer = 0;
+      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
+        this.gameUI.setDangerLineFlash(false);
+      }
+      return;
+    }
 
     const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? (GAME_CONFIG?.DANGER?.marginPx ?? 4);
     const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 0.5;
 
-    const exceeds = (stackHeight + currentFruitHeight) >= (dropThresholdHeight - tolerancePx);
+    const exceeds = (stackHeight + nextFruitHeight) >= (dropThresholdHeight - tolerancePx);
     if (exceeds) {
       this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
+      if (process?.env?.NODE_ENV !== 'production') {
+        try {
+          console.log('[GameOverCheck] exceeds=TRUE', { stackHeight, nextFruitHeight, dropThresholdHeight, tolerancePx, dangerTimer: this.dangerTimer.toFixed?.(2) });
+        } catch (_) {}
+      }
     } else {
       this.dangerTimer = 0;
+      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
+        this.gameUI.setDangerLineFlash(false);
+      }
     }
 
     if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
@@ -857,11 +889,21 @@ export class GameLogic {
   gameOver() {
     console.log('gameOver() called - setting game state and UI');
     this.gameState = GAME_STATES.GAME_OVER;
-    
+    // 结束即刻冻结投放
+    this.canDrop = false;
+
     // 记录最大连击数
     if (this.combo > this.maxCombo) {
       this.maxCombo = this.combo;
     }
+
+    // 最终高分确认：兜底一次，避免某些计分在结算边界遗漏持久化
+    try {
+      if (this.score > this.highScore) {
+        this.setHighScore(this.score);
+        this.newRecordAchievedThisRun = true;
+      }
+    } catch (_) { /* ignore */ }
     
     // 保存游戏数据
     this.saveGameData();
@@ -1022,6 +1064,13 @@ export class GameLogic {
     // 重置UI
     this.gameUI.reset();
     this.gameUI.setScore(this.score);
+    // 确保重开后UI立即显示当前最高分
+    if (typeof this.gameUI.setHighScore === 'function') {
+      this.gameUI.setHighScore(this.highScore);
+    }
+
+    // 生成并同步下一颗水果
+    this.prepareNextFruit();
     this.gameUI.setDangerLineFlash(false);
     
     // 准备下一个水果
@@ -1094,6 +1143,11 @@ export class GameLogic {
 
       this.physicsEngine.step(deltaTime);
       this.fruitManager.update(deltaTime);
+
+      // 冷却递减：保障第二次投放不会被“忘记递减”的状态锁住
+      if (this.dropCooldown > 0) {
+        this.dropCooldown = Math.max(0, this.dropCooldown - deltaTime);
+      }
 
       // 核心解锁逻辑（放宽判定，避免第二个水果迟迟无法投放）
       if (this.currentDroppingFruit) {

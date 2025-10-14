@@ -400,6 +400,14 @@ class FruitMergeZGame {
     } else {
       this.gameLogic = new GameLogic(this.canvas, this.effectSystem);
     }
+
+    // 记录默认性能参数，便于降级/恢复
+    try {
+      this._defaultSolverIterations = this.gameLogic?.physicsEngine?.solverIterations ?? (GAME_CONFIG?.PHYSICS?.solverIterations ?? 4);
+      this._defaultMaxFruits = GAME_CONFIG?.LIMITS?.maxFruits ?? 50;
+      this._minMaxFruits = Math.min(36, this._defaultMaxFruits);
+      this._perfDegraded = false;
+    } catch (_) {}
   }
   
   // 设置事件监听
@@ -1299,7 +1307,8 @@ class FruitMergeZGame {
   
   // 动态调整性能设置
   adjustPerformanceSettings() {
-    if (this.fps < 30) {
+    const fallbackFps = (GAME_CONFIG?.QUALITY?.autoFallbackFps ?? 28);
+    if (this.fps < Math.max(24, fallbackFps)) {
       // 降低目标帧率
       this.targetFPS = Math.max(30, this.targetFPS - 5);
       this.frameInterval = 1000 / this.targetFPS;
@@ -1308,6 +1317,26 @@ class FruitMergeZGame {
       if (this.effectSystem) {
         this.effectSystem.setQuality('low');
       }
+
+      // 物理降级：减少求解迭代、限制最大水果数量
+      try {
+        if (this.gameLogic?.physicsEngine) {
+          const pe = this.gameLogic.physicsEngine;
+          const newIter = Math.max(2, Math.min(pe.solverIterations, 3));
+          if (pe.solverIterations !== newIter) pe.solverIterations = newIter;
+        }
+        if (GAME_CONFIG?.LIMITS) {
+          const target = this._minMaxFruits || 36;
+          if (GAME_CONFIG.LIMITS.maxFruits > target) {
+            GAME_CONFIG.LIMITS.maxFruits = target;
+          }
+        }
+        // 若存在渲染适配层，强制降画质以避免三维渲染开销
+        if (this.gameLogic?.renderAdapter) {
+          this.gameLogic.renderAdapter.quality = { ...(this.gameLogic.renderAdapter.quality || {}), tier: 'low' };
+        }
+        this._perfDegraded = true;
+      } catch (_) {}
       
       console.log('Performance adjusted: target FPS =', this.targetFPS);
     } else if (this.fps > 55 && this.targetFPS < 60) {
@@ -1319,6 +1348,23 @@ class FruitMergeZGame {
       if (this.effectSystem) {
         this.effectSystem.setQuality('high');
       }
+
+      // 恢复物理与数量上限
+      try {
+        if (this._perfDegraded) {
+          if (this.gameLogic?.physicsEngine && typeof this._defaultSolverIterations === 'number') {
+            this.gameLogic.physicsEngine.solverIterations = this._defaultSolverIterations;
+          }
+          if (GAME_CONFIG?.LIMITS && typeof this._defaultMaxFruits === 'number') {
+            GAME_CONFIG.LIMITS.maxFruits = this._defaultMaxFruits;
+          }
+          if (this.gameLogic?.renderAdapter) {
+            // 恢复为自动档，由适配器按设备能力选择
+            this.gameLogic.renderAdapter.quality = { ...(this.gameLogic.renderAdapter.quality || {}), tier: 'auto' };
+          }
+          this._perfDegraded = false;
+        }
+      } catch (_) {}
       
       console.log('Performance restored: target FPS =', this.targetFPS);
     }
