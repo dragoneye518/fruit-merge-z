@@ -1,6 +1,8 @@
 // Three.js 3D水果渲染器（离屏WebGL渲染，拷贝到2D画布）
 // 浏览器环境下依赖 window.THREE；抖音小游戏使用内置WebGL适配（后续适配）
 
+import { imageLoader } from '../utils/imageLoader.js';
+
 export class ThreeFruit3DRenderer {
   constructor(width, height) {
     const THREE = window.THREE;
@@ -32,6 +34,7 @@ export class ThreeFruit3DRenderer {
     // 资源缓存
     this.textureLoader = new THREE.TextureLoader();
     this.textures = new Map(); // type -> Texture
+    this.materials = new Map(); // type -> Material 缓存，避免频繁创建
     this.meshPool = []; // 复用mesh，降低GC
     this.activeMeshes = []; // 当前帧使用的mesh
     this.lastGridHash = '';
@@ -111,6 +114,25 @@ export class ThreeFruit3DRenderer {
 
         const texUrl = texturesByType[type];
         const texture = texUrl ? await this.getTextureFor(type, texUrl) : null;
+        if (texture && texUrl) {
+          try {
+            await imageLoader.loadImage(texUrl);
+            const b = imageLoader.getOpaqueBounds(texUrl);
+            const img = texture.image;
+            const w = img?.naturalWidth || img?.width || 0;
+            const h = img?.naturalHeight || img?.height || 0;
+            if (b && w && h) {
+              const THREE = window.THREE;
+              texture.wrapS = THREE.ClampToEdgeWrapping;
+              texture.wrapT = THREE.ClampToEdgeWrapping;
+              texture.offset.set(b.sx / w, b.sy / h);
+              texture.repeat.set(b.sw / w, b.sh / h);
+              texture.needsUpdate = true;
+            }
+          } catch (e) {
+            // 静默降级：纹理裁剪失败时继续使用原图
+          }
+        }
         const material = mesh.material;
         if (texture) {
           material.map = texture;
@@ -159,8 +181,17 @@ export class ThreeFruit3DRenderer {
         burst.points.material.opacity = t;
       }
       if (burst.life <= 0) {
-        if (burst.flash) this.scene.remove(burst.flash);
-        if (burst.points) this.scene.remove(burst.points);
+        if (burst.flash) {
+          this.scene.remove(burst.flash);
+          // 释放资源，避免长期累积
+          burst.flash.geometry?.dispose?.();
+          burst.flash.material?.dispose?.();
+        }
+        if (burst.points) {
+          this.scene.remove(burst.points);
+          burst.points.geometry?.dispose?.();
+          burst.points.material?.dispose?.();
+        }
         this.mergeBursts.splice(i, 1);
       }
     }
@@ -176,7 +207,8 @@ export class ThreeFruit3DRenderer {
     for (const fruit of fruits) {
       if (!fruit || fruit.isMarkedForRemoval) continue;
       const mesh = this.acquireMesh();
-      mesh.position.set(fruit.position.x, fruit.position.y, 0);
+      const pos = fruit.body?.position || fruit.position || { x: 0, y: 0 };
+      mesh.position.set(pos.x, pos.y, 0);
       const baseRadius = 16;
       const scale = (fruit.radius || 16) / baseRadius;
       mesh.scale.set(scale, scale, scale);
@@ -187,8 +219,8 @@ export class ThreeFruit3DRenderer {
       mesh.material = material;
       // 轻微旋转
       const t = this.time;
-      mesh.rotation.y = Math.sin(t * 0.001 + fruit.position.x * 0.01) * 0.25;
-      mesh.rotation.x = Math.cos(t * 0.001 + fruit.position.y * 0.01) * 0.12;
+      mesh.rotation.y = Math.sin(t * 0.001 + pos.x * 0.01) * 0.25;
+      mesh.rotation.x = Math.cos(t * 0.001 + pos.y * 0.01) * 0.12;
     }
 
     // 渲染前添加活跃的合成特效对象
@@ -239,25 +271,34 @@ export class ThreeFruit3DRenderer {
     const usePhysical = !!THREE.MeshPhysicalMaterial;
     const baseColor = new THREE.Color(0xffffff);
     const params = this.getMaterialParams(type);
-    let mat;
-    if (usePhysical) {
-      mat = new THREE.MeshPhysicalMaterial({
-        color: baseColor,
-        roughness: params.roughness,
-        metalness: params.metalness,
-        transmission: params.transmission,
-        thickness: params.thickness,
-        transparent: true,
-        opacity: 1
-      });
-    } else {
-      mat = new THREE.MeshStandardMaterial({
-        color: baseColor,
-        roughness: params.roughness,
-        metalness: params.metalness
-      });
+    // 复用同类型材质，避免每帧创建导致内存增长
+    let mat = this.materials.get(type);
+    if (!mat) {
+      if (usePhysical) {
+        mat = new THREE.MeshPhysicalMaterial({
+          color: baseColor,
+          roughness: params.roughness,
+          metalness: params.metalness,
+          transmission: params.transmission,
+          thickness: params.thickness,
+          transparent: true,
+          opacity: 1
+        });
+      } else {
+        mat = new THREE.MeshStandardMaterial({
+          color: baseColor,
+          roughness: params.roughness,
+          metalness: params.metalness
+        });
+      }
+      this.materials.set(type, mat);
     }
-    if (texture) mat.map = texture;
+    // 更新贴图（如存在）
+    if (texture) {
+      mat.map = texture;
+    } else {
+      mat.map = null;
+    }
     mat.needsUpdate = true;
     return mat;
   }
@@ -287,5 +328,41 @@ export class ThreeFruit3DRenderer {
       default:
         return { roughness: 0.5, metalness: 0.02, transmission: 0.06, thickness: 0.5 };
     }
+  }
+
+  // 销毁并释放所有WebGL资源（用于退出或切换渲染模式）
+  destroy() {
+    if (!this.enabled) return;
+    // 释放合成特效残留
+    for (const burst of this.mergeBursts) {
+      if (burst.flash) {
+        this.scene.remove(burst.flash);
+        burst.flash.geometry?.dispose?.();
+        burst.flash.material?.dispose?.();
+      }
+      if (burst.points) {
+        this.scene.remove(burst.points);
+        burst.points.geometry?.dispose?.();
+        burst.points.material?.dispose?.();
+      }
+    }
+    this.mergeBursts.length = 0;
+    // 释放纹理与材质缓存
+    for (const tex of this.textures.values()) {
+      tex?.dispose?.();
+    }
+    this.textures.clear();
+    for (const mat of this.materials.values()) {
+      mat?.dispose?.();
+    }
+    this.materials.clear();
+    // 释放meshPool内的几何（默认球体）
+    for (const mesh of this.meshPool) {
+      mesh.geometry?.dispose?.();
+    }
+    this.meshPool.length = 0;
+    // 释放renderer
+    this.renderer?.dispose?.();
+    this.enabled = false;
   }
 }

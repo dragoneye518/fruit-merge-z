@@ -1146,6 +1146,30 @@ export class EffectSystem {
     this.effects = [];
   }
   
+  // 质量设置：在低性能或紧急模式下降低特效负载
+  setQuality(level) {
+    const theme = (typeof UI_THEME !== 'undefined') ? UI_THEME : {};
+    if (level === 'low') {
+      this.maxParticles = Math.min(this.maxParticles, 120);
+      this.maxEffects = Math.min(this.maxEffects, 60);
+      this.shakeEnabled = false;
+    } else if (level === 'high') {
+      this.maxParticles = typeof theme.maxParticles === 'number' ? theme.maxParticles : 300;
+      this.maxEffects = typeof theme.maxEffects === 'number' ? theme.maxEffects : 120;
+      this.shakeEnabled = !!theme.shakeEnabled;
+    } else if (level === 'off') {
+      this.clear();
+      this.maxParticles = 0;
+      this.maxEffects = 0;
+      this.shakeEnabled = false;
+    }
+  }
+
+  // 兼容优化器的清理接口
+  cleanup() {
+    this.clear();
+  }
+  
   // 获取特效数量（用于性能监控）
   getEffectCount() {
     return {

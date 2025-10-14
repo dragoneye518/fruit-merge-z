@@ -57,7 +57,10 @@ export class RendererAdapter {
       return false;
     }
     // 2D渲染路径
-    const sorted = fruits.filter(f=>!f.isMarkedForRemoval).sort((a,b)=>a.position.y-b.position.y);
+    const sorted = fruits
+      .filter(f => !f.isMarkedForRemoval)
+      // 使用刚体位置进行排序，避免访问不存在的 fruit.position 导致崩溃
+      .sort((a, b) => (a.body?.position?.y || 0) - (b.body?.position?.y || 0));
     for (const fruit of sorted) {
       fruit.render(ctx);
     }

@@ -68,12 +68,37 @@ export class Match3Logic {
   }
 
   // 基本数据管理
-  setHighScore(val) { this.highScore = val; }
-  loadHighScore() {
-    try { return Number(localStorage.getItem('fruitMergeZ_highScore')) || 0; } catch { return 0; }
+  setHighScore(val) { 
+    this.highScore = val; 
   }
+
+  // 获取最高分
+  getHighScore() {
+    try {
+      // 抖音环境优先使用tt.getStorageSync
+      if (typeof tt !== 'undefined' && tt.getStorageSync) {
+        return Number(tt.getStorageSync('fruitMergeZ_highScore')) || 0;
+      }
+      // 浏览器环境使用localStorage
+      if (typeof localStorage !== 'undefined') {
+        return Number(localStorage.getItem('fruitMergeZ_highScore')) || 0;
+      }
+      return 0;
+    } catch { 
+      return 0; 
+    }
+  }
+
+  // 保存最高分
   saveHighScore() {
-    try { localStorage.setItem('fruitMergeZ_highScore', String(this.highScore)); } catch {}
+    try {
+      // 抖音环境优先使用tt.setStorageSync
+      if (typeof tt !== 'undefined' && tt.setStorageSync) {
+        tt.setStorageSync('fruitMergeZ_highScore', String(this.highScore));
+      } else if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('fruitMergeZ_highScore', String(this.highScore));
+      }
+    } catch {}
   }
 
   // 网格与生成

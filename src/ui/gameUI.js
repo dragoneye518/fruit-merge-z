@@ -1,4 +1,4 @@
-import { UI_THEME, GAME_CONFIG, FRUIT_CONFIG } from '../config/constants.js';
+import { UI_THEME, GAME_CONFIG, FRUIT_CONFIG, GAME_STATES, RENDER_TUNING } from '../config/constants.js';
 import { imageLoader } from '../utils/imageLoader.js';
 
 export class GameUI {
@@ -12,7 +12,7 @@ export class GameUI {
     this.score = 0;
     this.highScore = 0;
     this.nextFruitType = 'CHERRY';
-    this.gameState = 'PLAYING';
+    this.gameState = GAME_STATES.PLAYING;
     this.dangerLineFlash = false;
     this.flashTimer = 0;
     
@@ -80,60 +80,14 @@ export class GameUI {
     this.renderButtons();
   }
   
-  // 渲染背景
+  // 渲染背景（简化版本）
   renderBackground() {
-    // 主背景渐变 - 增强版
-    const mainGradient = this.ctx.createRadialGradient(
-      this.width * 0.3, this.height * 0.2, 0,
-      this.width * 0.5, this.height * 0.5, Math.max(this.width, this.height) * 0.8
-    );
-    
-    // 更丰富的渐变色彩，模仿水果忍者的暖色调
-    mainGradient.addColorStop(0, '#FFE0B2');    // 温暖的桃色
-    mainGradient.addColorStop(0.2, '#FFCC80');  // 浅橙色
-    mainGradient.addColorStop(0.4, '#FFB74D');  // 中橙色
-    mainGradient.addColorStop(0.6, '#FF9800');  // 深橙色
-    mainGradient.addColorStop(0.8, '#F57C00');  // 暗橙色
-    mainGradient.addColorStop(1, '#E65100');    // 深红橙色
-    
-    this.ctx.fillStyle = mainGradient;
+    // 简单的背景渐变
+    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.height);
+    gradient.addColorStop(0, '#FFE0B2');
+    gradient.addColorStop(1, '#FFCC80');
+    this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.width, this.height);
-    
-    // 添加顶部光晕效果
-    const topGlow = this.ctx.createRadialGradient(
-      this.width * 0.5, 0, 0,
-      this.width * 0.5, this.height * 0.3, this.width * 0.6
-    );
-    topGlow.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-    topGlow.addColorStop(0.5, 'rgba(255, 255, 255, 0.1)');
-    topGlow.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    
-    this.ctx.fillStyle = topGlow;
-    this.ctx.fillRect(0, 0, this.width, this.height * 0.4);
-    
-    // 添加底部阴影效果
-    const bottomShadow = this.ctx.createLinearGradient(0, this.height * 0.7, 0, this.height);
-    bottomShadow.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    bottomShadow.addColorStop(0.5, 'rgba(0, 0, 0, 0.1)');
-    bottomShadow.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
-    
-    this.ctx.fillStyle = bottomShadow;
-    this.ctx.fillRect(0, this.height * 0.7, this.width, this.height * 0.3);
-    
-    // 添加木质纹理效果
-    this.renderWoodTexture();
-    
-    // 添加动态光影效果
-    this.renderDynamicLighting(Date.now() * 0.001);
-    
-    // 添加装饰性图案
-    this.renderBackgroundPattern();
-    
-    // 添加飘落的叶子效果
-    this.renderFloatingLeaves(Date.now() * 0.001);
-    
-    // 添加忍者刀光轨迹
-    this.renderNinjaSlashes(Date.now());
   }
   
   // 渲染背景图案
@@ -301,8 +255,9 @@ export class GameUI {
     this.ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     this.ctx.lineWidth = 2;
     this.ctx.beginPath();
-    this.ctx.moveTo(left + 6, groundTopY + 1);
-    this.ctx.lineTo(right - 6, groundTopY + 1);
+    // 与物理地面严格对齐，避免视觉上的缝隙
+    this.ctx.moveTo(left + 6, groundTopY);
+    this.ctx.lineTo(right - 6, groundTopY);
     this.ctx.stroke();
 
     // 简单草叶（少量，避免杂乱）
@@ -521,7 +476,9 @@ export class GameUI {
   renderDropPreview() {
     if (!this.touchState.isDown) return;
     
-    const fruitRadius = FRUIT_CONFIG[this.nextFruitType].radius;
+    const baseRadius = FRUIT_CONFIG[this.nextFruitType].radius;
+    const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
+    const fruitRadius = Math.round(baseRadius * radiusScale);
     const x = this.touchState.currentX;
     const y = GAME_CONFIG.DROP_LINE_Y;
     
@@ -531,8 +488,19 @@ export class GameUI {
     const img = texturePath ? imageLoader.getImage(texturePath) : null;
     if (img) {
       this.ctx.globalAlpha = 0.75;
+      // 使用物理半径作为渲染半径，确保预览与实际一致
       const size = fruitRadius * 2;
-      this.ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+      // 暂时禁用透明边距裁剪，确保预览与实际水果的视觉一致性
+      // const bounds = imageLoader?.getOpaqueBounds ? imageLoader.getOpaqueBounds(texturePath) : null;
+      // if (bounds && bounds.sw && bounds.sh) {
+      //   this.ctx.drawImage(
+      //     img,
+      //     bounds.sx, bounds.sy, bounds.sw, bounds.sh,
+      //     x - size / 2, y - size / 2, size, size
+      //   );
+      // } else {
+        this.ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+      // }
       this.ctx.globalAlpha = 1.0;
     } else {
       const previewGrad = this.ctx.createRadialGradient(
@@ -817,16 +785,37 @@ export class GameUI {
     if (this.touchState.isDown) {
       this.touchState.currentX = x;
       this.touchState.currentY = y;
+
+      // 检查按钮点击（在移动过程中也可能触发按钮）
+      const buttonClick = this.checkButtonClick(x, y);
+      if (buttonClick) {
+        console.log(`[UI] Button touched during move: ${buttonClick.name}`);
+        return buttonClick;
+      }
     }
+
+    // 如果没有点击按钮，返回null（与onTouchEnd保持一致）
+    return null;
   }
   
   // 处理触摸结束
   onTouchEnd(x, y) {
-    if (!this.touchState.isDown) return null;
+    // 放宽结束事件判定，确保单击触发投放
     this.touchState.isDown = false;
-    
-    // 直接在投放线处投放水果，无需限制释放位置
-    return { type: 'drop', x: this.touchState.currentX, y: GAME_CONFIG.DROP_LINE_Y };
+
+    // 优先检查按钮点击，避免按钮区域触发投放
+    const buttonClick = this.checkButtonClick(x, y);
+    if (buttonClick) {
+      console.log(`[UI] Button clicked: ${buttonClick.name}`);
+      return buttonClick;
+    }
+
+    // 如果没有点击按钮，才返回投放事件
+    return {
+      type: 'drop',
+      x: x,
+      y: y
+    };
   }
   
   // 检查按钮点击
@@ -842,17 +831,27 @@ export class GameUI {
   
   // 工具函数：绘制圆角矩形
   roundRect(x, y, width, height, radius) {
-    this.ctx.beginPath();
-    this.ctx.moveTo(x + radius, y);
-    this.ctx.lineTo(x + width - radius, y);
-    this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    this.ctx.lineTo(x + width, y + height - radius);
-    this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    this.ctx.lineTo(x + radius, y + height);
-    this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    this.ctx.lineTo(x, y + radius);
-    this.ctx.quadraticCurveTo(x, y, x + radius, y);
-    this.ctx.closePath();
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const r = Math.max(0, Math.min(radius || 0, Math.min(width, height) / 2));
+    // 兼容环境兜底：若不支持 moveTo/quadraticCurveTo，则退化为矩形路径
+    if (typeof ctx.moveTo !== 'function' || typeof ctx.quadraticCurveTo !== 'function') {
+      ctx.beginPath();
+      ctx.rect(x, y, width, height);
+      ctx.closePath();
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 
   // 保留工具函数：圆角矩形
@@ -985,17 +984,26 @@ export class GameUI {
 
   // 工具函数：绘制圆角矩形
   roundRect(x, y, width, height, radius) {
-    this.ctx.beginPath();
-    this.ctx.moveTo(x + radius, y);
-    this.ctx.lineTo(x + width - radius, y);
-    this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    this.ctx.lineTo(x + width, y + height - radius);
-    this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    this.ctx.lineTo(x + radius, y + height);
-    this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    this.ctx.lineTo(x, y + radius);
-    this.ctx.quadraticCurveTo(x, y, x + radius, y);
-    this.ctx.closePath();
+    const ctx = this.ctx;
+    if (!ctx) return;
+    const r = Math.max(0, Math.min(radius || 0, Math.min(width, height) / 2));
+    if (typeof ctx.moveTo !== 'function' || typeof ctx.quadraticCurveTo !== 'function') {
+      ctx.beginPath();
+      ctx.rect(x, y, width, height);
+      ctx.closePath();
+      return;
+    }
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
   }
 
   // 工具函数：颜色加深

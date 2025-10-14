@@ -1,4 +1,5 @@
-import { FRUIT_CONFIG } from '../config/constants.js';
+import { FRUIT_CONFIG, RENDER_TUNING } from '../config/constants.js';
+import { imageLoader } from '../utils/imageLoader.js';
 
 // 2.5D 拟真水果绘制器（Canvas 纯绘制，支持贴图叠加）
 export class FruitRenderer {
@@ -10,8 +11,18 @@ export class FruitRenderer {
     ctx.save();
 
     if (image) {
-      const size = cellSize - 6;
-      ctx.drawImage(image, x - size/2, y - size/2, size, size);
+      const inset = (RENDER_TUNING?.insetOverrides?.[type] ?? RENDER_TUNING?.insetDefaultPx ?? 1);
+      const size = cellSize - 6 - inset * 2;
+      const bounds = imageLoader?.computeOpaqueBounds ? imageLoader.computeOpaqueBounds(image) : null;
+      if (bounds && bounds.sw && bounds.sh) {
+        ctx.drawImage(
+          image,
+          bounds.sx, bounds.sy, bounds.sw, bounds.sh,
+          x - size/2, y - size/2, size, size
+        );
+      } else {
+        ctx.drawImage(image, x - size/2, y - size/2, size, size);
+      }
     } else {
       if (type === 'RAINBOW') {
         this.drawRainbow(ctx, x, y, radius);

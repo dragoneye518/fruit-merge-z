@@ -1,12 +1,17 @@
 // 游戏常量配置
 export const GAME_CONFIG = {
   // 渲染器选择：'canvas' | 'three'
-  RENDERER: 'three',
+  RENDERER: 'canvas',
 
   // 画布尺寸
   CANVAS: {
     width: 375,
     height: 667
+  },
+  // 尺寸全局缩放（用于统一调整水果半径）
+  SIZE: {
+    // 统一加大水果半径（约 1.6x，视觉与物理同时放大）
+    radiusScale: 1.6
   },
   
   // 游戏区域配置
@@ -44,52 +49,37 @@ export const GAME_CONFIG = {
     // 新生成水果的危险判定宽限时间（秒），避免顶部生成瞬间被判定危险
     spawnGraceSec: 0.3,
     // 仅在顶部接近停滞时才计入危险（垂直速度阈值，px/s）
-    settleSpeedY: 20,
+    settleSpeedY: 24,
     // 顶部危险线的判定边距（像素），小幅越线不立即计入
     marginPx: 3
   },
   
-  // 物理参数
+  // 物理参数（简化版本）
   PHYSICS: {
-    gravity: 360,          // 重力保持适中
-    friction: 0.92,        // 增强摩擦力，快速消除水平震动
-    restitution: 0.08,     // 大幅降低弹性，几乎无弹跳
-    airResistance: 0.96,   // 增强空气阻力，快速衰减速度
-    maxVelocity: 480,      // 最大速度限制
-    mergeDistance: 1.0,    // 合成距离阈值
-    bounceDamping: 0.3,    // 新增：落地弹跳额外阻尼
-    settleThreshold: 8,    // 新增：静止判定速度阈值
-    // 底部微重叠过滤阈值（像素）：小于该值且近静止时不参与重复碰撞
-    tinyOverlapEpsilon: 1.2,
-    // 睡眠/唤醒机制（底部长期稳定后进入睡眠，受较大冲量或明显压紧时唤醒）
-    sleepEnabled: true,
-    sleepVelThreshold: 6,      // 速度低于该值（px/s）计入睡眠判定
-    sleepTimeoutSec: 0.9,      // 持续低速超过该秒数进入睡眠
-    wakeImpulse: 24,           // 冲量强度超过该值时唤醒
-    wakeOverlapPx: 2.0,        // 重叠超过该像素时唤醒/参与碰撞
-    // 冲击传播参数（新增，可调）
-    impactSourceVelY: 160,         // 下落体垂直速度超过该值标为冲击源
-    impactSourceDurationSec: 0.6,  // 冲击源标记持续时间（秒）
-    propagationDamping: 0.22,      // 底部非冲击源对的传播阻尼（越小越弱）
-    bottomStackImpulseClamp: 20,   // 底部堆叠非冲击源最大冲击强度上限
-    stableContactSec: 0.6,         // 底部接触判定为“稳定”的时间阈值
-    // 地面-接触物理（新增）
-    staticFrictionVelThreshold: 18, // 低于该切向速度，稳定接触启用静摩擦（vx归零）
-    groundAbsorbFactor: 0.35,       // 地面吸收法向冲击比例（越大越不弹）
-    groundRestitutionScale: 0.4     // 地面接触时的回弹系数缩放（降低弹跳）
+    gravity: 800,        // 重力
+    friction: 0.95,      // 摩擦力
+    restitution: 0.1,    // 弹性系数
+    airResistance: 0.99, // 空气阻力
+    maxVelocity: 300,    // 最大速度
+    settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
+    mergeDistance: 2.0,  // 合成距离
+    bounceDamping: 0.3,  // 弹跳阻尼
+    groundBounceDamping: 0.1, // 地面弹跳阻尼
+    sleepVelThreshold: 5,   // 睡眠速度阈值
+    solverIterations: 4     // 求解器迭代次数
   },
   
   // 性能限制
   LIMITS: {
     maxFruits: 50, // 场景中允许的最大水果数量
-    DROP_COOLDOWN: 0.5, // 投放冷却时间（秒）
+    DROP_COOLDOWN: 0.35, // 投放冷却时间（秒）
     COMBO_DURATION: 2, // 连击持续时间（秒）
   },
 
   // 掉落行为参数（顶部上方生成 + 初速度）
   DROP: {
     spawnAboveTopPx: 60,    // 生成位置相对容器顶部向上偏移
-    initialVelocityY: 180,  // 降低下落初速度，减轻落地冲击
+    initialVelocityY: 420,  // 提高初始下落速度，确保更快进入支撑
     sideJitterPx: 0         // 水平轻微扰动（可为0）
   },
 
@@ -108,6 +98,12 @@ export const GAME_CONFIG = {
     COMBO_ON_ELIMINATE: true,
     // 同类消除的最小团簇数量（建议 2 或 3）
     ELIMINATE_MIN_CLUSTER: 2,
+    // 开局宽限时间（秒），避免初始化时误判游戏结束
+    BOOT_GRACE_SEC: 1.5,
+    // 游戏结束判定容差（像素）
+    GAMEOVER_TOLERANCE_PX: 4,
+    // 游戏结束持续时间（秒）
+    GAMEOVER_SUSTAIN_SEC: 0.5,
     // 网格三消配置
     MATCH3: {
       cols: 7,
@@ -130,8 +126,6 @@ export const GAME_CONFIG = {
       rainbowChance: 0.03
     }
   },
-  // 渲染器选择：'canvas' | 'three'
-  RENDERER: 'three',
 
   // 画质与性能档位（新增）
   QUALITY: {
@@ -164,7 +158,7 @@ export const GAME_CONFIG = {
       LEMON: [[1],[1]],
       ORANGE: [[1,1],[1,1]],
       APPLE: [[1,1],[1,1]],
-      KIWI: [[1,1],[1,1]],
+      KIWI: [[1.1],[1,1]],
       TOMATO: [[1,1]],
       COCONUT: [[1,1],[1,1]],
       WATERMELON: [[1,1],[1,1]]
@@ -185,14 +179,6 @@ export const GAME_CONFIG = {
   
   // 危险状态持续时间（秒），超过则判定游戏结束（抖音手机节奏更紧凑）- 减少到1.5秒，更快触发游戏结束
   DANGER_TIMEOUT: 1.5,
-
-  // 画质与性能档位（含自动回退）
-  QUALITY: {
-    tier: 'auto',          // 'low' | 'medium' | 'high' | 'auto'
-    autoFallbackFps: 24,   // 连续低于该FPS则回退至2D
-    autoFallbackWindowSec: 3, // 统计窗口（秒）
-    autoFallbackEnabled: true
-  }
 };
 
 // 水果配置 - 基于PRD但优化色彩设计
@@ -200,7 +186,7 @@ export const FRUIT_CONFIG = {
   CHERRY: {
     id: 1,
     name: '樱桃',
-    radius: 20,  // 从16增加到20
+    radius: 13,  // 缩小为原来的2/3
     color: '#E53E3E', // 深红色
     gradient: ['#E53E3E', '#C53030'],
     texture: 'assets/images/fruits/cherry.png',
@@ -211,7 +197,7 @@ export const FRUIT_CONFIG = {
   STRAWBERRY: {
     id: 2,
     name: '草莓',
-    radius: 25,  // 从20增加到25
+    radius: 17,  // 缩小为原来的2/3
     color: '#F56565', // 亮红色
     gradient: ['#F56565', '#E53E3E'],
     texture: 'assets/images/fruits/strawberry.png',
@@ -222,7 +208,7 @@ export const FRUIT_CONFIG = {
   GRAPE: {
     id: 3,
     name: '葡萄',
-    radius: 30,  // 从24增加到30
+    radius: 20,  // 缩小为原来的2/3
     color: '#9F7AEA', // 紫色
     gradient: ['#9F7AEA', '#805AD5'],
     texture: 'assets/images/fruits/grape.png',
@@ -233,7 +219,7 @@ export const FRUIT_CONFIG = {
   LEMON: {
     id: 4,
     name: '柠檬',
-    radius: 35,  // 从28增加到35
+    radius: 23,  // 缩小为原来的2/3
     color: '#F6E05E', // 柠檬黄
     gradient: ['#F6E05E', '#ECC94B'],
     texture: 'assets/images/fruits/lemon.png',
@@ -244,7 +230,7 @@ export const FRUIT_CONFIG = {
   ORANGE: {
     id: 5,
     name: '橙子',
-    radius: 41,  // 从33增加到41
+    radius: 27,  // 缩小为原来的2/3
     color: '#FF8C00', // 橙色
     gradient: ['#FF8C00', '#FF7F00'],
     texture: 'assets/images/fruits/orange.png',
@@ -255,7 +241,7 @@ export const FRUIT_CONFIG = {
   APPLE: {
     id: 6,
     name: '苹果',
-    radius: 46,  // 从37增加到46
+    radius: 31,  // 缩小为原来的2/3
     color: '#FF6B6B', // 苹果红
     gradient: ['#FF6B6B', '#EE5A52'],
     texture: 'assets/images/fruits/apple.png',
@@ -266,7 +252,7 @@ export const FRUIT_CONFIG = {
   KIWI: {
     id: 7,
     name: '猕猴桃',
-    radius: 54,  // 从43增加到54
+    radius: 36,  // 缩小为原来的2/3
     color: '#68D391', // 猕猴桃绿
     gradient: ['#68D391', '#48BB78'],
     texture: 'assets/images/fruits/kiwi.png',
@@ -277,7 +263,7 @@ export const FRUIT_CONFIG = {
   TOMATO: {
     id: 8,
     name: '番茄',
-    radius: 60,  // 从48增加到60
+    radius: 40,  // 缩小为原来的2/3
     color: '#FC8181', // 番茄红
     gradient: ['#FC8181', '#F56565'],
     texture: 'assets/images/fruits/tomato.png',
@@ -288,7 +274,7 @@ export const FRUIT_CONFIG = {
   COCONUT: {
     id: 9,
     name: '椰子',
-    radius: 66,  // 从53增加到66
+    radius: 44,  // 缩小为原来的2/3
     color: '#A0522D', // 椰子棕
     gradient: ['#A0522D', '#8B4513'],
     texture: 'assets/images/fruits/coconut.png',
@@ -299,7 +285,7 @@ export const FRUIT_CONFIG = {
   WATERMELON: {
     id: 10,
     name: '西瓜',
-    radius: 75,  // 从60增加到75
+    radius: 50,  // 缩小为原来的2/3
     color: '#38A169', // 西瓜绿
     gradient: ['#38A169', '#2F855A'],
     texture: 'assets/images/fruits/watermelon.png',
@@ -312,7 +298,7 @@ export const FRUIT_CONFIG = {
   BLUEBERRY: {
     id: 11,
     name: '蓝莓',
-    radius: 16,                 // 比樱桃更小的微型果
+    radius: 11,                 // 缩小为原来的2/3
     color: '#4A90E2',
     gradient: ['#4A90E2', '#357ABD'],
     texture: 'assets/images/fruits/blueberry.png',
@@ -323,7 +309,7 @@ export const FRUIT_CONFIG = {
   PEACH: {
     id: 12,
     name: '桃子',
-    radius: 38,                 // 介于橙子与苹果之间
+    radius: 25,                 // 缩小为原来的2/3
     color: '#FFA07A',
     gradient: ['#FFA07A', '#FF7F50'],
     texture: 'assets/images/fruits/peach.png',
@@ -334,7 +320,7 @@ export const FRUIT_CONFIG = {
   PEAR: {
     id: 13,
     name: '梨子',
-    radius: 42,                 // 接近猕猴桃大小
+    radius: 28,                 // 缩小为原来的2/3
     color: '#A3D170',
     gradient: ['#A3D170', '#7FBF3F'],
     texture: 'assets/images/fruits/pear.png',
@@ -345,7 +331,7 @@ export const FRUIT_CONFIG = {
   MANGO: {
     id: 14,
     name: '芒果',
-    radius: 44,                 // 略大于梨子
+    radius: 29,                 // 缩小为原来的2/3
     color: '#FFC04D',
     gradient: ['#FFC04D', '#FFA72B'],
     texture: 'assets/images/fruits/mango.png',
@@ -356,7 +342,7 @@ export const FRUIT_CONFIG = {
   PINEAPPLE: {
     id: 15,
     name: '菠萝',
-    radius: 68,                 // 接近椰子/次于西瓜的大型果
+    radius: 45,                 // 缩小为原来的2/3
     color: '#FFCC00',
     gradient: ['#FFCC00', '#E0B000'],
     texture: 'assets/images/fruits/pineapple.png',
@@ -368,7 +354,7 @@ export const FRUIT_CONFIG = {
   BOMB: {
     id: 101,
     name: '炸弹',
-    radius: 37,
+    radius: 25,                 // 缩小为原来的2/3
     color: '#333333',
     gradient: ['#4a4a4a', '#1f1f1f'],
     texture: null,
@@ -379,7 +365,7 @@ export const FRUIT_CONFIG = {
   RAINBOW: {
     id: 102,
     name: '彩虹果',
-    radius: 37,
+    radius: 25,                 // 缩小为原来的2/3
     color: '#FFD54F',
     gradient: ['#FF6B6B', '#4ECDC4'],
     texture: null,
@@ -476,3 +462,49 @@ export const AUDIO_SETTINGS = {
   // 默认是否静音（仍可通过UI按钮切换）
   defaultMuted: false
 };
+    // 接触法线缓存与偏置消除
+// 注意：以上接触法线与CCD参数已移至 PHYSICS 对象内部，避免语法错误与重复定义
+
+// 渲染细节微调（新增）：不同水果的贴图内缩，减少堆叠视觉空隙
+export const RENDER_TUNING = {
+  insetDefaultPx: 1,
+  insetOverrides: {
+    // 圆形类（默认1px）
+    ORANGE: 1,
+    LEMON: 1,
+    APPLE: 1,
+    TOMATO: 1,
+    COCONUT: 1,
+    WATERMELON: 1,
+    GRAPE: 1,
+    CHERRY: 1,
+    BLUEBERRY: 1,
+    // 细长/有叶缘类（2px）
+    STRAWBERRY: 2,
+    PEACH: 2,
+    PEAR: 2,
+    KIWI: 2,
+    MANGO: 2,
+    // 棘刺/复杂边缘类（3px）
+    PINEAPPLE: 3
+  }
+};
+
+// Global fallbacks for non-module environments
+// Some runtimes (e.g., certain embedded webviews or legacy loaders) may execute
+// scripts outside ES module scope and expect configuration objects on the global.
+// This attaches read-only-style references to the global object without
+// overriding existing values.
+try {
+  const g = (typeof globalThis !== 'undefined')
+    ? globalThis
+    : (typeof window !== 'undefined' ? window : null);
+  if (g) {
+    g.GAME_CONFIG = g.GAME_CONFIG || GAME_CONFIG;
+    g.FRUIT_CONFIG = g.FRUIT_CONFIG || FRUIT_CONFIG;
+    g.UI_THEME = g.UI_THEME || UI_THEME;
+    g.GAME_STATES = g.GAME_STATES || GAME_STATES;
+    g.AUDIO_CONFIG = g.AUDIO_CONFIG || AUDIO_CONFIG;
+    g.AUDIO_SETTINGS = g.AUDIO_SETTINGS || AUDIO_SETTINGS;
+  }
+} catch (_) {}
