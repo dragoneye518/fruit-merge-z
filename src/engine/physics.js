@@ -166,7 +166,7 @@ export class PhysicsEngine {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const groundFriction = 0.6; 
+        const groundFriction = 0.7; 
         const groundBounceDamping = GAME_CONFIG.PHYSICS.groundBounceDamping;
 
         body.prevPosition.x = pos.x - (pos.x - prev.x) * groundFriction;

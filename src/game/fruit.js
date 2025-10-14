@@ -18,6 +18,7 @@ export class Fruit {
     this.texture = config.texture;
     this.image = null;
     this.imageLoaded = false;
+    this.bounds = null; // 缓存透明边界，避免每帧重复计算
     this.rotation = Math.random() * Math.PI * 2;
     
     this.loadImage();
@@ -27,6 +28,12 @@ export class Fruit {
     try {
       this.image = await imageLoader.loadImage(this.texture);
       this.imageLoaded = true;
+      // 加载完成后一次性计算并缓存透明边界
+      try {
+        this.bounds = imageLoader.getOpaqueBounds(this.texture) || null;
+      } catch (_) {
+        this.bounds = null;
+      }
     } catch (error) {
       console.warn(`Failed to load fruit image: ${this.texture}`, error);
     }
@@ -41,19 +48,20 @@ export class Fruit {
 
     if (this.imageLoaded && this.image) {
       try {
-        // 使用物理半径作为渲染半径，确保视觉与物理匹配
-        const size = this.radius * 2;
-        // 暂时禁用透明边距裁剪，避免额外的视觉偏移影响地面贴合
-        // const bounds = imageLoader?.computeOpaqueBounds ? imageLoader.computeOpaqueBounds(this.image) : null;
-        // if (bounds && bounds.sw && bounds.sh) {
-        //   ctx.drawImage(
-        //     this.image,
-        //     bounds.sx, bounds.sy, bounds.sw, bounds.sh,
-        //     -size / 2, -size / 2, size, size
-        //   );
-        // } else {
+        // 使用物理半径作为基准尺寸，并使用缓存的透明边界裁剪，减少堆叠视觉间隙
+        const baseSize = this.radius * 2;
+        const inset = (RENDER_TUNING?.insetOverrides?.[this.fruitType] ?? RENDER_TUNING?.insetDefaultPx ?? 0);
+        const bounds = this.bounds;
+        if (bounds && bounds.sw && bounds.sh) {
+          ctx.drawImage(
+            this.image,
+            bounds.sx, bounds.sy, bounds.sw, bounds.sh,
+            -baseSize / 2, -baseSize / 2, baseSize, baseSize
+          );
+        } else {
+          const size = Math.max(2, baseSize - inset * 2);
           ctx.drawImage(this.image, -size / 2, -size / 2, size, size);
-        // }
+        }
       } catch (e) {
         this.renderFallback(ctx);
       }

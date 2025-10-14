@@ -788,24 +788,41 @@ export class GameLogic {
       // 若没有活动水果，仅因轻微抖动导致未稳定，则继续执行高度判定（保留之前的结算修复）
     }
 
-    const dropLineY = this.physicsEngine?.dangerLineY ?? (GAME_CONFIG?.DROP_LINE_Y ?? 200);
+    // 新规则：从草地位置开始计算，堆叠水果垂直高度 + 投放位置水果高度
+    // 若高于投放位置（投放线），则判定为游戏结束（带容差与持续时间）
+    const groundTopY = this.physicsEngine.getGroundTopY();
     const stackTopY = this.physicsEngine.getStackTopY();
+    const stackHeight = Math.max(0, groundTopY - stackTopY);
 
-    const tolerancePx = GAME_CONFIG?.DANGER?.marginPx ?? 4;
-    const sustainSec = GAME_CONFIG?.DANGER_TIMEOUT ?? 0.5;
+    // 若当前没有下落中的水果，使用“下一颗水果”的高度进行评估
+    let currentFruitHeight = 0;
+    if (this.currentDroppingFruit) {
+      currentFruitHeight = this.currentDroppingFruit.radius * 2;
+    } else if (this.nextFruitType && FRUIT_CONFIG?.[this.nextFruitType]) {
+      const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
+      const nextRadius = Math.round((FRUIT_CONFIG[this.nextFruitType].radius || 0) * radiusScale);
+      currentFruitHeight = nextRadius * 2;
+    }
+    const dropLineY = (GAME_CONFIG?.DROP_LINE_Y ?? GAME_CONFIG?.DROP_AREA?.y ?? 200);
+    // 正确的阈值为“地面到投放线的垂直距离”：groundTopY - dropLineY（应为正值）
+    const dropThresholdHeight = Math.max(0, groundTopY - dropLineY);
 
-    if (stackTopY <= dropLineY + tolerancePx) {
-        this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
+    const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? (GAME_CONFIG?.DANGER?.marginPx ?? 4);
+    const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 0.5;
+
+    const exceeds = (stackHeight + currentFruitHeight) >= (dropThresholdHeight - tolerancePx);
+    if (exceeds) {
+      this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
     } else {
-        this.dangerTimer = 0;
+      this.dangerTimer = 0;
     }
 
     if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-        this.gameUI.setDangerLineFlash(this.dangerTimer > 0);
+      this.gameUI.setDangerLineFlash(this.dangerTimer > 0);
     }
 
     if (this.dangerTimer >= sustainSec && this.gameState !== GAME_STATES.GAME_OVER) {
-        this.gameOver();
+      this.gameOver();
     }
   }
 

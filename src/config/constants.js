@@ -56,14 +56,14 @@ export const GAME_CONFIG = {
   
   // 物理参数（简化版本）
   PHYSICS: {
-    gravity: 800,        // 重力
+    gravity: 1000,       // 重力（提高整体下落速度）
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
-    airResistance: 0.99, // 空气阻力
+    airResistance: 0.985,// 空气阻力（减小空气阻力，提升下落与碰撞速度）
     maxVelocity: 300,    // 最大速度
     settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.3,  // 弹跳阻尼
+    bounceDamping: 0.45, // 弹跳阻尼（提高耗能，加快收敛）
     groundBounceDamping: 0.1, // 地面弹跳阻尼
     sleepVelThreshold: 5,   // 睡眠速度阈值
     solverIterations: 4     // 求解器迭代次数
@@ -79,7 +79,7 @@ export const GAME_CONFIG = {
   // 掉落行为参数（顶部上方生成 + 初速度）
   DROP: {
     spawnAboveTopPx: 60,    // 生成位置相对容器顶部向上偏移
-    initialVelocityY: 420,  // 提高初始下落速度，确保更快进入支撑
+    initialVelocityY: 560,  // 提高初始下落速度，确保更快进入支撑
     sideJitterPx: 0         // 水平轻微扰动（可为0）
   },
 
@@ -467,18 +467,18 @@ export const AUDIO_SETTINGS = {
 
 // 渲染细节微调（新增）：不同水果的贴图内缩，减少堆叠视觉空隙
 export const RENDER_TUNING = {
-  insetDefaultPx: 1,
+  insetDefaultPx: 2,
   insetOverrides: {
     // 圆形类（默认1px）
-    ORANGE: 1,
-    LEMON: 1,
-    APPLE: 1,
-    TOMATO: 1,
-    COCONUT: 1,
-    WATERMELON: 1,
-    GRAPE: 1,
-    CHERRY: 1,
-    BLUEBERRY: 1,
+    ORANGE: 2,
+    LEMON: 2,
+    APPLE: 2,
+    TOMATO: 2,
+    COCONUT: 3,
+    WATERMELON: 3,
+    GRAPE: 2,
+    CHERRY: 2,
+    BLUEBERRY: 2,
     // 细长/有叶缘类（2px）
     STRAWBERRY: 2,
     PEACH: 2,
