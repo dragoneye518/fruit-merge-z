@@ -653,6 +653,17 @@ export class GameLogic {
         const color = safeCfg?.color || '#FFFFFF';
         this.renderAdapter.triggerMergeEffect(position.x, position.y, fruitType, color);
       }
+      // 升级模式：在合成位置生成新水果实体
+      try {
+        if (this.fruitManager && mergeData?.newType) {
+          const newFruit = this.fruitManager.createFruit(mergeData.newType, position.x, position.y);
+          if (newFruit?.body && typeof newFruit.body.setMergeCooldown === 'function') {
+            newFruit.body.setMergeCooldown(60);
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to create upgraded fruit:', e);
+      }
     }
 
     // 展示连击特效
@@ -768,93 +779,116 @@ export class GameLogic {
     }
   }
   
-  // 检查游戏结束：仅在世界稳定时评估高度，并以“下一颗水果”作为占位
+  // 检查游戏结束（简化版本）
   checkGameOver() {
+    // 基本安全检查
+    if (!this.physicsEngine || this.gameState !== GAME_STATES.PLAYING) {
+      return;
+    }
+
+    // 检查deltaTime
+    if (!this.deltaTime || !isFinite(this.deltaTime) || this.deltaTime <= 0) {
+      return;
+    }
+
+    // 启动宽限期
     const bootGraceSec = GAME_CONFIG?.GAMEPLAY?.BOOT_GRACE_SEC ?? 1.5;
-    if ((this.gameTime || 0) < bootGraceSec) return;
-
-    // 仅在世界完全稳定时才进行高度评估，避免“看起来还没到线却被判结束”
-    const worldSettled = this.physicsEngine ? this.physicsEngine.isWorldSettled() : true;
-    if (!worldSettled) {
-      // 未稳定时不进行危险累计，直接重置并关闭闪烁，避免空中缓慢经过投放线导致的误判
-      this.dangerTimer = 0;
-      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-        this.gameUI.setDangerLineFlash(false);
-      }
+    if ((this.gameTime || 0) < bootGraceSec) {
       return;
     }
 
-    // 新规则：从草地位置开始计算，堆叠水果垂直高度 + 投放位置水果高度
-    // 若高于投放位置（投放线），则判定为游戏结束（带容差与持续时间）
-    const groundTopY = this.physicsEngine.getGroundTopY();
-    // 仅统计“已触地或稳定接触”的水果，忽略仍在空中的当前下落体，防止误算堆高
-    let stackTopY = groundTopY;
+    // 简化的参数
+    const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? 4;
+    const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 1.0;
+    const dangerY = this.physicsEngine?.dangerLineY ?? 200;
+
+    // 找到最高的水果
+    let topBody = null;
+    let topY = Infinity;
     try {
-      const bodies = (this.physicsEngine?.bodies || []);
-      for (const b of bodies) {
-        if (!b || b.isMarkedForRemoval) continue;
-        const groundedOrStable = !!(b.bottomContact || (b.bottomContactDuration || 0) > 0.12);
-        if (!groundedOrStable) continue;
-        const yTop = (b.position?.y || 0) - (b.radius || 0);
-        if (yTop < stackTopY) stackTopY = yTop;
+      const bodies = this.physicsEngine?.bodies || [];
+      for (let i = 0; i < Math.min(bodies.length, 50); i++) {
+        const b = bodies[i];
+        if (!b || b.isMarkedForRemoval || !b.position || !isFinite(b.position.y) || !isFinite(b.radius)) {
+          continue;
+        }
+        const yTop = b.position.y - b.radius;
+        if (yTop < topY) {
+          topY = yTop;
+          topBody = b;
+        }
       }
-    } catch (_) { /* ignore stack scan errors */ }
-    const stackHeight = Math.max(0, groundTopY - stackTopY);
-
-    // 始终以“下一颗水果”的高度评估是否还有投放空间（与用户心智一致）
-    let nextFruitHeight = 0;
-    if (this.nextFruitType && FRUIT_CONFIG?.[this.nextFruitType]) {
-      const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
-      const nextRadius = Math.round((FRUIT_CONFIG[this.nextFruitType].radius || 0) * radiusScale);
-      nextFruitHeight = nextRadius * 2;
-    } else {
-      try {
-        // 保守取可投放水果中的最小半径，避免配置异常导致误判
-        const starters = GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES || Object.keys(FRUIT_CONFIG || {});
-        const minR = starters.reduce((m, t) => Math.min(m, (FRUIT_CONFIG?.[t]?.radius || m)), Infinity);
-        const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
-        nextFruitHeight = isFinite(minR) ? Math.round(minR * radiusScale) * 2 : 0;
-      } catch (_) { nextFruitHeight = 0; }
-    }
-    const dropLineY = (GAME_CONFIG?.DROP_LINE_Y ?? GAME_CONFIG?.DROP_AREA?.y ?? 200);
-    // 正确的阈值为“地面到投放线的垂直距离”：groundTopY - dropLineY（应为正值）
-    let dropThresholdHeight = Math.max(0, groundTopY - dropLineY);
-    // 若阈值过小（配置错误：投放线低于地面），直接跳过结束判定
-    if (dropThresholdHeight < 20) {
-      if (process?.env?.NODE_ENV !== 'production') {
-        console.warn('[GameOverCheck] dropThresholdHeight too small:', dropThresholdHeight, 'groundTopY=', groundTopY, 'dropLineY=', dropLineY);
-      }
+    } catch (error) {
+      console.warn('[CheckGameOver] Error finding top body:', error);
       this.dangerTimer = 0;
-      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-        this.gameUI.setDangerLineFlash(false);
-      }
       return;
     }
 
-    const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? (GAME_CONFIG?.DANGER?.marginPx ?? 4);
-    const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 0.5;
+    // 没有水果
+    if (!topBody || !isFinite(topY)) {
+      this.dangerTimer = 0;
+      return;
+    }
 
-    const exceeds = (stackHeight + nextFruitHeight) >= (dropThresholdHeight - tolerancePx);
-    if (exceeds) {
+    // 简化的条件判断
+    const beyond = topY <= (dangerY - tolerancePx);
+
+    if (!beyond) {
+      this.dangerTimer = 0;
+      return;
+    }
+
+    // 简化的静止判断
+    let isStatic = false;
+    try {
+      const vy = Math.abs(topBody.velocity?.y || 0);
+      const speedThreshold = GAME_CONFIG?.DANGER?.settleSpeedY ?? 36;
+      isStatic = vy <= speedThreshold;
+    } catch (_) {
+      isStatic = false;
+    }
+
+    // 新水果宽限
+    let graceActive = false;
+    try {
+      const dropAgeSec = ((Date.now() - (topBody.dropTime || 0)) / 1000) || 0;
+      const spawnGraceSec = GAME_CONFIG?.DANGER?.spawnGraceSec ?? 0.3;
+      const isActiveTop = !!(this.physicsEngine?.activeBody && topBody === this.physicsEngine.activeBody);
+      graceActive = isActiveTop && (dropAgeSec < spawnGraceSec);
+    } catch (_) {
+      graceActive = false;
+    }
+
+    // 累计危险时间
+    if (beyond && isStatic && !graceActive) {
       this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
-      if (process?.env?.NODE_ENV !== 'production') {
-        try {
-          console.log('[GameOverCheck] exceeds=TRUE', { stackHeight, nextFruitHeight, dropThresholdHeight, tolerancePx, dangerTimer: this.dangerTimer.toFixed?.(2) });
-        } catch (_) {}
-      }
     } else {
       this.dangerTimer = 0;
-      if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-        this.gameUI.setDangerLineFlash(false);
+    }
+
+    // 调试日志
+    try {
+      const ts = Date.now();
+      const prevTimer = (this.dangerTimer || 0);
+      let label = graceActive ? '宽限期中' : (isStatic ? (prevTimer > 0 ? '计时中' : '开始计时') : '未静止');
+      console.log(`[${ts}] [CheckGameOver] 状态=${label}, topY=${topY.toFixed(1)}, dangerY=${dangerY}, 计时=${prevTimer.toFixed(2)}`);
+    } catch (_) {
+      // 忽略日志错误
+    }
+
+    // 检查是否应该结束游戏
+    if (this.dangerTimer >= sustainSec && this.gameState === GAME_STATES.PLAYING) {
+      console.log(`[CheckGameOver] Triggering game over`);
+
+      try {
+        this.gameOver();
+      } catch (error) {
+        console.error('[CheckGameOver] Error in gameOver:', error);
+        // 强制结束游戏
+        this.gameState = GAME_STATES.GAME_OVER;
+        this.canDrop = false;
+        this.showGameOverScreen = true;
       }
-    }
-
-    if (this.gameUI && typeof this.gameUI.setDangerLineFlash === 'function') {
-      this.gameUI.setDangerLineFlash(this.dangerTimer > 0);
-    }
-
-    if (this.dangerTimer >= sustainSec && this.gameState !== GAME_STATES.GAME_OVER) {
-      this.gameOver();
     }
   }
 
@@ -887,10 +921,24 @@ export class GameLogic {
   
   // 游戏结束（增强版）
   gameOver() {
+    // 安全检查：避免重复调用
+    if (this.gameState === GAME_STATES.GAME_OVER) {
+      console.warn('[GameOver] Game already over, ignoring duplicate call');
+      return;
+    }
+
     console.log('gameOver() called - setting game state and UI');
+
+    // 立即设置游戏状态，防止重复调用
     this.gameState = GAME_STATES.GAME_OVER;
     // 结束即刻冻结投放
     this.canDrop = false;
+
+    // 清理当前下落水果
+    this.currentDroppingFruit = null;
+    if (this.physicsEngine) {
+      this.physicsEngine.activeBody = null;
+    }
 
     // 记录最大连击数
     if (this.combo > this.maxCombo) {
@@ -904,32 +952,48 @@ export class GameLogic {
         this.newRecordAchievedThisRun = true;
       }
     } catch (_) { /* ignore */ }
-    
+
     // 保存游戏数据
     this.saveGameData();
-    
+
     // 上报游戏结束数据到抖音
     this.reportGameOverData();
-    
+
     // 创建游戏结束特效
     this.createGameOverEffect();
 
     // 播放游戏结束音效
     audioManager.playSound('GAME_OVER');
-    
+
     // 立即显示游戏结束界面（堆满后马上可重开）
     this.showGameOverScreen = true;
     console.log(`gameOver() - showGameOverScreen set to: ${this.showGameOverScreen}, gameState: ${this.gameState}`);
-    
-    // 延迟显示游戏结束界面，让特效播放完毕（记录定时器以便重开时清理）
+
+    // 初始化结束面板动画状态
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    this.gameOverAnim = {
+      startTime: now,
+      // PRD动画：遮罩渐入300ms；面板缩放260ms（近似值，缓动为ease-out）
+      maskDurationMs: 300,
+      panelDurationMs: 260,
+      initialScale: 0.9,
+      finalScale: 1.0,
+      targetMaskAlpha: 0.6
+    };
+
+    // 清理之前的定时器
     if (this._gameOverTimeoutId) {
       try { clearTimeout(this._gameOverTimeoutId); } catch {}
       this._gameOverTimeoutId = null;
     }
+
+    // 延迟显示游戏结束界面，让特效播放完毕（记录定时器以便重开时清理）
     this._gameOverTimeoutId = setTimeout(() => {
-      // 保持界面显示状态，不重复赋值，避免闪烁
-      // 显示激励视频广告（有一定概率）
-      this.maybeShowRewardedAd();
+      // 安全检查：确保游戏仍然处于结束状态
+      if (this.gameState === GAME_STATES.GAME_OVER) {
+        // 显示激励视频广告（有一定概率）
+        this.maybeShowRewardedAd();
+      }
     }, 500);
   }
 
@@ -1030,6 +1094,7 @@ export class GameLogic {
     this.canDrop = true;
     this.dropCooldown = 0;
     this.showGameOverScreen = false;
+    this.gameOverAnim = null;
     this.restartButton = null;
     // 清理可能遗留的“游戏结束”延迟定时器，避免重开后又显示覆盖层
     if (this._gameOverTimeoutId) {
@@ -1133,6 +1198,7 @@ export class GameLogic {
     }
     this.deltaTime = deltaTime;
     this.multiMergeCount = 0;
+
     // 驱动UI更新（分数动画与危险线闪烁）
     if (this.gameUI && typeof this.gameUI.update === 'function') {
       this.gameUI.update(deltaTime);
@@ -1141,10 +1207,17 @@ export class GameLogic {
     if (this.gameState === GAME_STATES.PLAYING) {
       this.gameTime = (this.gameTime || 0) + deltaTime;
 
-      this.physicsEngine.step(deltaTime);
-      this.fruitManager.update(deltaTime);
+      // 安全检查：确保物理引擎可用
+      if (this.physicsEngine) {
+        this.physicsEngine.step(deltaTime);
+      }
 
-      // 冷却递减：保障第二次投放不会被“忘记递减”的状态锁住
+      // 安全检查：确保水果管理器可用
+      if (this.fruitManager) {
+        this.fruitManager.update(deltaTime);
+      }
+
+      // 冷却递减：保障第二次投放不会被"忘记递减"的状态锁住
       if (this.dropCooldown > 0) {
         this.dropCooldown = Math.max(0, this.dropCooldown - deltaTime);
       }
@@ -1152,32 +1225,39 @@ export class GameLogic {
       // 核心解锁逻辑（放宽判定，避免第二个水果迟迟无法投放）
       if (this.currentDroppingFruit) {
         const fruit = this.currentDroppingFruit;
-        
-        // Manually calculate fresh velocity as it's not updated in the physics engine step
-        const freshVelocity = fruit.position.subtract(fruit.prevPosition).multiply(1 / this.deltaTime);
-        const speed = freshVelocity.magnitude();
-        const timeSinceDrop = (Date.now() - fruit.dropTime) / 1000;
 
-        // 条件1: 水果速度低于阈值且已下落超过最短时间
-        const settled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6);
-        const minDropTime = 0.12; // 放宽最短下落时间，提升解锁响应
+        // 安全检查：确保水果对象仍然有效
+        if (fruit && fruit.position && fruit.prevPosition) {
+          // Manually calculate fresh velocity as it's not updated in the physics engine step
+          const freshVelocity = fruit.position.subtract(fruit.prevPosition).multiply(1 / this.deltaTime);
+          const speed = freshVelocity.magnitude();
+          const timeSinceDrop = (Date.now() - fruit.dropTime) / 1000;
 
-        // 条件1b: 触地接触（放宽：不再要求较长的持续时长）
-        const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.2;
-        const settledByContact = !!(fruit.bottomContact && (fruit.bottomContactDuration || 0) >= stableSec);
+          // 条件1: 水果速度低于阈值且已下落超过最短时间
+          const settled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6);
+          const minDropTime = 0.12; // 放宽最短下落时间，提升解锁响应
 
-        // 条件2: 超时强制解锁（更短）
-        const timeout = 0.6; // 0.6秒后强制解锁，避免“第二个水果不能投放”体验
+          // 条件1b: 触地接触（放宽：不再要求较长的持续时长）
+          const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.2;
+          const settledByContact = !!(fruit.bottomContact && (fruit.bottomContactDuration || 0) >= stableSec);
 
-        // 条件3: 水果已被标记移除（例如同类消除后），无需继续等待
-        const removed = !!fruit.isMarkedForRemoval;
+          // 条件2: 超时强制解锁（更短）
+          const timeout = 0.6; // 0.6秒后强制解锁，避免"第二个水果不能投放"体验
 
-        if ((settled && timeSinceDrop > minDropTime) || settledByContact || timeSinceDrop > timeout || removed) {
-          if (timeSinceDrop > timeout) {
-            console.warn(`[UpdateUnlock] Unlocking fruit due to timeout (${timeSinceDrop.toFixed(2)}s)`);
-          } else {
-            console.log(`[UpdateUnlock] Unlocking fruit because it has settled (speed: ${speed.toFixed(2)}).`);
+          // 条件3: 水果已被标记移除（例如同类消除后），无需继续等待
+          const removed = !!fruit.isMarkedForRemoval;
+
+          if ((settled && timeSinceDrop > minDropTime) || settledByContact || timeSinceDrop > timeout || removed) {
+            if (timeSinceDrop > timeout) {
+              console.warn(`[UpdateUnlock] Unlocking fruit due to timeout (${timeSinceDrop.toFixed(2)}s)`);
+            } else {
+              console.log(`[UpdateUnlock] Unlocking fruit because it has settled (speed: ${speed.toFixed(2)}).`);
+            }
+            this.unlockDrop();
           }
+        } else {
+          // 水果对象无效，强制解锁
+          console.warn('[UpdateUnlock] Fruit object invalid, forcing unlock');
           this.unlockDrop();
         }
       } else if (!this.canDrop) {
@@ -1193,7 +1273,19 @@ export class GameLogic {
         }
       }
 
-      this.checkGameOver();
+      // 安全检查：在游戏结束时调用checkGameOver
+      try {
+        this.checkGameOver();
+      } catch (error) {
+        console.error('[Update] Error in checkGameOver:', error);
+        // 如果checkGameOver出错，强制结束游戏以避免卡死
+        if (this.gameState === GAME_STATES.PLAYING) {
+          console.warn('[Update] Forcing game over due to checkGameOver error');
+          this.gameState = GAME_STATES.GAME_OVER;
+          this.canDrop = false;
+          this.showGameOverScreen = true;
+        }
+      }
     }
   }
   
@@ -1249,86 +1341,102 @@ export class GameLogic {
     console.log(`renderGameOverOverlay rendering - showGameOverScreen: ${this.showGameOverScreen}, gameState: ${this.gameState}, score: ${this.score}`);
     
     this.ctx.save();
+    // 计算动画进度
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const anim = this.gameOverAnim || {
+      startTime: now,
+      maskDurationMs: 300,
+      panelDurationMs: 260,
+      initialScale: 0.9,
+      finalScale: 1.0,
+      targetMaskAlpha: 0.6
+    };
+    const easeOutCubic = (t) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+    const maskT = easeOutCubic((now - anim.startTime) / anim.maskDurationMs);
+    const panelT = easeOutCubic((now - anim.startTime) / anim.panelDurationMs);
+    const maskAlpha = (anim.targetMaskAlpha || 0.6) * maskT;
+    const scale = (anim.initialScale || 0.9) + ((anim.finalScale || 1.0) - (anim.initialScale || 0.9)) * panelT;
     
-    // 渐变背景
-    const gradient = this.ctx.createRadialGradient(
-      this.canvas.width / 2, this.canvas.height / 2, 0,
-      this.canvas.width / 2, this.canvas.height / 2, this.canvas.width / 2
-    );
-    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
-    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.7)');
-    this.ctx.fillStyle = gradient;
+    // 半透明遮罩（PRD：opacity 0.6）
+    this.ctx.fillStyle = `rgba(0, 0, 0, ${maskAlpha.toFixed(3)})`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
     
-    // 游戏结束标题（带发光效果）
-    this.ctx.shadowColor = '#FF6B35';
-    this.ctx.shadowBlur = 20;
-    this.ctx.font = 'bold 42px Arial, sans-serif';
-    this.ctx.fillStyle = '#FF6B35';
-    this.ctx.strokeStyle = '#FFFFFF';
-    this.ctx.lineWidth = 3;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    
-    this.ctx.strokeText('游戏结束', centerX, centerY - 80);
-    this.ctx.fillText('游戏结束', centerX, centerY - 80);
-    
-    // 重置阴影
+    // 白色圆角面板（PRD：宽0.8W，高0.4H，圆角20）
+    const basePanelWidth = Math.floor(this.canvas.width * 0.8);
+    const basePanelHeight = Math.floor(this.canvas.height * 0.4);
+    const panelWidth = Math.floor(basePanelWidth * scale);
+    const panelHeight = Math.floor(basePanelHeight * scale);
+    const panelX = Math.floor(centerX - panelWidth / 2);
+    const panelY = Math.floor(centerY - panelHeight / 2);
+    const panelRadius = 20;
+
+    // 阴影
+    this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
+    this.ctx.shadowBlur = 16;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 6;
+
+    // 卡片背景
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    if (typeof this.ctx.roundRect === 'function') {
+      this.ctx.roundRect(panelX, panelY, panelWidth, panelHeight, panelRadius);
+    } else {
+      const r = panelRadius; const x = panelX; const y = panelY; const w = panelWidth; const h = panelHeight;
+      this.ctx.moveTo(x + r, y);
+      this.ctx.arcTo(x + w, y, x + w, y + h, r);
+      this.ctx.arcTo(x + w, y + h, x, y + h, r);
+      this.ctx.arcTo(x, y + h, x, y, r);
+      this.ctx.arcTo(x, y, x + w, y, r);
+      this.ctx.closePath();
+    }
+    this.ctx.fill();
+    this.ctx.stroke();
+    // 关闭阴影影响后续文本
     this.ctx.shadowBlur = 0;
     
-    // 分数信息面板
-    const panelWidth = 280;
-    const panelHeight = 160;
-    const panelX = centerX - panelWidth / 2;
-    const panelY = centerY - 40;
-    
-    // 面板背景
-    this.ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    this.ctx.lineWidth = 2;
-    this.ctx.fillRect(panelX, panelY, panelWidth, panelHeight);
-    this.ctx.strokeRect(panelX, panelY, panelWidth, panelHeight);
-    
-    // 分数信息
-    this.ctx.font = '20px Arial, sans-serif';
-    this.ctx.fillStyle = '#FFFFFF';
-    
-    const scoreY = panelY + 30;
-    this.ctx.fillText(`最终得分: ${this.score.toLocaleString()}`, centerX, scoreY);
-    
-    // 高分显示（使用本局标志，避免与已更新的最高分比较导致误判）
+    // 标题
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillStyle = '#333333';
+    this.ctx.font = 'bold 30px Arial, sans-serif';
+    this.ctx.fillText('游戏结束', centerX, panelY + 40);
+
+    // 本次得分（大号红色数字）
+    this.ctx.fillStyle = '#E53E3E';
+    this.ctx.font = 'bold 48px Arial, sans-serif';
+    this.ctx.fillText(String(this.score), centerX, panelY + 100);
+
+    // 历史最高分（小号灰色）
     const isNewRecord = !!this.newRecordAchievedThisRun;
+    this.ctx.fillStyle = '#666666';
+    this.ctx.font = '16px Arial, sans-serif';
+    this.ctx.fillText(`历史最高：${this.highScore}`, centerX, panelY + 140);
+
+    // 新纪录提示（条件显示，金色 + emoji）
     if (isNewRecord) {
       this.ctx.fillStyle = '#FFD700';
-      this.ctx.font = 'bold 20px Arial, sans-serif';
-      this.ctx.fillText('🎉 新纪录! 🎉', centerX, scoreY + 30);
-      this.ctx.fillText(`最高得分: ${this.highScore.toLocaleString()}`, centerX, scoreY + 60);
-    } else {
-      this.ctx.fillStyle = '#CCCCCC';
-      this.ctx.fillText(`最高得分: ${this.highScore.toLocaleString()}`, centerX, scoreY + 30);
+      this.ctx.font = 'bold 18px Arial, sans-serif';
+      this.ctx.fillText('🎉 新纪录！', centerX, panelY + 165);
     }
-    
-    // 连击信息
-    this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.font = '18px Arial, sans-serif';
-    this.ctx.fillText(`最大连击: ${this.maxCombo || 0}`, centerX, scoreY + (isNewRecord ? 90 : 60));
-    this.ctx.fillText(`游戏时长: ${Math.floor(this.gameTime / 60)}:${String(Math.floor(this.gameTime % 60)).padStart(2, '0')}`, centerX, scoreY + (isNewRecord ? 110 : 80));
 
     // 重新开始按钮（增强样式）
-    const buttonWidth = 180;
-    const buttonHeight = 60;
+    const buttonWidth = Math.floor(basePanelWidth * 0.45); // 点击区域按最终尺寸
+    const buttonHeight = 52;
     const buttonX = centerX - buttonWidth / 2;
-    const buttonY = centerY + 140;
+    const buttonY = (centerY + (panelHeight / 2)) - buttonHeight - 24;
 
     this.restartButton = { x: buttonX, y: buttonY, width: buttonWidth, height: buttonHeight };
 
     // 按钮渐变背景
     const buttonGradient = this.ctx.createLinearGradient(buttonX, buttonY, buttonX, buttonY + buttonHeight);
-    buttonGradient.addColorStop(0, '#4CAF50');
-    buttonGradient.addColorStop(1, '#45a049');
+    buttonGradient.addColorStop(0, '#48BB78');
+    buttonGradient.addColorStop(1, '#38A169');
     this.ctx.fillStyle = buttonGradient;
     
     // 按钮圆角
@@ -1353,18 +1461,18 @@ export class GameLogic {
     this.ctx.stroke();
 
     // 按钮文字
-    this.ctx.font = 'bold 24px Arial, sans-serif';
+    this.ctx.font = 'bold 20px Arial, sans-serif';
     this.ctx.fillStyle = '#FFFFFF';
     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
     this.ctx.shadowBlur = 2;
-    this.ctx.fillText('🔄 重新开始', centerX, buttonY + buttonHeight / 2);
+    this.ctx.fillText('重新开始', centerX, buttonY + buttonHeight / 2);
     
     // 重置阴影
     this.ctx.shadowBlur = 0;
 
     this.ctx.restore();
     
-    // 添加排行榜和分享按钮
+    // （V1.0）不渲染分享与排行榜按钮；保留点击区域逻辑为重启
     this.renderGameOverButtons(centerX, centerY);
   }
 

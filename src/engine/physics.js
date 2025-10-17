@@ -137,7 +137,7 @@ export class PhysicsEngine {
       this.solveCollisions();
       this.applyConstraints();
     }
-    this.handleElimination();
+    this.handleMergeByBehavior();
     this.cleanupBodies();
   }
 
@@ -293,6 +293,16 @@ export class PhysicsEngine {
     }
   }
   
+  // 根据配置选择合成行为
+  handleMergeByBehavior() {
+    const behavior = GAME_CONFIG?.GAMEPLAY?.MERGE_BEHAVIOR || 'eliminate';
+    if (behavior === 'upgrade') {
+      this.handleUpgrade();
+    } else {
+      this.handleElimination();
+    }
+  }
+
   handleElimination() {
     const pairsToEliminate = [];
     for (let i = 0; i < this.bodies.length; i++) {
@@ -329,6 +339,50 @@ export class PhysicsEngine {
             action: 'eliminate',
             score: this.getFruitScore(bodyA.fruitType)
         });
+    }
+  }
+
+  // 升级合成：相同水果相交后，移除两者并生成更高级类型（由上层负责创建）
+  handleUpgrade() {
+    const pairsToUpgrade = [];
+    for (let i = 0; i < this.bodies.length; i++) {
+      for (let j = i + 1; j < this.bodies.length; j++) {
+        const bodyA = this.bodies[i];
+        const bodyB = this.bodies[j];
+        if (bodyA.isMarkedForRemoval || bodyB.isMarkedForRemoval) continue;
+        if (bodyA.fruitType !== bodyB.fruitType) continue;
+        if (bodyA.mergeCooldown > 0 || bodyB.mergeCooldown > 0) continue;
+
+        const axis = bodyA.position.subtract(bodyB.position);
+        const dist = axis.magnitude();
+        const min_dist = (bodyA.radius + bodyB.radius) * 0.98;
+
+        if (dist < min_dist) {
+          const type = bodyA.fruitType;
+          const nextType = FRUIT_CONFIG?.[type]?.nextLevel || null;
+          if (nextType) {
+            pairsToUpgrade.push([bodyA, bodyB, nextType]);
+          }
+        }
+      }
+    }
+    for (const [bodyA, bodyB, nextType] of pairsToUpgrade) {
+      if (bodyA.isMarkedForRemoval || bodyB.isMarkedForRemoval) continue;
+
+      bodyA.setMergeCooldown(40);
+      bodyB.setMergeCooldown(40);
+      bodyA.isMarkedForRemoval = true;
+      bodyB.isMarkedForRemoval = true;
+
+      const mergePosition = bodyA.position.add(bodyB.position).multiply(0.5);
+      // 不在物理层直接创建新刚体，交由上层FruitManager创建；此处仅派发事件
+      this.emitMerge({
+        oldType: bodyA.fruitType,
+        newType: nextType,
+        position: { x: mergePosition.x, y: mergePosition.y },
+        count: 2,
+        action: 'upgrade'
+      });
     }
   }
 

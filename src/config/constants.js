@@ -40,7 +40,7 @@ export const GAME_CONFIG = {
   
   // 危险线
   DANGER_LINE: {
-    y: 300,
+    y: 200,
     color: '#FF4444',
     flashDuration: 500
   },
@@ -72,7 +72,7 @@ export const GAME_CONFIG = {
   // 性能限制
   LIMITS: {
     maxFruits: 50, // 场景中允许的最大水果数量
-    DROP_COOLDOWN: 0.35, // 投放冷却时间（秒）
+    DROP_COOLDOWN: 0.5, // 投放冷却时间（秒）
     COMBO_DURATION: 2, // 连击持续时间（秒）
   },
 
@@ -88,10 +88,10 @@ export const GAME_CONFIG = {
     // 主玩法模式：'tetris' 俄罗斯方块式堆叠消行 | 'physics' 物理堆叠 | 'match3' 网格三消
     MODE: 'physics',
     // 可选值：'upgrade' | 'eliminate' | 'eliminate_on_bottom'
-    // 改为“碰撞即消除”的模式：同类型水果发生碰撞且形成团簇则消除
-    MERGE_BEHAVIOR: 'eliminate',
-    // 物理模式/自由投放的可生成水果列表（扩展为十种）
-    STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON','BLUEBERRY','PEACH','PEAR','MANGO','PINEAPPLE'],
+    // 改为“升级合成”模式：相同水果碰撞后消失并在中点生成更高级水果
+    MERGE_BEHAVIOR: 'upgrade',
+    // 物理模式/自由投放的可生成水果列表（仅限可升级链条，最高级不直接出现）
+    STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT'],
     // 消除得分倍率（相对该水果基础分）
     ELIMINATE_SCORE_MULTIPLIER: 1.0,
     // 是否因消除增加连击
@@ -103,7 +103,7 @@ export const GAME_CONFIG = {
     // 游戏结束判定容差（像素）
     GAMEOVER_TOLERANCE_PX: 4,
     // 游戏结束持续时间（秒）
-    GAMEOVER_SUSTAIN_SEC: 0.5,
+    GAMEOVER_SUSTAIN_SEC: 1.0,
     // 网格三消配置
     MATCH3: {
       cols: 7,
@@ -289,7 +289,7 @@ export const FRUIT_CONFIG = {
     color: '#38A169', // 西瓜绿
     gradient: ['#38A169', '#2F855A'],
     texture: 'assets/images/fruits/watermelon.png',
-    score: 55,
+    score: 45,
     mass: 6.5,
     nextLevel: null
   }

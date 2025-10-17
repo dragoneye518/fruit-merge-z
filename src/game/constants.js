@@ -40,7 +40,7 @@ export const GAME_CONFIG = {
   
   // 危险线
   DANGER_LINE: {
-    y: 300,
+    y: 200,
     color: '#FF4444',
     flashDuration: 500
   },
@@ -72,7 +72,7 @@ export const GAME_CONFIG = {
   // 性能限制
   LIMITS: {
     maxFruits: 36, // 场景中允许的最大水果数量（降低以避免移动端过载）
-    DROP_COOLDOWN: 0.35, // 投放冷却时间（秒）
+    DROP_COOLDOWN: 0.5, // 投放冷却时间（秒）
     COMBO_DURATION: 2, // 连击持续时间（秒）
   },
 
@@ -103,7 +103,7 @@ export const GAME_CONFIG = {
     // 游戏结束判定容差（像素）
     GAMEOVER_TOLERANCE_PX: 4,
     // 游戏结束持续时间（秒）
-    GAMEOVER_SUSTAIN_SEC: 0.5,
+    GAMEOVER_SUSTAIN_SEC: 1.0,
     // 网格三消配置
     MATCH3: {
       cols: 7,
