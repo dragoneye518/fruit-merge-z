@@ -21,8 +21,9 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "devDependencies": {},
-  "dependencies": {},
+  "dependencies": {
+    "sharp": "^0.34.4"
+  },
   "repository": {
     "type": "git",
     "url": ""

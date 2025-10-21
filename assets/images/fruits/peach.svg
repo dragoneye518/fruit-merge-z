@@ -1,42 +1,46 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="peachGradient" cx="0.3" cy="0.3" r="0.8">
-      <stop offset="0%" style="stop-color:#FFCCCB;stop-opacity:1" />
-      <stop offset="30%" style="stop-color:#FFB6C1;stop-opacity:1" />
-      <stop offset="70%" style="stop-color:#FF69B4;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FF1493;stop-opacity:1" />
+    <radialGradient id="peachGrad" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#FFCCCB"/>
+      <stop offset="30%" stop-color="#FFB347"/>
+      <stop offset="70%" stop-color="#FF8C69"/>
+      <stop offset="100%" stop-color="#CD5C5C"/>
     </radialGradient>
-    <radialGradient id="peachHighlight" cx="0.25" cy="0.25" r="0.4">
-      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.8" />
-      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#90EE90;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#228B22;stop-opacity:1" />
-    </linearGradient>
   </defs>
   
-  <!-- Main peach body -->
-  <path d="M 100 50 Q 140 60 150 100 Q 155 140 130 160 Q 100 180 70 160 Q 45 140 50 100 Q 60 60 100 50 Z" 
-        fill="url(#peachGradient)" stroke="#FF1493" stroke-width="2"/>
+  <!-- 桃子主体 - 心形，填满画布 -->
+  <path d="M48 88 C32 76 16 60 16 44 C16 28 28 16 44 20 C46 22 48 24 48 24 C48 24 50 22 52 20 C68 16 80 28 80 44 C80 60 64 76 48 88 Z" 
+        fill="url(#peachGrad)" stroke="#CD5C5C" stroke-width="1"/>
   
-  <!-- Peach crease -->
-  <path d="M 100 50 Q 105 80 110 110 Q 115 140 120 160" 
-        fill="none" stroke="#FF69B4" stroke-width="3" opacity="0.6"/>
+  <!-- 桃子凹槽 -->
+  <path d="M48 24 Q46 40 48 56 Q50 40 48 24" stroke="#CD5C5C" stroke-width="2" fill="none"/>
   
-  <!-- Leaf -->
-  <path d="M 95 45 Q 85 35 75 40 Q 70 45 75 55 Q 85 50 95 45 Z" 
-        fill="url(#leafGradient)" stroke="#228B22" stroke-width="1"/>
+  <!-- 桃子茎 -->
+  <rect x="47" y="8" width="2" height="12" fill="#8D6E63" rx="1"/>
   
-  <!-- Leaf vein -->
-  <path d="M 90 42 Q 80 45 75 50" 
-        fill="none" stroke="#006400" stroke-width="1" opacity="0.7"/>
+  <!-- 叶子 -->
+  <ellipse cx="54" cy="12" rx="6" ry="3" fill="#4CAF50" transform="rotate(30 54 12)"/>
   
-  <!-- Highlight -->
-  <ellipse cx="85" cy="80" rx="25" ry="30" fill="url(#peachHighlight)"/>
+  <!-- 高光效果 -->
+  <ellipse cx="36" cy="36" rx="12" ry="16" fill="url(#highlight)"/>
   
-  <!-- Small texture -->
-  <circle cx="90" cy="100" r="1" fill="#FFB6C1" opacity="0.8"/>
-  <circle cx="110" cy="95" r="1" fill="#FFB6C1" opacity="0.8"/>
-  <circle cx="105" cy="120" r="1" fill="#FFB6C1" opacity="0.8"/>
+  <!-- 桃子绒毛效果 -->
+  <g fill="#FFFFFF" opacity="0.3">
+    <circle cx="32" cy="48" r="0.5"/>
+    <circle cx="56" cy="44" r="0.5"/>
+    <circle cx="40" cy="64" r="0.5"/>
+    <circle cx="64" cy="60" r="0.5"/>
+    <circle cx="28" cy="68" r="0.5"/>
+    <circle cx="68" cy="72" r="0.5"/>
+    <circle cx="44" cy="76" r="0.5"/>
+    <circle cx="60" cy="32" r="0.5"/>
+  </g>
+  
+  <!-- 表面光泽 -->
+  <path d="M48 88 C32 76 16 60 16 44 C16 28 28 16 44 20 C46 22 48 24 48 24 C48 24 50 22 52 20 C68 16 80 28 80 44 C80 60 64 76 48 88 Z" 
+        fill="#FFF5EE" opacity="0.2"/>
 </svg>

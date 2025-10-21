@@ -1,96 +1,42 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 番茄主体渐变 -->
-    <radialGradient id="tomatoBody" cx="0.4" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#FF8A80"/>
-      <stop offset="30%" stop-color="#FF5722"/>
-      <stop offset="70%" stop-color="#D32F2F"/>
-      <stop offset="100%" stop-color="#B71C1C"/>
+    <radialGradient id="tomatoGrad" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#FF6B6B"/>
+      <stop offset="40%" stop-color="#E53E3E"/>
+      <stop offset="80%" stop-color="#C53030"/>
+      <stop offset="100%" stop-color="#9B2C2C"/>
     </radialGradient>
-    
-    <!-- 番茄高光 -->
-    <radialGradient id="tomatoHighlight" cx="0.3" cy="0.2" r="0.4">
+    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#68D391"/>
+      <stop offset="100%" stop-color="#38A169"/>
+    </linearGradient>
+    <radialGradient id="highlight" cx="0.3" cy="0.25" r="0.4">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.3"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    
-    <!-- 番茄阴影 -->
-    <radialGradient id="tomatoShadow" cx="0.7" cy="0.8" r="0.5">
-      <stop offset="0%" stop-color="#B71C1C" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#8B0000" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#2E2E2E" stop-opacity="0.5"/>
-    </radialGradient>
-    
-    <!-- 番茄顶部渐变 -->
-    <radialGradient id="tomatoTop" cx="0.5" cy="0.3" r="0.7">
-      <stop offset="0%" stop-color="#FFCDD2"/>
-      <stop offset="50%" stop-color="#EF5350"/>
-      <stop offset="100%" stop-color="#C62828"/>
-    </radialGradient>
-    
-    <!-- 叶子渐变 -->
-    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8BC34A"/>
-      <stop offset="50%" stop-color="#689F38"/>
-      <stop offset="100%" stop-color="#33691E"/>
-    </linearGradient>
-    
-    <!-- 茎部渐变 -->
-    <linearGradient id="stemGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4CAF50"/>
-      <stop offset="50%" stop-color="#388E3C"/>
-      <stop offset="100%" stop-color="#1B5E20"/>
-    </linearGradient>
-    
-    <!-- 阴影滤镜 -->
-    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.3"/>
-    </filter>
   </defs>
   
   <!-- 番茄主体 -->
-  <circle cx="100" cy="120" r="55" fill="url(#tomatoBody)" filter="url(#dropShadow)"/>
+  <circle cx="64" cy="68" r="52" fill="url(#tomatoGrad)" stroke="#9B2C2C" stroke-width="1"/>
   
-  <!-- 番茄顶部凹陷 -->
-  <ellipse cx="100" cy="65" rx="25" ry="8" fill="url(#tomatoTop)"/>
-  
-  <!-- 番茄分瓣线条 -->
-  <g stroke="#C62828" stroke-width="1" fill="none" opacity="0.4">
-    <path d="M100 65 Q85 90 75 120 Q85 150 100 175"/>
-    <path d="M100 65 Q115 90 125 120 Q115 150 100 175"/>
-    <path d="M100 65 Q100 95 100 175"/>
-    <path d="M100 65 Q70 85 60 120 Q75 155 100 175"/>
-    <path d="M100 65 Q130 85 140 120 Q125 155 100 175"/>
+  <!-- 番茄顶部花萼 -->
+  <g fill="url(#leafGrad)" stroke="#38A169" stroke-width="0.5">
+    <path d="M64 16 L58 28 L52 20 L46 32 L40 24 L34 36 L42 44 L50 36 L58 44 L66 36 L74 44 L82 36 L90 44 L94 36 L88 24 L82 32 L76 20 L70 28 Z"/>
   </g>
   
-  <!-- 番茄茎部 -->
-  <ellipse cx="100" cy="60" rx="8" ry="15" fill="url(#stemGradient)"/>
+  <!-- 番茄茎 -->
+  <rect x="60" y="8" width="8" height="12" fill="#8B4513" rx="4"/>
   
-  <!-- 番茄叶子 -->
-  <g fill="url(#leafGradient)">
-    <path d="M85 50 Q80 35 75 45 Q85 60 95 55 Q90 45 85 50"/>
-    <path d="M100 45 Q95 30 90 40 Q100 55 110 50 Q105 40 100 45"/>
-    <path d="M115 50 Q110 35 105 45 Q115 60 125 55 Q120 45 115 50"/>
-    <path d="M95 55 Q90 40 85 50 Q95 65 105 60 Q100 50 95 55"/>
-    <path d="M105 55 Q100 40 95 50 Q105 65 115 60 Q110 50 105 55"/>
+  <!-- 高光效果 -->
+  <ellipse cx="48" cy="52" rx="16" ry="20" fill="url(#highlight)"/>
+  
+  <!-- 番茄表面光泽 -->
+  <ellipse cx="44" cy="76" rx="6" ry="8" fill="#FFFFFF" opacity="0.3"/>
+  
+  <!-- 番茄表面纹理 -->
+  <g stroke="#9B2C2C" stroke-width="0.5" opacity="0.3" fill="none">
+    <path d="M64 20 C60 40 60 60 64 80 C64 90 64 100 64 110"/>
+    <path d="M44 32 C48 52 52 72 56 92"/>
+    <path d="M84 32 C80 52 76 72 72 92"/>
   </g>
-  
-  <!-- 叶子细节 -->
-  <g stroke="#4CAF50" stroke-width="0.5" fill="none" opacity="0.6">
-    <path d="M85 45 Q87 50 85 55"/>
-    <path d="M100 40 Q102 45 100 50"/>
-    <path d="M115 45 Q117 50 115 55"/>
-    <path d="M95 50 Q97 55 95 60"/>
-    <path d="M105 50 Q107 55 105 60"/>
-  </g>
-  
-  <!-- 番茄阴影 -->
-  <circle cx="100" cy="120" r="55" fill="url(#tomatoShadow)"/>
-  
-  <!-- 番茄高光 -->
-  <ellipse cx="80" cy="90" rx="18" ry="25" fill="url(#tomatoHighlight)"/>
-  
-  <!-- 小高光点 -->
-  <ellipse cx="75" cy="85" rx="5" ry="8" fill="#FFFFFF" opacity="0.4"/>
 </svg>

@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水果图片验证</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .requirements {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .requirements h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .requirements ol {
+            line-height: 1.6;
+        }
+        .fruit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .fruit-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .fruit-image {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            position: relative;
+        }
+        .fruit-image img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        .fruit-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .fruit-info {
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .size-info {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .checklist {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .checklist label {
+            display: block;
+            margin: 5px 0;
+            cursor: pointer;
+        }
+        .checklist input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        .size-64 { border-color: #3498db; }
+        .size-96 { border-color: #2ecc71; }
+        .size-128 { border-color: #f39c12; }
+        .size-192 { border-color: #9b59b6; }
+        .size-256 { border-color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>水果图片验证 - 15种水果PNG图片</h1>
+        
+        <div class="requirements">
+            <h2>验证要求</h2>
+            <ol>
+                <li><strong>风格一致性：</strong>所有水果采用3D风格，无投影，尺寸统一从64x64、96x96、128x128、192x192、256x256像素中选择</li>
+                <li><strong>水果特征：</strong>每种水果都要符合其真实特征（形状、颜色、渐变、单个不多颗）</li>
+                <li><strong>填充度：</strong>水果图形尽可能填满图片空间，减少透明空白区域</li>
+                <li><strong>识别度：</strong>每种水果都要容易识别，外观特征明显</li>
+            </ol>
+        </div>
+
+        <div class="fruit-grid" id="fruitGrid">
+            <!-- 水果卡片将通过JavaScript生成 -->
+        </div>
+    </div>
+
+    <script>
+        const fruits = [
+            { name: 'apple', size: '96x96', description: '苹果 - 经典苹果形状，红色渐变，带茎和叶子' },
+            { name: 'blueberry', size: '64x64', description: '蓝莓 - 单颗圆形，深蓝色渐变，顶部星形花冠' },
+            { name: 'cherry', size: '64x64', description: '樱桃 - 单颗心形，红色渐变，带茎' },
+            { name: 'coconut', size: '128x128', description: '椰子 - 椭圆形，棕色渐变，三个眼，纤维纹理' },
+            { name: 'grape', size: '64x64', description: '葡萄 - 单颗圆形，紫色渐变（不是串）' },
+            { name: 'kiwi', size: '96x96', description: '猕猴桃 - 椭圆形，棕色渐变，表面绒毛纹理' },
+            { name: 'lemon', size: '96x96', description: '柠檬 - 椭圆形两端尖，黄色渐变，表面纹理' },
+            { name: 'mango', size: '128x128', description: '芒果 - 椭圆形，黄橙色渐变，带茎' },
+            { name: 'orange', size: '96x96', description: '橙子 - 圆形，橙色渐变，带茎和叶子，表面纹理' },
+            { name: 'peach', size: '96x96', description: '桃子 - 心形，粉橙色渐变，带茎和叶子，绒毛效果' },
+            { name: 'pear', size: '96x96', description: '梨子 - 梨形，绿黄色渐变，带茎和叶子，表面斑点' },
+            { name: 'pineapple', size: '192x192', description: '菠萝 - 椭圆形，黄橙色渐变，绿色叶冠，菱形纹理' },
+            { name: 'strawberry', size: '96x96', description: '草莓 - 心形，红色渐变，绿色叶冠，表面籽点' },
+            { name: 'tomato', size: '96x96', description: '番茄 - 圆形，红色渐变，绿色茎和叶子' },
+            { name: 'watermelon', size: '256x256', description: '西瓜 - 圆形，绿色条纹外皮' }
+        ];
+
+        function getSizeClass(size) {
+            const sizeNum = parseInt(size.split('x')[0]);
+            return `size-${sizeNum}`;
+        }
+
+        function createFruitCard(fruit) {
+            return `
+                <div class="fruit-card">
+                    <div class="fruit-image ${getSizeClass(fruit.size)}">
+                        <img src="assets/images/fruits/${fruit.name}.png" alt="${fruit.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div style="display:none; color:#e74c3c;">图片加载失败</div>
+                    </div>
+                    <div class="fruit-name">${fruit.name.toUpperCase()}</div>
+                    <div class="fruit-info">
+                        <div class="size-info">尺寸: ${fruit.size}</div>
+                        <div>${fruit.description}</div>
+                        <div class="checklist">
+                            <label><input type="checkbox"> ✓ 风格一致（3D，无投影）</label>
+                            <label><input type="checkbox"> ✓ 特征正确（形状、颜色、单个）</label>
+                            <label><input type="checkbox"> ✓ 填充良好（减少空白区域）</label>
+                            <label><input type="checkbox"> ✓ 识别度高（容易辨认）</label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 生成所有水果卡片
+        document.getElementById('fruitGrid').innerHTML = fruits.map(createFruitCard).join('');
+    </script>
+</body>
+</html>

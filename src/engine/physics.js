@@ -22,7 +22,7 @@ export class RigidBody {
     this.radius = radius;
     this.mass = mass > 0 ? mass : 1;
     this.invMass = 1 / this.mass;
-    this.restitution = 0.1;
+    this.restitution = 0.15; // 增加弹性，让水果碰撞后保持更多速度
     this.fruitType = fruitType;
     this.color = color;
     this.id = id || `rb_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -161,12 +161,12 @@ export class PhysicsEngine {
     const isDouyinEnv = typeof tt !== 'undefined';
 
     for (const body of this.bodies) {
-      const onGround = (body.position.y + body.radius > groundY - 1.0);
+      const onGround = (body.position.y + body.radius >= groundY);
       if (onGround) {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const groundFriction = 0.7; 
+        const groundFriction = 0.85; // 减少地面摩擦，让水果能更快滑落 
         const groundBounceDamping = GAME_CONFIG.PHYSICS.groundBounceDamping;
 
         body.prevPosition.x = pos.x - (pos.x - prev.x) * groundFriction;
@@ -213,19 +213,19 @@ export class PhysicsEngine {
       }
 
       if (body.position.x - body.radius < leftWallX) {
-        body.position.x = leftWallX + body.radius * 0.98;
+        body.position.x = leftWallX + body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const fx = GAME_CONFIG.PHYSICS.groundBounceDamping;
-        body.prevPosition.x = pos.x - (pos.x - prev.x) * fx;
+        const wallFriction = 0.9; // 墙壁摩擦力，减少阻碍让水果更快滑落
+        body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
       }
 
       if (body.position.x + body.radius > rightWallX) {
-        body.position.x = rightWallX - body.radius * 0.98;
+        body.position.x = rightWallX - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const fx = GAME_CONFIG.PHYSICS.groundBounceDamping;
-        body.prevPosition.x = pos.x - (pos.x - prev.x) * fx;
+        const wallFriction = 0.9; // 墙壁摩擦力，减少阻碍让水果更快滑落
+        body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
       }
 
       const speed = body.velocity.magnitude();
@@ -242,7 +242,7 @@ export class PhysicsEngine {
         const bodyB = this.bodies[j];
         const axis = bodyA.position.subtract(bodyB.position);
         const dist = axis.magnitude();
-        const min_dist = (bodyA.radius + bodyB.radius) * 0.95;
+        const min_dist = (bodyA.radius + bodyB.radius) * 0.998;
         if (dist < min_dist) {
           if (GAME_CONFIG?.DEBUG?.verboseCollisions) {
             console.log(`Collision: ${bodyA.id} vs ${bodyB.id}, overlap: ${(min_dist - dist).toFixed(2)}`);
@@ -316,8 +316,8 @@ export class PhysicsEngine {
         
         const axis = bodyA.position.subtract(bodyB.position);
         const dist = axis.magnitude();
-        const min_dist = (bodyA.radius + bodyB.radius) * 0.98;
-        
+        const min_dist = (bodyA.radius + bodyB.radius) * 0.998;
+
         if (dist < min_dist) {
           pairsToEliminate.push([bodyA, bodyB]);
         }
@@ -355,7 +355,7 @@ export class PhysicsEngine {
 
         const axis = bodyA.position.subtract(bodyB.position);
         const dist = axis.magnitude();
-        const min_dist = (bodyA.radius + bodyB.radius) * 0.98;
+        const min_dist = (bodyA.radius + bodyB.radius) * 0.998;
 
         if (dist < min_dist) {
           const type = bodyA.fruitType;

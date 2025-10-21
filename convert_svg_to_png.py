@@ -25,8 +25,8 @@ def check_dependencies():
             print(f"Failed to install cairosvg: {e}")
             return False
 
-def convert_svg_to_png(svg_path, png_path, width=200, height=200):
-    """Convert SVG file to PNG with specified dimensions"""
+def convert_svg_to_png(svg_path, png_path, width=128, height=128):
+    """Convert SVG file to PNG with specified dimensions (default 128x128)"""
     try:
         import cairosvg
         cairosvg.svg2png(
@@ -35,7 +35,7 @@ def convert_svg_to_png(svg_path, png_path, width=200, height=200):
             output_width=width,
             output_height=height
         )
-        print(f"✓ Converted {svg_path.name} -> {png_path.name}")
+        print(f"✓ Converted {svg_path.name} -> {png_path.name} ({width}x{height})")
         return True
     except Exception as e:
         print(f"✗ Failed to convert {svg_path.name}: {e}")

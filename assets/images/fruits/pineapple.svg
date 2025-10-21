@@ -1,177 +1,58 @@
-<svg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+<svg width="192" height="192" viewBox="0 0 192 192" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 菠萝主体渐变 -->
-    <linearGradient id="pineappleGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#FFF8E1"/>
-      <stop offset="20%" stop-color="#FFD54F"/>
-      <stop offset="50%" stop-color="#FFA000"/>
-      <stop offset="80%" stop-color="#FF8F00"/>
-      <stop offset="100%" stop-color="#E65100"/>
-    </linearGradient>
-    
-    <!-- 菠萝网格纹理渐变 -->
-    <radialGradient id="textureGradient" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0%" stop-color="#FFB300"/>
-      <stop offset="70%" stop-color="#FF8F00"/>
-      <stop offset="100%" stop-color="#E65100"/>
+    <radialGradient id="pineappleGrad" cx="0.35" cy="0.4" r="0.8">
+      <stop offset="0%" stop-color="#FFF176"/>
+      <stop offset="30%" stop-color="#FFB74D"/>
+      <stop offset="70%" stop-color="#FF9800"/>
+      <stop offset="100%" stop-color="#F57C00"/>
     </radialGradient>
-    
-    <!-- 高光渐变 -->
-    <radialGradient id="pineappleHighlight" cx="0.2" cy="0.15" r="0.6">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.3"/>
+    <radialGradient id="highlight" cx="0.25" cy="0.3" r="0.3">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    
-    <!-- 叶子渐变 -->
-    <linearGradient id="leafGradient" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#C8E6C9"/>
-      <stop offset="30%" stop-color="#66BB6A"/>
-      <stop offset="70%" stop-color="#4CAF50"/>
-      <stop offset="100%" stop-color="#2E7D32"/>
-    </linearGradient>
-    
-    <!-- 阴影滤镜 -->
-    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#000000" flood-opacity="0.3"/>
-    </filter>
   </defs>
   
-  <!-- 菠萝主体 -->
-  <ellipse cx="30" cy="38" rx="18" ry="22" 
-           fill="url(#pineappleGradient)" 
-           stroke="#E65100" 
-           stroke-width="1"
-           filter="url(#dropShadow)"/>
+  <!-- 菠萝主体 - 椭圆形，填满画布 -->
+  <ellipse cx="96" cy="120" rx="72" ry="64" fill="url(#pineappleGrad)" stroke="#F57C00" stroke-width="2"/>
   
-  <!-- 菠萝网格纹理 - 横向线条 -->
-  <g stroke="#D84315" stroke-width="1.5" fill="none" opacity="0.6">
-    <path d="M15 20 Q30 18 45 20"/>
-    <path d="M14 26 Q30 24 46 26"/>
-    <path d="M13 32 Q30 30 47 32"/>
-    <path d="M14 38 Q30 36 46 38"/>
-    <path d="M15 44 Q30 42 45 44"/>
-    <path d="M16 50 Q30 48 44 50"/>
-    <path d="M18 56 Q30 54 42 56"/>
+  <!-- 菠萝叶冠 -->
+  <g fill="#4CAF50" stroke="#2E7D32" stroke-width="1">
+    <path d="M96 8 L88 56 L80 12 L72 60 L64 16 L56 64 L68 68 L76 64 L84 68 L92 64 L100 68 L108 64 L116 68 L124 64 L136 16 L128 60 L120 12 L112 56 L104 8"/>
+    <path d="M96 8 L100 52 L108 12 L116 56 L124 16 L132 60 L140 20 L148 64 L136 68 L128 64 L120 68 L112 64 L104 68 L96 64"/>
   </g>
   
-  <!-- 菠萝网格纹理 - 斜向线条（左倾） -->
-  <g stroke="#D84315" stroke-width="1.2" fill="none" opacity="0.5">
-    <path d="M12 22 L48 46"/>
-    <path d="M12 28 L48 52"/>
-    <path d="M12 34 L42 58"/>
-    <path d="M12 16 L48 40"/>
-    <path d="M18 16 L48 34"/>
-    <path d="M24 16 L48 28"/>
+  <!-- 菠萝表面菱形纹理 -->
+  <g stroke="#F57C00" stroke-width="2" fill="none">
+    <!-- 横向线条 -->
+    <path d="M32 88 L160 88"/>
+    <path d="M28 104 L164 104"/>
+    <path d="M32 120 L160 120"/>
+    <path d="M28 136 L164 136"/>
+    <path d="M32 152 L160 152"/>
+    <path d="M36 168 L156 168"/>
+    
+    <!-- 斜向线条 -->
+    <path d="M48 72 L144 168"/>
+    <path d="M64 72 L160 168"/>
+    <path d="M80 72 L176 168"/>
+    <path d="M96 72 L192 168"/>
+    <path d="M112 72 L208 168"/>
+    <path d="M128 72 L224 168"/>
+    <path d="M144 72 L240 168"/>
+    
+    <!-- 反向斜线 -->
+    <path d="M144 72 L48 168"/>
+    <path d="M128 72 L32 168"/>
+    <path d="M112 72 L16 168"/>
+    <path d="M96 72 L0 168"/>
+    <path d="M80 72 L-16 168"/>
+    <path d="M64 72 L-32 168"/>
+    <path d="M48 72 L-48 168"/>
   </g>
   
-  <!-- 菠萝网格纹理 - 斜向线条（右倾） -->
-  <g stroke="#D84315" stroke-width="1.2" fill="none" opacity="0.5">
-    <path d="M48 22 L12 46"/>
-    <path d="M48 28 L12 52"/>
-    <path d="M48 34 L18 58"/>
-    <path d="M48 16 L12 40"/>
-    <path d="M42 16 L12 34"/>
-    <path d="M36 16 L12 28"/>
-  </g>
+  <!-- 高光效果 -->
+  <ellipse cx="72" cy="100" rx="20" ry="24" fill="url(#highlight)"/>
   
-  <!-- 菠萝表面凸起点 -->
-  <g fill="url(#textureGradient)" opacity="0.7">
-    <circle cx="22" cy="24" r="1.5"/>
-    <circle cx="30" cy="22" r="1.8"/>
-    <circle cx="38" cy="24" r="1.5"/>
-    <circle cx="18" cy="30" r="1.6"/>
-    <circle cx="26" cy="28" r="1.7"/>
-    <circle cx="34" cy="28" r="1.7"/>
-    <circle cx="42" cy="30" r="1.6"/>
-    <circle cx="22" cy="34" r="1.8"/>
-    <circle cx="30" cy="32" r="2"/>
-    <circle cx="38" cy="34" r="1.8"/>
-    <circle cx="18" cy="40" r="1.7"/>
-    <circle cx="26" cy="38" r="1.9"/>
-    <circle cx="34" cy="38" r="1.9"/>
-    <circle cx="42" cy="40" r="1.7"/>
-    <circle cx="22" cy="44" r="1.6"/>
-    <circle cx="30" cy="42" r="1.8"/>
-    <circle cx="38" cy="44" r="1.6"/>
-    <circle cx="20" cy="50" r="1.4"/>
-    <circle cx="28" cy="48" r="1.6"/>
-    <circle cx="36" cy="48" r="1.6"/>
-    <circle cx="40" cy="50" r="1.4"/>
-    <circle cx="24" cy="54" r="1.3"/>
-    <circle cx="30" cy="52" r="1.5"/>
-    <circle cx="36" cy="54" r="1.3"/>
-  </g>
-  
-  <!-- 主高光 -->
-  <ellipse cx="22" cy="28" rx="8" ry="12" fill="url(#pineappleHighlight)"/>
-  
-  <!-- 次高光 -->
-  <ellipse cx="20" cy="35" rx="3" ry="5" fill="#FFFFFF" opacity="0.4"/>
-  
-  <!-- 菠萝叶子冠 -->
-  <g filter="url(#dropShadow)">
-    <!-- 中央叶子 -->
-    <path d="M30 16 Q32 2 34 16 Q32 18 30 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <!-- 左侧叶子 -->
-    <path d="M26 16 Q24 4 22 16 Q24 18 26 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <path d="M22 16 Q18 6 16 16 Q18 18 22 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <!-- 右侧叶子 -->
-    <path d="M34 16 Q36 4 38 16 Q36 18 34 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <path d="M38 16 Q42 6 44 16 Q42 18 38 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <!-- 更多外侧叶子 -->
-    <path d="M18 16 Q14 8 12 16 Q14 18 18 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-    
-    <path d="M42 16 Q46 8 48 16 Q46 18 42 16" 
-          fill="url(#leafGradient)" 
-          stroke="#1B5E20" 
-          stroke-width="0.5"/>
-  </g>
-  
-  <!-- 叶子纹理 -->
-  <g stroke="#1B5E20" stroke-width="0.6" fill="none" opacity="0.7">
-    <path d="M30 16 Q31 8 32 2"/>
-    <path d="M26 16 Q25 10 24 4"/>
-    <path d="M22 16 Q21 11 20 6"/>
-    <path d="M34 16 Q35 10 36 4"/>
-    <path d="M38 16 Q39 11 40 6"/>
-    <path d="M18 16 Q17 12 16 8"/>
-    <path d="M42 16 Q43 12 44 8"/>
-  </g>
-  
-  <!-- 菠萝表面整体光泽 -->
-  <path d="M15 25 Q30 20 45 25" 
-        stroke="#FFF8E1" 
-        stroke-width="1.5" 
-        fill="none" 
-        opacity="0.4"/>
-  
-  <path d="M16 35 Q30 30 44 35" 
-        stroke="#FFF8E1" 
-        stroke-width="1.2" 
-        fill="none" 
-        opacity="0.3"/>
+  <!-- 表面光泽 -->
+  <ellipse cx="96" cy="120" rx="72" ry="64" fill="#FFF8E1" opacity="0.1"/>
 </svg>

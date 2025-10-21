@@ -48,20 +48,15 @@ export class Fruit {
 
     if (this.imageLoaded && this.image) {
       try {
-        // 使用物理半径作为基准尺寸，并使用缓存的透明边界裁剪，减少堆叠视觉间隙
-        const baseSize = this.radius * 2;
-        const inset = (RENDER_TUNING?.insetOverrides?.[this.fruitType] ?? RENDER_TUNING?.insetDefaultPx ?? 0);
-        const bounds = this.bounds;
-        if (bounds && bounds.sw && bounds.sh) {
-          ctx.drawImage(
-            this.image,
-            bounds.sx, bounds.sy, bounds.sw, bounds.sh,
-            -baseSize / 2, -baseSize / 2, baseSize, baseSize
-          );
-        } else {
-          const size = Math.max(2, baseSize - inset * 2);
-          ctx.drawImage(this.image, -size / 2, -size / 2, size, size);
-        }
+        // 完全使用物理半径，确保渲染边界与物理边界完全一致
+        const renderSize = this.radius * 2;
+
+        // 直接渲染到完整的物理边界，无任何内缩或边距
+        ctx.drawImage(
+          this.image,
+          0, 0, this.image.naturalWidth || this.image.width, this.image.naturalHeight || this.image.height,
+          -this.radius, -this.radius, renderSize, renderSize
+        );
       } catch (e) {
         this.renderFallback(ctx);
       }

@@ -56,15 +56,15 @@ export const GAME_CONFIG = {
   
   // 物理参数（简化版本）
   PHYSICS: {
-    gravity: 1000,       // 重力（提高整体下落速度）
+    gravity: 1200,       // 重力（提高整体下落速度）
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
-    airResistance: 0.985,// 空气阻力（减小空气阻力，提升下落与碰撞速度）
-    maxVelocity: 300,    // 最大速度
+    airResistance: 0.995, // 空气阻力（进一步减小，让水果保持更多速度滑落）
+    maxVelocity: 350,    // 最大速度
     settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.45, // 弹跳阻尼（提高耗能，加快收敛）
-    groundBounceDamping: 0.1, // 地面弹跳阻尼
+    bounceDamping: 0.25, // 弹跳阻尼（减少阻尼，让水果碰撞后保持更多速度滑落）
+    groundBounceDamping: 0.08, // 地面弹跳阻尼（减少弹跳，更快稳定）
     sleepVelThreshold: 5,   // 睡眠速度阈值
     solverIterations: 4     // 求解器迭代次数
   },
@@ -79,7 +79,7 @@ export const GAME_CONFIG = {
   // 掉落行为参数（顶部上方生成 + 初速度）
   DROP: {
     spawnAboveTopPx: 60,    // 生成位置相对容器顶部向上偏移
-    initialVelocityY: 560,  // 提高初始下落速度，确保更快进入支撑
+    initialVelocityY: 650,  // 提高初始下落速度，确保更快进入支撑
     sideJitterPx: 0         // 水平轻微扰动（可为0）
   },
 
@@ -465,29 +465,10 @@ export const AUDIO_SETTINGS = {
     // 接触法线缓存与偏置消除
 // 注意：以上接触法线与CCD参数已移至 PHYSICS 对象内部，避免语法错误与重复定义
 
-// 渲染细节微调（新增）：不同水果的贴图内缩，减少堆叠视觉空隙
+// 渲染细节微调：完全移除内缩，确保所有水果完美贴合
 export const RENDER_TUNING = {
-  insetDefaultPx: 2,
-  insetOverrides: {
-    // 圆形类（默认1px）
-    ORANGE: 2,
-    LEMON: 2,
-    APPLE: 2,
-    TOMATO: 2,
-    COCONUT: 3,
-    WATERMELON: 3,
-    GRAPE: 2,
-    CHERRY: 2,
-    BLUEBERRY: 2,
-    // 细长/有叶缘类（2px）
-    STRAWBERRY: 2,
-    PEACH: 2,
-    PEAR: 2,
-    KIWI: 2,
-    MANGO: 2,
-    // 棘刺/复杂边缘类（3px）
-    PINEAPPLE: 3
-  }
+  insetDefaultPx: 0,  // 完全移除默认内缩
+  insetOverrides: {}   // 移除所有水果的内缩覆盖，确保使用完整物理边界
 };
 
 // Global fallbacks for non-module environments

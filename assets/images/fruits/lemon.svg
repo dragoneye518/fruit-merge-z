@@ -1,65 +1,41 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 柠檬主体渐变 -->
-    <radialGradient id="lemonBody" cx="0.4" cy="0.3" r="0.8">
+    <radialGradient id="lemonGrad" cx="0.35" cy="0.3" r="0.8">
       <stop offset="0%" stop-color="#FFF59D"/>
       <stop offset="30%" stop-color="#FFEB3B"/>
-      <stop offset="70%" stop-color="#F9A825"/>
-      <stop offset="100%" stop-color="#E65100"/>
+      <stop offset="70%" stop-color="#FBC02D"/>
+      <stop offset="100%" stop-color="#F57F17"/>
     </radialGradient>
-    
-    <!-- 柠檬高光 -->
-    <radialGradient id="lemonHighlight" cx="0.3" cy="0.2" r="0.4">
+    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
-      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.3"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    
-    <!-- 柠檬阴影 -->
-    <radialGradient id="lemonShadow" cx="0.7" cy="0.8" r="0.5">
-      <stop offset="0%" stop-color="#E65100" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#BF360C" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#3E2723" stop-opacity="0.6"/>
-    </radialGradient>
-    
-    <!-- 叶子渐变 -->
-    <linearGradient id="leafGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8BC34A"/>
-      <stop offset="50%" stop-color="#689F38"/>
-      <stop offset="100%" stop-color="#33691E"/>
-    </linearGradient>
-    
-    <!-- 阴影滤镜 -->
-    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.3"/>
-    </filter>
-    
-    <!-- 柠檬纹理 -->
-    <pattern id="lemonTexture" patternUnits="userSpaceOnUse" width="8" height="8">
-      <circle cx="4" cy="4" r="0.5" fill="#FFF176" opacity="0.3"/>
-    </pattern>
   </defs>
   
-  <!-- 柠檬主体 -->
-  <ellipse cx="100" cy="110" rx="45" ry="60" fill="url(#lemonBody)" filter="url(#dropShadow)"/>
+  <!-- 柠檬主体 - 椭圆形，两端尖，填满画布 -->
+  <path d="M48 8 C60 8 72 16 80 28 C88 40 88 56 80 68 C72 80 60 88 48 88 C36 88 24 80 16 68 C8 56 8 40 16 28 C24 16 36 8 48 8 Z" 
+        fill="url(#lemonGrad)" stroke="#F57F17" stroke-width="1"/>
   
-  <!-- 柠檬纹理 -->
-  <ellipse cx="100" cy="110" rx="45" ry="60" fill="url(#lemonTexture)"/>
+  <!-- 柠檬顶部尖端 -->
+  <ellipse cx="48" cy="8" rx="4" ry="6" fill="#F57F17"/>
   
-  <!-- 柠檬顶部突起 -->
-  <ellipse cx="100" cy="50" rx="8" ry="12" fill="url(#lemonBody)"/>
+  <!-- 柠檬底部尖端 -->
+  <ellipse cx="48" cy="88" rx="4" ry="6" fill="#F57F17"/>
   
-  <!-- 柠檬阴影 -->
-  <ellipse cx="100" cy="110" rx="45" ry="60" fill="url(#lemonShadow)"/>
+  <!-- 高光效果 -->
+  <ellipse cx="36" cy="32" rx="12" ry="16" fill="url(#highlight)"/>
   
-  <!-- 柠檬高光 -->
-  <ellipse cx="85" cy="80" rx="20" ry="25" fill="url(#lemonHighlight)"/>
+  <!-- 柠檬表面纹理 -->
+  <g fill="#F57F17" opacity="0.3">
+    <circle cx="32" cy="40" r="1"/>
+    <circle cx="56" cy="36" r="1"/>
+    <circle cx="40" cy="60" r="1"/>
+    <circle cx="64" cy="56" r="1"/>
+    <circle cx="28" cy="64" r="1"/>
+    <circle cx="60" cy="72" r="1"/>
+  </g>
   
-  <!-- 小叶子 -->
-  <path d="M95 45 Q90 35 85 40 Q90 50 95 45" fill="url(#leafGradient)"/>
-  <path d="M105 45 Q110 35 115 40 Q110 50 105 45" fill="url(#leafGradient)"/>
-  
-  <!-- 叶子细节 -->
-  <path d="M90 40 Q92 42 90 45" stroke="#4CAF50" stroke-width="0.5" fill="none"/>
-  <path d="M110 40 Q108 42 110 45" stroke="#4CAF50" stroke-width="0.5" fill="none"/>
+  <!-- 表面光泽 -->
+  <path d="M48 8 C60 8 72 16 80 28 C88 40 88 56 80 68 C72 80 60 88 48 88 C36 88 24 80 16 68 C8 56 8 40 16 28 C24 16 36 8 48 8 Z" 
+        fill="#FFFDE7" opacity="0.2"/>
 </svg>

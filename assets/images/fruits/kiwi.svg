@@ -1,90 +1,51 @@
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <!-- 猕猴桃外皮渐变 -->
-    <radialGradient id="kiwiSkin" cx="0.4" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#8D6E63"/>
-      <stop offset="30%" stop-color="#6D4C41"/>
+    <radialGradient id="kiwiGrad" cx="0.35" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#D7CCC8"/>
+      <stop offset="30%" stop-color="#8D6E63"/>
       <stop offset="70%" stop-color="#5D4037"/>
       <stop offset="100%" stop-color="#3E2723"/>
     </radialGradient>
-    
-    <!-- 猕猴桃果肉渐变 -->
-    <radialGradient id="kiwiFruit" cx="0.5" cy="0.5" r="0.6">
-      <stop offset="0%" stop-color="#C8E6C9"/>
-      <stop offset="30%" stop-color="#A5D6A7"/>
-      <stop offset="60%" stop-color="#81C784"/>
-      <stop offset="100%" stop-color="#66BB6A"/>
-    </radialGradient>
-    
-    <!-- 猕猴桃中心渐变 -->
-    <radialGradient id="kiwiCenter" cx="0.5" cy="0.5" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF"/>
-      <stop offset="50%" stop-color="#F1F8E9"/>
-      <stop offset="100%" stop-color="#DCEDC8"/>
-    </radialGradient>
-    
-    <!-- 高光 -->
-    <radialGradient id="kiwiHighlight" cx="0.3" cy="0.2" r="0.4">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
-      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.2"/>
+    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    
-    <!-- 阴影 -->
-    <radialGradient id="kiwiShadow" cx="0.7" cy="0.8" r="0.5">
-      <stop offset="0%" stop-color="#3E2723" stop-opacity="0"/>
-      <stop offset="50%" stop-color="#2E2E2E" stop-opacity="0.3"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0.5"/>
-    </radialGradient>
-    
-    <!-- 阴影滤镜 -->
-    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feDropShadow dx="3" dy="6" stdDeviation="4" flood-color="#000000" flood-opacity="0.3"/>
-    </filter>
-    
-    <!-- 毛茸茸纹理 -->
-    <pattern id="fuzzyTexture" patternUnits="userSpaceOnUse" width="4" height="4">
-      <circle cx="2" cy="2" r="0.3" fill="#795548" opacity="0.4"/>
-      <circle cx="1" cy="1" r="0.2" fill="#8D6E63" opacity="0.3"/>
-      <circle cx="3" cy="3" r="0.2" fill="#6D4C41" opacity="0.3"/>
-    </pattern>
   </defs>
   
-  <!-- 猕猴桃外皮 -->
-  <ellipse cx="100" cy="100" rx="50" ry="55" fill="url(#kiwiSkin)" filter="url(#dropShadow)"/>
+  <!-- 猕猴桃主体 - 椭圆形，填满画布 -->
+  <ellipse cx="48" cy="48" rx="44" ry="36" fill="url(#kiwiGrad)" stroke="#3E2723" stroke-width="1"/>
   
-  <!-- 毛茸茸纹理 -->
-  <ellipse cx="100" cy="100" rx="50" ry="55" fill="url(#fuzzyTexture)"/>
+  <!-- 高光效果 -->
+  <ellipse cx="36" cy="36" rx="12" ry="10" fill="url(#highlight)"/>
   
-  <!-- 猕猴桃切面（果肉） -->
-  <ellipse cx="100" cy="100" rx="35" ry="40" fill="url(#kiwiFruit)"/>
-  
-  <!-- 猕猴桃中心白色部分 -->
-  <ellipse cx="100" cy="100" rx="8" ry="10" fill="url(#kiwiCenter)"/>
-  
-  <!-- 猕猴桃种子 -->
-  <g fill="#2E2E2E" opacity="0.6">
-    <ellipse cx="100" cy="85" rx="1" ry="2" transform="rotate(0 100 85)"/>
-    <ellipse cx="108" cy="90" rx="1" ry="2" transform="rotate(30 108 90)"/>
-    <ellipse cx="112" cy="100" rx="1" ry="2" transform="rotate(60 112 100)"/>
-    <ellipse cx="108" cy="110" rx="1" ry="2" transform="rotate(90 108 110)"/>
-    <ellipse cx="100" cy="115" rx="1" ry="2" transform="rotate(120 100 115)"/>
-    <ellipse cx="92" cy="110" rx="1" ry="2" transform="rotate(150 92 110)"/>
-    <ellipse cx="88" cy="100" rx="1" ry="2" transform="rotate(180 88 100)"/>
-    <ellipse cx="92" cy="90" rx="1" ry="2" transform="rotate(210 92 90)"/>
+  <!-- 猕猴桃表面绒毛纹理 -->
+  <g stroke="#3E2723" stroke-width="0.5" opacity="0.4" fill="none">
+    <path d="M20 32 L24 36"/>
+    <path d="M28 28 L32 32"/>
+    <path d="M36 24 L40 28"/>
+    <path d="M44 20 L48 24"/>
+    <path d="M52 20 L56 24"/>
+    <path d="M60 24 L64 28"/>
+    <path d="M68 28 L72 32"/>
+    <path d="M76 32 L80 36"/>
+    <path d="M16 48 L20 52"/>
+    <path d="M24 44 L28 48"/>
+    <path d="M32 40 L36 44"/>
+    <path d="M40 36 L44 40"/>
+    <path d="M52 36 L56 40"/>
+    <path d="M60 40 L64 44"/>
+    <path d="M68 44 L72 48"/>
+    <path d="M76 48 L80 52"/>
+    <path d="M20 64 L24 68"/>
+    <path d="M28 60 L32 64"/>
+    <path d="M36 56 L40 60"/>
+    <path d="M44 52 L48 56"/>
+    <path d="M52 52 L56 56"/>
+    <path d="M60 56 L64 60"/>
+    <path d="M68 60 L72 64"/>
+    <path d="M76 64 L80 68"/>
   </g>
   
-  <!-- 果肉纹理线条 -->
-  <g stroke="#4CAF50" stroke-width="0.5" fill="none" opacity="0.3">
-    <path d="M100 75 Q105 85 100 95 Q95 105 100 115"/>
-    <path d="M85 100 Q95 95 105 100 Q115 105 125 100"/>
-    <path d="M90 85 Q100 90 110 85"/>
-    <path d="M90 115 Q100 110 110 115"/>
-  </g>
-  
-  <!-- 阴影 -->
-  <ellipse cx="100" cy="100" rx="50" ry="55" fill="url(#kiwiShadow)"/>
-  
-  <!-- 高光 -->
-  <ellipse cx="85" cy="75" rx="15" ry="20" fill="url(#kiwiHighlight)"/>
+  <!-- 表面光泽 -->
+  <ellipse cx="48" cy="48" rx="44" ry="36" fill="#EFEBE9" opacity="0.1"/>
 </svg>
