@@ -1,46 +1,97 @@
-<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="peachGrad" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#FFCCCB"/>
-      <stop offset="30%" stop-color="#FFB347"/>
-      <stop offset="70%" stop-color="#FF8C69"/>
-      <stop offset="100%" stop-color="#CD5C5C"/>
+    <!-- 桃子主体渐变 -->
+    <radialGradient id="peachGradient" cx="0.3" cy="0.4" r="0.8">
+      <stop offset="0%" stop-color="#FFCDD2"/>
+      <stop offset="30%" stop-color="#F8BBD9"/>
+      <stop offset="60%" stop-color="#E91E63"/>
+      <stop offset="100%" stop-color="#AD1457"/>
     </radialGradient>
-    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+    
+    <!-- 茎渐变 -->
+    <linearGradient id="stemGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#388E3C"/>
+    </linearGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="peachHighlight" cx="0.35" cy="0.3" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- 绒毛纹理渐变 -->
+    <radialGradient id="fuzzGradient" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#F8BBD9" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#E91E63" stop-opacity="0.2"/>
     </radialGradient>
   </defs>
   
   <!-- 桃子主体 - 心形，填满画布 -->
-  <path d="M48 88 C32 76 16 60 16 44 C16 28 28 16 44 20 C46 22 48 24 48 24 C48 24 50 22 52 20 C68 16 80 28 80 44 C80 60 64 76 48 88 Z" 
-        fill="url(#peachGrad)" stroke="#CD5C5C" stroke-width="1"/>
+  <path d="M64 120 
+           C40 100, 8 80, 8 48 
+           C8 24, 24 8, 48 8 
+           C56 8, 62 12, 64 18 
+           C66 12, 72 8, 80 8 
+           C104 8, 120 24, 120 48 
+           C120 80, 88 100, 64 120 Z" 
+        fill="url(#peachGradient)"/>
   
-  <!-- 桃子凹槽 -->
-  <path d="M48 24 Q46 40 48 56 Q50 40 48 24" stroke="#CD5C5C" stroke-width="2" fill="none"/>
+  <!-- 桃子中央凹陷线 -->
+  <path d="M64 18 Q64 40 64 120" 
+        stroke="#AD1457" stroke-width="2" fill="none" opacity="0.4"/>
   
   <!-- 桃子茎 -->
-  <rect x="47" y="8" width="2" height="12" fill="#8D6E63" rx="1"/>
+  <rect x="62" y="2" width="4" height="20" rx="2" fill="url(#stemGradient)"/>
   
-  <!-- 叶子 -->
-  <ellipse cx="54" cy="12" rx="6" ry="3" fill="#4CAF50" transform="rotate(30 54 12)"/>
+  <!-- 桃子叶子 -->
+  <path d="M66 16 
+           Q72 12, 78 14 
+           Q82 16, 80 20 
+           Q78 22, 74 20 
+           Q70 18, 66 20 Z" 
+        fill="url(#stemGradient)"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="36" cy="36" rx="12" ry="16" fill="url(#highlight)"/>
+  <!-- 绒毛纹理层 -->
+  <path d="M64 120 
+           C40 100, 8 80, 8 48 
+           C8 24, 24 8, 48 8 
+           C56 8, 62 12, 64 18 
+           C66 12, 72 8, 80 8 
+           C104 8, 120 24, 120 48 
+           C120 80, 88 100, 64 120 Z" 
+        fill="url(#fuzzGradient)"/>
   
-  <!-- 桃子绒毛效果 -->
-  <g fill="#FFFFFF" opacity="0.3">
-    <circle cx="32" cy="48" r="0.5"/>
-    <circle cx="56" cy="44" r="0.5"/>
-    <circle cx="40" cy="64" r="0.5"/>
-    <circle cx="64" cy="60" r="0.5"/>
-    <circle cx="28" cy="68" r="0.5"/>
-    <circle cx="68" cy="72" r="0.5"/>
-    <circle cx="44" cy="76" r="0.5"/>
-    <circle cx="60" cy="32" r="0.5"/>
+  <!-- 绒毛纹理细节 -->
+  <g stroke="#F8BBD9" stroke-width="0.5" opacity="0.5" fill="none">
+    <path d="M25 40 Q30 38 35 42"/>
+    <path d="M40 35 Q45 33 50 37"/>
+    <path d="M55 32 Q60 30 65 34"/>
+    <path d="M70 35 Q75 33 80 37"/>
+    <path d="M85 40 Q90 38 95 42"/>
+    <path d="M20 60 Q25 58 30 62"/>
+    <path d="M90 60 Q95 58 100 62"/>
+    <path d="M30 80 Q35 78 40 82"/>
+    <path d="M45 85 Q50 83 55 87"/>
+    <path d="M70 85 Q75 83 80 87"/>
+    <path d="M85 80 Q90 78 95 82"/>
+    <path d="M40 100 Q45 98 50 102"/>
+    <path d="M75 100 Q80 98 85 102"/>
   </g>
   
+  <!-- 主高光 -->
+  <ellipse cx="45" cy="45" rx="16" ry="20" fill="url(#peachHighlight)"/>
+  
+  <!-- 次要高光 -->
+  <ellipse cx="80" cy="60" rx="8" ry="10" fill="url(#peachHighlight)" opacity="0.5"/>
+  
   <!-- 表面光泽 -->
-  <path d="M48 88 C32 76 16 60 16 44 C16 28 28 16 44 20 C46 22 48 24 48 24 C48 24 50 22 52 20 C68 16 80 28 80 44 C80 60 64 76 48 88 Z" 
-        fill="#FFF5EE" opacity="0.2"/>
+  <path d="M64 120 
+           C40 100, 8 80, 8 48 
+           C8 24, 24 8, 48 8 
+           C56 8, 62 12, 64 18 
+           C66 12, 72 8, 80 8 
+           C104 8, 120 24, 120 48 
+           C120 80, 88 100, 64 120 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.2"/>
 </svg>

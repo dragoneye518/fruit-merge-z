@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>水果图片最终验证 - 15种水果PNG</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.2em;
+        }
+        
+        .requirements {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #007bff;
+        }
+        
+        .requirements h3 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .requirements ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .requirements li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+        
+        .size-info {
+            background: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #4caf50;
+        }
+        
+        .size-info h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+        }
+        
+        .size-table {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .size-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .fruits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+        
+        .fruit-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 2px solid #f0f0f0;
+        }
+        
+        .fruit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.15);
+        }
+        
+        .fruit-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .fruit-image {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            margin-right: 15px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        
+        .fruit-info h3 {
+            margin: 0 0 5px 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+        
+        .fruit-size {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0;
+        }
+        
+        .fruit-description {
+            color: #555;
+            font-size: 0.95em;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+        
+        .checklist {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .checklist li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+            accent-color: #4caf50;
+        }
+        
+        .checklist li.checked {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .summary {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #007bff;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+            font-weight: bold;
+            z-index: 1000;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍎 水果图片最终验证</h1>
+        <p class="subtitle">验证15种重新设计的水果PNG图片是否满足所有要求</p>
+        
+        <div class="requirements">
+            <h3>📋 验证要求</h3>
+            <ol>
+                <li><strong>风格一致性：</strong>3D风格，无投影，统一视觉风格</li>
+                <li><strong>尺寸规范：</strong>根据水果特征选择合适尺寸（64x64、96x96、128x128、192x192、256x256）</li>
+                <li><strong>填充度：</strong>水果图形尽可能填满图片空间，无多余透明区域</li>
+                <li><strong>识别度：</strong>水果特征明显，易于识别</li>
+            </ol>
+        </div>
+        
+        <div class="size-info">
+            <h4>🎯 尺寸分配标准</h4>
+            <div class="size-table">
+                <div class="size-row"><span><strong>64x64px:</strong></span><span>蓝莓、葡萄、樱桃、草莓</span></div>
+                <div class="size-row"><span><strong>96x96px:</strong></span><span>猕猴桃、柠檬、番茄</span></div>
+                <div class="size-row"><span><strong>128x128px:</strong></span><span>苹果、橙子、桃子、梨、芒果</span></div>
+                <div class="size-row"><span><strong>192x192px:</strong></span><span>菠萝、椰子</span></div>
+                <div class="size-row"><span><strong>256x256px:</strong></span><span>西瓜</span></div>
+            </div>
+        </div>
+        
+        <div id="loading" class="loading">
+            <p>🔄 正在加载水果图片...</p>
+        </div>
+        
+        <div id="fruits-container" class="fruits-grid" style="display: none;">
+            <!-- 水果卡片将通过JavaScript动态生成 -->
+        </div>
+        
+        <div id="summary" class="summary">
+            <span id="progress">0/60</span> 项已验证
+        </div>
+    </div>
+
+    <script>
+        const fruits = [
+            {
+                name: 'apple',
+                chinese: '苹果',
+                size: '128x128px',
+                description: '红色圆形，顶部有凹陷和绿色茎叶，表面光滑有光泽，3D立体效果明显'
+            },
+            {
+                name: 'blueberry',
+                chinese: '蓝莓',
+                size: '64x64px',
+                description: '深蓝色小圆形，顶部有星形花冠，表面有自然光泽，小巧精致'
+            },
+            {
+                name: 'cherry',
+                chinese: '樱桃',
+                size: '64x64px',
+                description: '红色心形，带绿色茎，表面光滑有光泽，双樱桃造型经典'
+            },
+            {
+                name: 'coconut',
+                chinese: '椰子',
+                size: '192x192px',
+                description: '棕色椭圆形，表面有纤维纹理，三个黑色眼孔，质感粗糙自然'
+            },
+            {
+                name: 'grape',
+                chinese: '葡萄',
+                size: '64x64px',
+                description: '紫色椭圆形，表面光滑有光泽，单颗葡萄设计，颜色饱满'
+            },
+            {
+                name: 'kiwi',
+                chinese: '猕猴桃',
+                size: '96x96px',
+                description: '棕色椭圆形，表面有毛茸纹理，自然粗糙质感，形状饱满'
+            },
+            {
+                name: 'lemon',
+                chinese: '柠檬',
+                size: '96x96px',
+                description: '黄色椭圆形，表面有凹凸纹理，两端略尖，颜色鲜亮'
+            },
+            {
+                name: 'mango',
+                chinese: '芒果',
+                size: '128x128px',
+                description: '黄橙色椭圆形，带红晕，有绿色茎叶，表面光滑，热带水果特征明显'
+            },
+            {
+                name: 'orange',
+                chinese: '橙子',
+                size: '128x128px',
+                description: '橙色圆形，表面有凹点纹理，颜色鲜艳，柑橘类特征明显'
+            },
+            {
+                name: 'peach',
+                chinese: '桃子',
+                size: '128x128px',
+                description: '粉红色心形，中央有凹陷线，带茎和叶子，表面有绒毛质感'
+            },
+            {
+                name: 'pear',
+                chinese: '梨',
+                size: '128x128px',
+                description: '黄绿色梨形，带茎和叶子，表面有斑点，经典梨子轮廓'
+            },
+            {
+                name: 'pineapple',
+                chinese: '菠萝',
+                size: '192x192px',
+                description: '黄色椭圆形，表面有菱形纹理，顶部有绿色叶冠，热带水果特征'
+            },
+            {
+                name: 'strawberry',
+                chinese: '草莓',
+                size: '64x64px',
+                description: '红色心形，顶部有绿色叶冠，表面有籽点，经典草莓造型'
+            },
+            {
+                name: 'tomato',
+                chinese: '番茄',
+                size: '96x96px',
+                description: '红色圆形，顶部有凹陷和绿色茎叶，有分瓣线条，蔬果特征明显'
+            },
+            {
+                name: 'watermelon',
+                chinese: '西瓜',
+                size: '256x256px',
+                description: '绿色圆形，有深绿色条纹，显示红色果肉和黑色籽，夏季水果特征'
+            }
+        ];
+
+        const checklistItems = [
+            '风格一致性（3D、无投影、统一风格）',
+            '水果特征正确性（颜色、形状、纹理）',
+            '填充度（尽可能填满空间）',
+            '识别度（特征明显、易识别）'
+        ];
+
+        let totalChecked = 0;
+        const totalItems = fruits.length * checklistItems.length;
+
+        function updateProgress() {
+            document.getElementById('progress').textContent = `${totalChecked}/${totalItems}`;
+        }
+
+        function createFruitCard(fruit) {
+            const card = document.createElement('div');
+            card.className = 'fruit-card';
+            
+            const imagePath = `assets/images/fruits/${fruit.name}.png`;
+            
+            card.innerHTML = `
+                <div class="fruit-header">
+                    <img src="${imagePath}" alt="${fruit.chinese}" class="fruit-image" 
+                         onerror="this.parentElement.parentElement.querySelector('.error').style.display='block'">
+                    <div class="fruit-info">
+                        <h3>${fruit.chinese} (${fruit.name})</h3>
+                        <p class="fruit-size">尺寸: ${fruit.size}</p>
+                    </div>
+                </div>
+                <div class="error" style="display: none;">
+                    ❌ 图片加载失败: ${imagePath}
+                </div>
+                <div class="fruit-description">
+                    ${fruit.description}
+                </div>
+                <ul class="checklist">
+                    ${checklistItems.map((item, index) => `
+                        <li>
+                            <input type="checkbox" class="checkbox" 
+                                   onchange="handleCheckboxChange(this)" 
+                                   data-fruit="${fruit.name}" 
+                                   data-item="${index}">
+                            <span>${item}</span>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+            
+            return card;
+        }
+
+        function handleCheckboxChange(checkbox) {
+            const li = checkbox.parentElement;
+            if (checkbox.checked) {
+                li.classList.add('checked');
+                totalChecked++;
+            } else {
+                li.classList.remove('checked');
+                totalChecked--;
+            }
+            updateProgress();
+        }
+
+        function loadFruits() {
+            const container = document.getElementById('fruits-container');
+            const loading = document.getElementById('loading');
+            
+            // 创建所有水果卡片
+            fruits.forEach(fruit => {
+                const card = createFruitCard(fruit);
+                container.appendChild(card);
+            });
+            
+            // 隐藏加载提示，显示水果网格
+            loading.style.display = 'none';
+            container.style.display = 'grid';
+            
+            updateProgress();
+        }
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadFruits, 500); // 添加小延迟以显示加载效果
+        });
+    </script>
+</body>
+</html>

@@ -1,51 +1,59 @@
 <svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="kiwiGrad" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#D7CCC8"/>
-      <stop offset="30%" stop-color="#8D6E63"/>
-      <stop offset="70%" stop-color="#5D4037"/>
+    <!-- 猕猴桃主体渐变 -->
+    <radialGradient id="kiwiGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#8D6E63"/>
+      <stop offset="30%" stop-color="#6D4C41"/>
+      <stop offset="60%" stop-color="#5D4037"/>
       <stop offset="100%" stop-color="#3E2723"/>
     </radialGradient>
-    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
+    
+    <!-- 毛茸纹理渐变 -->
+    <radialGradient id="fuzzGradient" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#A1887F" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#795548" stop-opacity="0.4"/>
+    </radialGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="kiwiHighlight" cx="0.35" cy="0.25" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
   
   <!-- 猕猴桃主体 - 椭圆形，填满画布 -->
-  <ellipse cx="48" cy="48" rx="44" ry="36" fill="url(#kiwiGrad)" stroke="#3E2723" stroke-width="1"/>
+  <ellipse cx="48" cy="48" rx="46" ry="46" fill="url(#kiwiGradient)"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="36" cy="36" rx="12" ry="10" fill="url(#highlight)"/>
+  <!-- 毛茸纹理层 -->
+  <ellipse cx="48" cy="48" rx="46" ry="46" fill="url(#fuzzGradient)"/>
   
-  <!-- 猕猴桃表面绒毛纹理 -->
-  <g stroke="#3E2723" stroke-width="0.5" opacity="0.4" fill="none">
-    <path d="M20 32 L24 36"/>
-    <path d="M28 28 L32 32"/>
-    <path d="M36 24 L40 28"/>
-    <path d="M44 20 L48 24"/>
-    <path d="M52 20 L56 24"/>
-    <path d="M60 24 L64 28"/>
-    <path d="M68 28 L72 32"/>
-    <path d="M76 32 L80 36"/>
-    <path d="M16 48 L20 52"/>
-    <path d="M24 44 L28 48"/>
-    <path d="M32 40 L36 44"/>
-    <path d="M40 36 L44 40"/>
-    <path d="M52 36 L56 40"/>
-    <path d="M60 40 L64 44"/>
-    <path d="M68 44 L72 48"/>
-    <path d="M76 48 L80 52"/>
-    <path d="M20 64 L24 68"/>
-    <path d="M28 60 L32 64"/>
-    <path d="M36 56 L40 60"/>
-    <path d="M44 52 L48 56"/>
-    <path d="M52 52 L56 56"/>
-    <path d="M60 56 L64 60"/>
-    <path d="M68 60 L72 64"/>
-    <path d="M76 64 L80 68"/>
+  <!-- 毛茸纹理细节 -->
+  <g stroke="#A1887F" stroke-width="0.5" opacity="0.6" fill="none">
+    <path d="M20 30 Q25 28 30 32"/>
+    <path d="M35 25 Q40 23 45 27"/>
+    <path d="M50 22 Q55 20 60 24"/>
+    <path d="M65 28 Q70 26 75 30"/>
+    <path d="M18 45 Q23 43 28 47"/>
+    <path d="M70 45 Q75 43 80 47"/>
+    <path d="M25 60 Q30 58 35 62"/>
+    <path d="M40 65 Q45 63 50 67"/>
+    <path d="M55 68 Q60 66 65 70"/>
+    <path d="M70 62 Q75 60 80 64"/>
+    <path d="M15 35 Q20 33 25 37"/>
+    <path d="M72 35 Q77 33 82 37"/>
+    <path d="M12 50 Q17 48 22 52"/>
+    <path d="M74 50 Q79 48 84 52"/>
+    <path d="M20 75 Q25 73 30 77"/>
+    <path d="M45 78 Q50 76 55 80"/>
+    <path d="M65 75 Q70 73 75 77"/>
   </g>
   
+  <!-- 主高光 -->
+  <ellipse cx="35" cy="32" rx="12" ry="10" fill="url(#kiwiHighlight)"/>
+  
+  <!-- 次要高光 -->
+  <ellipse cx="58" cy="40" rx="6" ry="5" fill="url(#kiwiHighlight)" opacity="0.4"/>
+  
   <!-- 表面光泽 -->
-  <ellipse cx="48" cy="48" rx="44" ry="36" fill="#EFEBE9" opacity="0.1"/>
+  <ellipse cx="48" cy="48" rx="46" ry="46" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.1"/>
 </svg>

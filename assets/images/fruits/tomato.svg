@@ -1,42 +1,60 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+<svg width="96" height="96" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="tomatoGrad" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#FF6B6B"/>
-      <stop offset="40%" stop-color="#E53E3E"/>
-      <stop offset="80%" stop-color="#C53030"/>
-      <stop offset="100%" stop-color="#9B2C2C"/>
+    <!-- 番茄主体渐变 -->
+    <radialGradient id="tomatoGradient" cx="0.3" cy="0.4" r="0.8">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="30%" stop-color="#F44336"/>
+      <stop offset="60%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
     </radialGradient>
-    <linearGradient id="leafGrad" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#68D391"/>
-      <stop offset="100%" stop-color="#38A169"/>
+    
+    <!-- 茎叶渐变 -->
+    <linearGradient id="stemGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#66BB6A"/>
+      <stop offset="100%" stop-color="#388E3C"/>
     </linearGradient>
-    <radialGradient id="highlight" cx="0.3" cy="0.25" r="0.4">
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="tomatoHighlight" cx="0.35" cy="0.3" r="0.4">
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
   
-  <!-- 番茄主体 -->
-  <circle cx="64" cy="68" r="52" fill="url(#tomatoGrad)" stroke="#9B2C2C" stroke-width="1"/>
+  <!-- 番茄主体 - 圆形，填满画布 -->
+  <circle cx="48" cy="52" r="42" fill="url(#tomatoGradient)"/>
   
-  <!-- 番茄顶部花萼 -->
-  <g fill="url(#leafGrad)" stroke="#38A169" stroke-width="0.5">
-    <path d="M64 16 L58 28 L52 20 L46 32 L40 24 L34 36 L42 44 L50 36 L58 44 L66 36 L74 44 L82 36 L90 44 L94 36 L88 24 L82 32 L76 20 L70 28 Z"/>
+  <!-- 番茄顶部凹陷 -->
+  <ellipse cx="48" cy="18" rx="20" ry="8" fill="url(#tomatoGradient)" opacity="0.8"/>
+  
+  <!-- 绿色茎叶 -->
+  <g fill="url(#stemGradient)">
+    <!-- 中心茎 -->
+    <rect x="46" y="2" width="4" height="20" rx="2"/>
+    
+    <!-- 叶片 -->
+    <path d="M48 18 L38 12 Q35 10 32 12 Q30 14 32 16 L42 20 Z"/>
+    <path d="M48 18 L58 12 Q61 10 64 12 Q66 14 64 16 L54 20 Z"/>
+    <path d="M48 18 L42 8 Q40 6 37 8 Q35 10 37 12 L45 16 Z"/>
+    <path d="M48 18 L54 8 Q56 6 59 8 Q61 10 59 12 L51 16 Z"/>
+    <path d="M48 18 L48 6 Q46 4 43 6 Q41 8 43 10 L48 14 Z"/>
   </g>
   
-  <!-- 番茄茎 -->
-  <rect x="60" y="8" width="8" height="12" fill="#8B4513" rx="4"/>
-  
-  <!-- 高光效果 -->
-  <ellipse cx="48" cy="52" rx="16" ry="20" fill="url(#highlight)"/>
-  
-  <!-- 番茄表面光泽 -->
-  <ellipse cx="44" cy="76" rx="6" ry="8" fill="#FFFFFF" opacity="0.3"/>
-  
-  <!-- 番茄表面纹理 -->
-  <g stroke="#9B2C2C" stroke-width="0.5" opacity="0.3" fill="none">
-    <path d="M64 20 C60 40 60 60 64 80 C64 90 64 100 64 110"/>
-    <path d="M44 32 C48 52 52 72 56 92"/>
-    <path d="M84 32 C80 52 76 72 72 92"/>
+  <!-- 番茄分瓣线条 -->
+  <g stroke="#D32F2F" stroke-width="1" fill="none" opacity="0.3">
+    <path d="M48 10 Q48 30 48 94"/>
+    <path d="M20 35 Q35 48 68 60"/>
+    <path d="M76 35 Q61 48 28 60"/>
+    <path d="M30 20 Q48 35 66 20"/>
+    <path d="M66 76 Q48 61 30 76"/>
   </g>
+  
+  <!-- 主高光 -->
+  <ellipse cx="35" cy="38" rx="12" ry="10" fill="url(#tomatoHighlight)"/>
+  
+  <!-- 次要高光 -->
+  <ellipse cx="58" cy="45" rx="6" ry="5" fill="url(#tomatoHighlight)" opacity="0.5"/>
+  
+  <!-- 表面光泽 -->
+  <circle cx="48" cy="52" r="42" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.2"/>
 </svg>

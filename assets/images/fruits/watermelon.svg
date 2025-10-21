@@ -1,31 +1,102 @@
 <svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="watermelonGrad" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#A5D6A7"/>
-      <stop offset="30%" stop-color="#4CAF50"/>
-      <stop offset="70%" stop-color="#2E7D32"/>
-      <stop offset="100%" stop-color="#1B5E20"/>
+    <!-- 西瓜外皮渐变 -->
+    <radialGradient id="watermelonGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#81C784"/>
+      <stop offset="30%" stop-color="#66BB6A"/>
+      <stop offset="60%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
     </radialGradient>
-    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.5"/>
+    
+    <!-- 深绿色条纹渐变 -->
+    <linearGradient id="stripeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1B5E20"/>
+      <stop offset="50%" stop-color="#2E7D32"/>
+      <stop offset="100%" stop-color="#1B5E20"/>
+    </linearGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="watermelonHighlight" cx="0.35" cy="0.25" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
+    
+    <!-- 果肉渐变 -->
+    <radialGradient id="fleshGradient" cx="0.4" cy="0.4" r="0.6">
+      <stop offset="0%" stop-color="#FF8A80"/>
+      <stop offset="30%" stop-color="#F44336"/>
+      <stop offset="70%" stop-color="#D32F2F"/>
+      <stop offset="100%" stop-color="#B71C1C"/>
+    </radialGradient>
+    
+    <!-- 白色果肉边缘渐变 -->
+    <linearGradient id="whiteFleshGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#F5F5F5"/>
+    </linearGradient>
   </defs>
   
   <!-- 西瓜主体 - 圆形，填满画布 -->
-  <circle cx="128" cy="128" r="124" fill="url(#watermelonGrad)" stroke="#1B5E20" stroke-width="2"/>
+  <circle cx="128" cy="128" r="120" fill="url(#watermelonGradient)"/>
   
   <!-- 西瓜条纹 -->
-  <g stroke="#1B5E20" stroke-width="8" fill="none" opacity="0.6">
-    <path d="M128 4 Q180 56 228 128 Q180 200 128 252 Q76 200 28 128 Q76 56 128 4"/>
-    <path d="M128 20 Q168 64 204 128 Q168 192 128 236 Q88 192 52 128 Q88 64 128 20"/>
-    <path d="M128 36 Q156 72 180 128 Q156 184 128 220 Q100 184 76 128 Q100 72 128 36"/>
-    <path d="M128 52 Q144 80 156 128 Q144 176 128 204 Q112 176 100 128 Q112 80 128 52"/>
+  <g fill="url(#stripeGradient)" opacity="0.8">
+    <!-- 垂直条纹 -->
+    <ellipse cx="60" cy="128" rx="8" ry="110" transform="rotate(-15 60 128)"/>
+    <ellipse cx="90" cy="128" rx="6" ry="115" transform="rotate(-10 90 128)"/>
+    <ellipse cx="120" cy="128" rx="8" ry="118" transform="rotate(-5 120 128)"/>
+    <ellipse cx="150" cy="128" rx="7" ry="116" transform="rotate(0 150 128)"/>
+    <ellipse cx="180" cy="128" rx="6" ry="112" transform="rotate(5 180 128)"/>
+    <ellipse cx="210" cy="128" rx="8" ry="108" transform="rotate(10 210 128)"/>
+    
+    <!-- 弯曲条纹 -->
+    <path d="M40 80 Q80 70 120 80 Q160 90 200 80" stroke="url(#stripeGradient)" stroke-width="12" fill="none"/>
+    <path d="M35 110 Q75 100 115 110 Q155 120 195 110" stroke="url(#stripeGradient)" stroke-width="10" fill="none"/>
+    <path d="M40 140 Q80 130 120 140 Q160 150 200 140" stroke="url(#stripeGradient)" stroke-width="12" fill="none"/>
+    <path d="M35 170 Q75 160 115 170 Q155 180 195 170" stroke="url(#stripeGradient)" stroke-width="10" fill="none"/>
   </g>
   
-  <!-- 高光效果 -->
-  <ellipse cx="96" cy="96" rx="32" ry="40" fill="url(#highlight)"/>
+  <!-- 西瓜切面（显示果肉） -->
+  <g>
+    <!-- 白色果肉边缘 -->
+    <path d="M50 128 A78 78 0 0 1 206 128 L190 128 A62 62 0 0 0 66 128 Z" fill="url(#whiteFleshGradient)"/>
+    
+    <!-- 红色果肉 -->
+    <path d="M66 128 A62 62 0 0 1 190 128 L175 128 A47 47 0 0 0 81 128 Z" fill="url(#fleshGradient)"/>
+    
+    <!-- 西瓜籽 -->
+    <g fill="#1A1A1A">
+      <ellipse cx="100" cy="115" rx="3" ry="6" transform="rotate(20 100 115)"/>
+      <ellipse cx="130" cy="110" rx="3" ry="6" transform="rotate(-15 130 110)"/>
+      <ellipse cx="160" cy="118" rx="3" ry="6" transform="rotate(30 160 118)"/>
+      <ellipse cx="115" cy="135" rx="3" ry="6" transform="rotate(-10 115 135)"/>
+      <ellipse cx="145" cy="140" rx="3" ry="6" transform="rotate(25 145 140)"/>
+      <ellipse cx="175" cy="135" rx="3" ry="6" transform="rotate(-20 175 135)"/>
+      <ellipse cx="85" cy="140" rx="3" ry="6" transform="rotate(15 85 140)"/>
+      <ellipse cx="105" cy="155" rx="3" ry="6" transform="rotate(-25 105 155)"/>
+      <ellipse cx="135" cy="160" rx="3" ry="6" transform="rotate(10 135 160)"/>
+      <ellipse cx="165" cy="155" rx="3" ry="6" transform="rotate(-30 165 155)"/>
+    </g>
+    
+    <!-- 果肉高光 -->
+    <ellipse cx="110" cy="120" rx="15" ry="8" fill="#FFFFFF" opacity="0.4"/>
+    <ellipse cx="150" cy="125" rx="12" ry="6" fill="#FFFFFF" opacity="0.3"/>
+  </g>
+  
+  <!-- 主高光 -->
+  <ellipse cx="90" cy="80" rx="30" ry="40" fill="url(#watermelonHighlight)"/>
+  
+  <!-- 次要高光 -->
+  <ellipse cx="160" cy="100" rx="20" ry="25" fill="url(#watermelonHighlight)" opacity="0.4"/>
   
   <!-- 表面光泽 -->
-  <circle cx="128" cy="128" r="124" fill="#E8F5E8" opacity="0.1"/>
+  <circle cx="128" cy="128" r="120" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.2"/>
+  
+  <!-- 额外条纹细节 -->
+  <g stroke="#1B5E20" stroke-width="2" fill="none" opacity="0.6">
+    <path d="M25 90 Q65 85 105 90 Q145 95 185 90 Q225 85 245 90"/>
+    <path d="M20 120 Q60 115 100 120 Q140 125 180 120 Q220 115 240 120"/>
+    <path d="M25 150 Q65 145 105 150 Q145 155 185 150 Q225 145 245 150"/>
+    <path d="M30 180 Q70 175 110 180 Q150 185 190 180 Q230 175 250 180"/>
+  </g>
 </svg>

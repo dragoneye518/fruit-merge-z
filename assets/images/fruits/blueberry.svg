@@ -1,28 +1,36 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="blueberryGrad" cx="0.35" cy="0.3" r="0.8">
-      <stop offset="0%" stop-color="#6B8DD6"/>
-      <stop offset="30%" stop-color="#4169E1"/>
-      <stop offset="70%" stop-color="#191970"/>
-      <stop offset="100%" stop-color="#0F0F23"/>
+    <!-- 蓝莓主体渐变 -->
+    <radialGradient id="blueberryGradient" cx="0.3" cy="0.3" r="0.8">
+      <stop offset="0%" stop-color="#6B9AFF"/>
+      <stop offset="40%" stop-color="#4A7FE7"/>
+      <stop offset="80%" stop-color="#2E5BBA"/>
+      <stop offset="100%" stop-color="#1A3F8A"/>
     </radialGradient>
-    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+    
+    <!-- 花冠渐变 -->
+    <linearGradient id="crownGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="highlightGradient" cx="0.4" cy="0.3" r="0.3">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
   
   <!-- 蓝莓主体 - 填满画布 -->
-  <circle cx="32" cy="34" r="28" fill="url(#blueberryGrad)" stroke="#0F0F23" stroke-width="1"/>
+  <circle cx="32" cy="34" r="28" fill="url(#blueberryGradient)"/>
   
-  <!-- 顶部花冠 -->
-  <g fill="#2F4F2F" stroke="#1C3A1C" stroke-width="0.5">
-    <path d="M32 6 L28 18 L24 12 L20 20 L16 16 L20 24 L24 20 L28 26 L32 22 L36 26 L40 20 L44 24 L48 16 L44 20 L40 12 L36 18 Z"/>
-  </g>
+  <!-- 顶部星形花冠 -->
+  <path d="M32 8 L34 14 L40 12 L36 18 L42 20 L35 22 L37 28 L32 24 L27 28 L29 22 L22 20 L28 18 L24 12 L30 14 Z" 
+        fill="url(#crownGradient)"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="24" cy="26" rx="8" ry="10" fill="url(#highlight)"/>
+  <!-- 主高光 -->
+  <ellipse cx="26" cy="24" rx="8" ry="6" fill="url(#highlightGradient)"/>
   
-  <!-- 表面白霜效果 -->
-  <circle cx="32" cy="34" r="28" fill="#E6E6FA" opacity="0.15"/>
+  <!-- 次要高光 -->
+  <ellipse cx="38" cy="30" rx="4" ry="3" fill="url(#highlightGradient)" opacity="0.6"/>
 </svg>

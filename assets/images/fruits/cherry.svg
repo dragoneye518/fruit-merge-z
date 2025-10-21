@@ -1,28 +1,49 @@
 <svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="cherryGrad" cx="0.35" cy="0.3" r="0.8">
+    <!-- 樱桃主体渐变 -->
+    <radialGradient id="cherryGradient" cx="0.3" cy="0.3" r="0.8">
       <stop offset="0%" stop-color="#FF6B9D"/>
-      <stop offset="30%" stop-color="#DC2626"/>
-      <stop offset="70%" stop-color="#991B1B"/>
-      <stop offset="100%" stop-color="#450A0A"/>
+      <stop offset="30%" stop-color="#E91E63"/>
+      <stop offset="60%" stop-color="#C2185B"/>
+      <stop offset="100%" stop-color="#880E4F"/>
     </radialGradient>
-    <radialGradient id="highlight" cx="0.25" cy="0.25" r="0.3">
-      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+    
+    <!-- 茎渐变 -->
+    <linearGradient id="stemGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4CAF50"/>
+      <stop offset="100%" stop-color="#2E7D32"/>
+    </linearGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="cherryHighlight" cx="0.35" cy="0.25" r="0.4">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.8"/>
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
   </defs>
   
-  <!-- 樱桃主体 - 心形，填满画布 -->
-  <path d="M32 60 C20 48 8 36 8 24 C8 12 18 4 28 8 C30 10 32 12 32 12 C32 12 34 10 36 8 C46 4 56 12 56 24 C56 36 44 48 32 60 Z" 
-        fill="url(#cherryGrad)" stroke="#450A0A" stroke-width="1"/>
-  
   <!-- 樱桃茎 -->
-  <path d="M32 12 Q30 8 28 4" stroke="#22C55E" stroke-width="2" fill="none"/>
+  <path d="M32 4 Q30 8 28 12 Q26 16 24 20" 
+        stroke="url(#stemGradient)" stroke-width="3" fill="none" stroke-linecap="round"/>
   
-  <!-- 高光效果 -->
-  <ellipse cx="24" cy="20" rx="6" ry="8" fill="url(#highlight)"/>
+  <!-- 樱桃主体 - 心形，填满画布 -->
+  <path d="M32 20 
+           C20 8, 4 16, 4 32 
+           C4 48, 32 60, 32 60 
+           C32 60, 60 48, 60 32 
+           C60 16, 44 8, 32 20 Z" 
+        fill="url(#cherryGradient)"/>
+  
+  <!-- 主高光 -->
+  <ellipse cx="22" cy="28" rx="8" ry="6" fill="url(#cherryHighlight)"/>
+  
+  <!-- 次要高光 -->
+  <ellipse cx="38" cy="32" rx="4" ry="3" fill="url(#cherryHighlight)" opacity="0.6"/>
   
   <!-- 表面光泽 -->
-  <path d="M32 60 C20 48 8 36 8 24 C8 12 18 4 28 8 C30 10 32 12 32 12 C32 12 34 10 36 8 C46 4 56 12 56 24 C56 36 44 48 32 60 Z" 
-        fill="#FFB3BA" opacity="0.15"/>
+  <path d="M32 20 
+           C20 8, 4 16, 4 32 
+           C4 48, 32 60, 32 60 
+           C32 60, 60 48, 60 32 
+           C60 16, 44 8, 32 20 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.2"/>
 </svg>
