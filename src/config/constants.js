@@ -10,8 +10,8 @@ export const GAME_CONFIG = {
   },
   // 尺寸全局缩放（用于统一调整水果半径）
   SIZE: {
-    // 统一加大水果半径（约 1.6x，视觉与物理同时放大）
-    radiusScale: 1.6
+    // 统一缩小水果半径为原来的一半（0.5x）
+    radiusScale: 0.5
   },
   
   // 游戏区域配置
@@ -186,7 +186,7 @@ export const FRUIT_CONFIG = {
   CHERRY: {
     id: 1,
     name: '樱桃',
-    radius: 13,  // 缩小为原来的2/3
+    radius: 32,
     color: '#E53E3E', // 深红色
     gradient: ['#E53E3E', '#C53030'],
     texture: 'assets/images/fruits/cherry.png',
@@ -197,7 +197,7 @@ export const FRUIT_CONFIG = {
   STRAWBERRY: {
     id: 2,
     name: '草莓',
-    radius: 17,  // 缩小为原来的2/3
+    radius: 32,
     color: '#F56565', // 亮红色
     gradient: ['#F56565', '#E53E3E'],
     texture: 'assets/images/fruits/strawberry.png',
@@ -208,7 +208,7 @@ export const FRUIT_CONFIG = {
   GRAPE: {
     id: 3,
     name: '葡萄',
-    radius: 20,  // 缩小为原来的2/3
+    radius: 32,
     color: '#9F7AEA', // 紫色
     gradient: ['#9F7AEA', '#805AD5'],
     texture: 'assets/images/fruits/grape.png',
@@ -219,7 +219,7 @@ export const FRUIT_CONFIG = {
   LEMON: {
     id: 4,
     name: '柠檬',
-    radius: 23,  // 缩小为原来的2/3
+    radius: 48,
     color: '#F6E05E', // 柠檬黄
     gradient: ['#F6E05E', '#ECC94B'],
     texture: 'assets/images/fruits/lemon.png',
@@ -230,7 +230,7 @@ export const FRUIT_CONFIG = {
   ORANGE: {
     id: 5,
     name: '橙子',
-    radius: 27,  // 缩小为原来的2/3
+    radius: 64,
     color: '#FF8C00', // 橙色
     gradient: ['#FF8C00', '#FF7F00'],
     texture: 'assets/images/fruits/orange.png',
@@ -241,7 +241,7 @@ export const FRUIT_CONFIG = {
   APPLE: {
     id: 6,
     name: '苹果',
-    radius: 31,  // 缩小为原来的2/3
+    radius: 64,
     color: '#FF6B6B', // 苹果红
     gradient: ['#FF6B6B', '#EE5A52'],
     texture: 'assets/images/fruits/apple.png',
@@ -252,7 +252,7 @@ export const FRUIT_CONFIG = {
   KIWI: {
     id: 7,
     name: '猕猴桃',
-    radius: 36,  // 缩小为原来的2/3
+    radius: 48,
     color: '#68D391', // 猕猴桃绿
     gradient: ['#68D391', '#48BB78'],
     texture: 'assets/images/fruits/kiwi.png',
@@ -263,7 +263,7 @@ export const FRUIT_CONFIG = {
   TOMATO: {
     id: 8,
     name: '番茄',
-    radius: 40,  // 缩小为原来的2/3
+    radius: 48,
     color: '#FC8181', // 番茄红
     gradient: ['#FC8181', '#F56565'],
     texture: 'assets/images/fruits/tomato.png',
@@ -274,7 +274,7 @@ export const FRUIT_CONFIG = {
   COCONUT: {
     id: 9,
     name: '椰子',
-    radius: 44,  // 缩小为原来的2/3
+    radius: 96,
     color: '#A0522D', // 椰子棕
     gradient: ['#A0522D', '#8B4513'],
     texture: 'assets/images/fruits/coconut.png',
@@ -285,20 +285,18 @@ export const FRUIT_CONFIG = {
   WATERMELON: {
     id: 10,
     name: '西瓜',
-    radius: 50,  // 缩小为原来的2/3
+    radius: 128,
     color: '#38A169', // 西瓜绿
     gradient: ['#38A169', '#2F855A'],
     texture: 'assets/images/fruits/watermelon.png',
     score: 45,
     mass: 6.5,
     nextLevel: null
-  }
-  ,
-  // 新增：5种常见水果（参考Fruit Ninja并按现有尺寸比例）
+  },
   BLUEBERRY: {
     id: 11,
     name: '蓝莓',
-    radius: 11,                 // 缩小为原来的2/3
+    radius: 32,
     color: '#4A90E2',
     gradient: ['#4A90E2', '#357ABD'],
     texture: 'assets/images/fruits/blueberry.png',
@@ -309,7 +307,7 @@ export const FRUIT_CONFIG = {
   PEACH: {
     id: 12,
     name: '桃子',
-    radius: 25,                 // 缩小为原来的2/3
+    radius: 64,
     color: '#FFA07A',
     gradient: ['#FFA07A', '#FF7F50'],
     texture: 'assets/images/fruits/peach.png',
@@ -320,7 +318,7 @@ export const FRUIT_CONFIG = {
   PEAR: {
     id: 13,
     name: '梨子',
-    radius: 28,                 // 缩小为原来的2/3
+    radius: 64,
     color: '#A3D170',
     gradient: ['#A3D170', '#7FBF3F'],
     texture: 'assets/images/fruits/pear.png',
@@ -331,7 +329,7 @@ export const FRUIT_CONFIG = {
   MANGO: {
     id: 14,
     name: '芒果',
-    radius: 29,                 // 缩小为原来的2/3
+    radius: 64,
     color: '#FFC04D',
     gradient: ['#FFC04D', '#FFA72B'],
     texture: 'assets/images/fruits/mango.png',
@@ -342,7 +340,7 @@ export const FRUIT_CONFIG = {
   PINEAPPLE: {
     id: 15,
     name: '菠萝',
-    radius: 45,                 // 缩小为原来的2/3
+    radius: 96,
     color: '#FFCC00',
     gradient: ['#FFCC00', '#E0B000'],
     texture: 'assets/images/fruits/pineapple.png',
