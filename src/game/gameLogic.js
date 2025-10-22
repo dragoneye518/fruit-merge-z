@@ -60,6 +60,9 @@ export class GameLogic {
     this.maxCombo = 0;
     this.multiMergeCount = 0;
     this.comboTimer = 0;
+    // 历史最高连击与一次性道具状态
+    this.highCombo = this.loadHighCombo ? this.loadHighCombo() : 0;
+    this.powerUsed = false;
     
     // 新增积分系统变量
     this.rapidDropCount = 0;
@@ -181,6 +184,15 @@ export class GameLogic {
     this.gameUI.setScore(this.score);
     this.gameUI.setHighScore(this.highScore);
     this.gameUI.setNextFruitType(this.nextFruitType);
+    if (typeof this.gameUI.setCombo === 'function') {
+      this.gameUI.setCombo(this.combo || 0);
+    }
+    if (typeof this.gameUI.setHighCombo === 'function') {
+      this.gameUI.setHighCombo(this.highCombo || 0);
+    }
+    if (typeof this.gameUI.setRunMaxCombo === 'function') {
+      this.gameUI.setRunMaxCombo(this.maxCombo || 0);
+    }
   }
 
   // 抖音/全局触摸事件桥接（供 game.js 调用）
@@ -289,6 +301,15 @@ export class GameLogic {
     const currentFruitCount = this.physicsEngine.bodies?.length || 0;
     if (currentFruitCount >= maxFruits) {
       console.warn(`[TouchEnd] Too many fruits: ${currentFruitCount}/${maxFruits}`);
+      // 达到水果上限时，触发结算，避免卡住无法继续
+      try {
+        this.gameOver();
+      } catch (e) {
+        console.warn('[TouchEnd] gameOver failed, applying fallback stop.');
+        this.gameState = GAME_STATES.GAME_OVER;
+        this.canDrop = false;
+        this.showGameOverScreen = true;
+      }
       return;
     }
 
@@ -462,14 +483,51 @@ export class GameLogic {
   handleUIEvent(event) {
     if (event.type === 'button') {
       switch (event.name) {
-        case 'pause':
-          this.togglePause();
+        case 'power': {
+          // 单次使用限制与禁用检查
+          if (this.powerUsed || (this.gameUI?.buttons?.power?.disabled)) {
+            audioManager.playSound('CLICK');
+            return;
+          }
+          // 仅在游戏进行中可用
+          if (this.gameState !== GAME_STATES.PLAYING) {
+            return;
+          }
+          try {
+            // 清除当前所有水果（不影响世界边界），游戏继续
+            this.fruitManager.clear();
+            if (this.physicsEngine) {
+              this.physicsEngine.activeBody = null;
+            }
+            // 安全复位危险状态与连击计时器
+            this.dangerTimer = 0;
+            this.isDangerous = false;
+            this.comboTimer = 0;
+            // 标记道具已使用并禁用按钮
+            this.powerUsed = true;
+            if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
+              this.gameUI.buttons.power.disabled = true;
+            }
+            // 视觉反馈：轻微震屏 + 爆裂与环形特效
+            const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
+            const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
+            if (this.effectSystem) {
+              if (typeof this.effectSystem.createExplosion === 'function') {
+                this.effectSystem.createExplosion(centerX, centerY, { particleCount: 36, colors: ['#4ECDC4', '#FFD700', '#9F7AEA'], life: 1.2, speed: 220 });
+              }
+              if (typeof this.effectSystem.createRingEffect === 'function') {
+                this.effectSystem.createRingEffect(centerX, centerY, { startRadius: 12, endRadius: 90, life: 0.5, color: '#4ECDC4', lineWidth: 3 });
+              }
+              if (typeof this.effectSystem.triggerScreenShake === 'function') {
+                this.effectSystem.triggerScreenShake(4, 0.18);
+              }
+            }
+          } catch (e) {
+            console.warn('[Power] Failed to clear fruits:', e);
+          }
           audioManager.playSound('CLICK');
           break;
-        case 'sound':
-          this.toggleSound();
-          audioManager.playSound('CLICK');
-          break;
+        }
       }
     }
   }
@@ -527,6 +585,9 @@ export class GameLogic {
       
       // 重置连击
       this.combo = 0;
+      if (this.gameUI && typeof this.gameUI.setCombo === 'function') {
+        this.gameUI.setCombo(0);
+      }
     } else {
       console.error('[DropFruit] Failed to create fruit, unlocking drop.');
       // 如果创建失败，必须解锁
@@ -633,6 +694,28 @@ export class GameLogic {
       this.combo++;
       this.maxCombo = Math.max(this.maxCombo, this.combo);
       this.comboTimer = GAME_CONFIG.COMBO_DURATION; // 重置连击计时器
+
+      // 刷新历史最高连击记录（如本局已超过）
+      if (this.maxCombo > (this.highCombo || 0)) {
+        if (typeof this.setHighCombo === 'function') {
+          this.setHighCombo(this.maxCombo);
+        } else {
+          this.highCombo = this.maxCombo;
+        }
+      }
+      
+      // 同步UI显示：当前连击、本局最高连击、历史最高连击
+      if (this.gameUI) {
+        if (typeof this.gameUI.setCombo === 'function') {
+          this.gameUI.setCombo(this.combo);
+        }
+        if (typeof this.gameUI.setRunMaxCombo === 'function') {
+          this.gameUI.setRunMaxCombo(this.maxCombo || 0);
+        }
+        if (typeof this.gameUI.setHighCombo === 'function') {
+          this.gameUI.setHighCombo(this.highCombo || 0);
+        }
+      }
       
       // 连击里程碑特效
       if (this.combo === 5 || this.combo === 10 || this.combo === 20 || this.combo % 25 === 0) {
@@ -659,6 +742,13 @@ export class GameLogic {
           const newFruit = this.fruitManager.createFruit(mergeData.newType, position.x, position.y);
           if (newFruit?.body && typeof newFruit.body.setMergeCooldown === 'function') {
             newFruit.body.setMergeCooldown(60);
+          }
+          // 合成后给予新水果轻微初速度，促进更快滑落
+          if (newFruit?.body) {
+            const jitterX = (Math.random() - 0.5) * 6; // 轻微水平扰动（±3px）
+            const impulseY = Math.max(6, Math.min(12, newFruit.body.radius * 0.12)); // 垂直初速度（像素位移）
+            newFruit.body.prevPosition.x = newFruit.body.position.x - jitterX;
+            newFruit.body.prevPosition.y = newFruit.body.position.y - impulseY;
           }
         }
       } catch (e) {
@@ -769,12 +859,37 @@ export class GameLogic {
   handleUIEvent(event) {
     if (event.type === 'button') {
       switch (event.name) {
-        case 'pause':
-          this.togglePause();
+        case 'power': {
+          // 单次使用限制与禁用检查
+          if (this.powerUsed || (this.gameUI?.buttons?.power?.disabled)) {
+            audioManager.playSound('CLICK');
+            return;
+          }
+          // 仅在游戏进行中可用
+          if (this.gameState !== GAME_STATES.PLAYING) {
+            return;
+          }
+          try {
+            // 清除当前所有水果（不影响世界边界），游戏继续
+            this.fruitManager.clear();
+            if (this.physicsEngine) {
+              this.physicsEngine.activeBody = null;
+            }
+            // 安全复位危险状态与连击计时器
+            this.dangerTimer = 0;
+            this.isDangerous = false;
+            this.comboTimer = 0;
+            // 标记道具已使用并禁用按钮
+            this.powerUsed = true;
+            if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
+              this.gameUI.buttons.power.disabled = true;
+            }
+          } catch (e) {
+            console.warn('[Power] Failed to clear fruits:', e);
+          }
+          audioManager.playSound('CLICK');
           break;
-        case 'sound':
-          this.toggleSound();
-          break;
+        }
       }
     }
   }
@@ -950,6 +1065,17 @@ export class GameLogic {
       if (this.score > this.highScore) {
         this.setHighScore(this.score);
         this.newRecordAchievedThisRun = true;
+      }
+      // 连击纪录兜底确认
+      if (this.maxCombo > (this.highCombo || 0)) {
+        if (typeof this.setHighCombo === 'function') {
+          this.setHighCombo(this.maxCombo);
+        } else {
+          this.highCombo = this.maxCombo;
+        }
+        this.newComboRecordAchievedThisRun = true;
+      } else {
+        this.newComboRecordAchievedThisRun = false;
       }
     } catch (_) { /* ignore */ }
 
@@ -1133,6 +1259,21 @@ export class GameLogic {
     if (typeof this.gameUI.setHighScore === 'function') {
       this.gameUI.setHighScore(this.highScore);
     }
+    // 同步连击显示：当前连击重置为0，最高连击保持
+    if (this.gameUI) {
+      if (typeof this.gameUI.setCombo === 'function') {
+        this.gameUI.setCombo(0);
+      }
+      if (typeof this.gameUI.setHighCombo === 'function') {
+        this.gameUI.setHighCombo(this.highCombo || 0);
+      }
+    }
+
+    // 重置一次性道具状态
+    this.powerUsed = false;
+    if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
+      this.gameUI.buttons.power.disabled = false;
+    }
 
     // 生成并同步下一颗水果
     this.prepareNextFruit();
@@ -1233,26 +1374,16 @@ export class GameLogic {
           const speed = freshVelocity.magnitude();
           const timeSinceDrop = (Date.now() - fruit.dropTime) / 1000;
 
-          // 条件1: 水果速度低于阈值且已下落超过最短时间
+          // 更严格的解锁：必须“速度低 + 持续触地稳定”才视为完成掉落
           const settled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6);
-          const minDropTime = 0.12; // 放宽最短下落时间，提升解锁响应
-
-          // 条件1b: 触地接触（放宽：不再要求较长的持续时长）
-          const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.2;
+          const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.35; // 提高接触稳定时间
           const settledByContact = !!(fruit.bottomContact && (fruit.bottomContactDuration || 0) >= stableSec);
 
-          // 条件2: 超时强制解锁（更短）
-          const timeout = 0.6; // 0.6秒后强制解锁，避免"第二个水果不能投放"体验
-
-          // 条件3: 水果已被标记移除（例如同类消除后），无需继续等待
+          // 水果已被标记移除（例如同类消除后），无需继续等待
           const removed = !!fruit.isMarkedForRemoval;
 
-          if ((settled && timeSinceDrop > minDropTime) || settledByContact || timeSinceDrop > timeout || removed) {
-            if (timeSinceDrop > timeout) {
-              console.warn(`[UpdateUnlock] Unlocking fruit due to timeout (${timeSinceDrop.toFixed(2)}s)`);
-            } else {
-              console.log(`[UpdateUnlock] Unlocking fruit because it has settled (speed: ${speed.toFixed(2)}).`);
-            }
+          if (removed || settledByContact) {
+            console.log(`[UpdateUnlock] Unlocking: contactStable=${settledByContact}, speed=${speed.toFixed(2)}, contactSec=${(fruit.bottomContactDuration||0).toFixed(2)}`);
             this.unlockDrop();
           }
         } else {
@@ -1270,6 +1401,9 @@ export class GameLogic {
         this.comboTimer -= deltaTime;
         if (this.comboTimer <= 0) {
           this.combo = 0;
+          if (this.gameUI && typeof this.gameUI.setCombo === 'function') {
+            this.gameUI.setCombo(0);
+          }
         }
       }
 
@@ -1294,8 +1428,16 @@ export class GameLogic {
     // 渲染UI背景
     this.gameUI.render();
 
-    // 渲染水果
+    // 渲染水果（应用震屏偏移）
+    this.ctx.save();
+    const shake = (this.effectSystem && typeof this.effectSystem.getShakeOffset === 'function')
+      ? this.effectSystem.getShakeOffset()
+      : { x: 0, y: 0 };
+    if (shake.x || shake.y) {
+      this.ctx.translate(shake.x, shake.y);
+    }
     this.fruitManager.render(this.ctx);
+    this.ctx.restore();
 
     // 渲染游戏状态覆盖层
     if (this.gameState === GAME_STATES.PAUSED) {
@@ -1360,6 +1502,8 @@ export class GameLogic {
     // 半透明遮罩（PRD：opacity 0.6）
     this.ctx.fillStyle = `rgba(0, 0, 0, ${maskAlpha.toFixed(3)})`;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // 水位线（在遮罩上方、面板下方）
+    this.renderGameOverWaterline();
     
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
@@ -1400,29 +1544,44 @@ export class GameLogic {
     // 关闭阴影影响后续文本
     this.ctx.shadowBlur = 0;
     
-    // 标题
+    // 标题（去除文字阴影）
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.fillStyle = '#333333';
     this.ctx.font = 'bold 30px Arial, sans-serif';
+    this.ctx.shadowColor = 'rgba(0,0,0,0)';
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 0;
     this.ctx.fillText('游戏结束', centerX, panelY + 40);
 
-    // 本次得分（大号红色数字）
+    // 本次得分（大号红色数字，无阴影）
     this.ctx.fillStyle = '#E53E3E';
     this.ctx.font = 'bold 48px Arial, sans-serif';
+    this.ctx.shadowColor = 'rgba(0,0,0,0)';
+    this.ctx.shadowBlur = 0;
     this.ctx.fillText(String(this.score), centerX, panelY + 100);
 
-    // 历史最高分（小号灰色）
+    // 本局最高连击（次行展示，仅显示本局数据，无阴影）
     const isNewRecord = !!this.newRecordAchievedThisRun;
-    this.ctx.fillStyle = '#666666';
+    const isNewComboRecord = !!this.newComboRecordAchievedThisRun;
+    this.ctx.fillStyle = '#4A5568';
     this.ctx.font = '16px Arial, sans-serif';
-    this.ctx.fillText(`历史最高：${this.highScore}`, centerX, panelY + 140);
+    this.ctx.shadowColor = 'rgba(0,0,0,0)';
+    this.ctx.shadowBlur = 0;
+    this.ctx.fillText(`本局最高连击：${this.maxCombo || 0}`, centerX, panelY + 140);
 
-    // 新纪录提示（条件显示，金色 + emoji）
-    if (isNewRecord) {
+    // 新纪录提示（分数/连击，无阴影）
+    if (isNewRecord || isNewComboRecord) {
       this.ctx.fillStyle = '#FFD700';
       this.ctx.font = 'bold 18px Arial, sans-serif';
-      this.ctx.fillText('🎉 新纪录！', centerX, panelY + 165);
+      this.ctx.shadowColor = 'rgba(0,0,0,0)';
+      this.ctx.shadowBlur = 0;
+      const tips = [
+        isNewRecord ? '🎉 分数新纪录！' : null,
+        isNewComboRecord ? '💥 连击新纪录！' : null
+      ].filter(Boolean).join(' ');
+      this.ctx.fillText(tips, centerX, panelY + 165);
     }
 
     // 重新开始按钮（增强样式）
@@ -1460,15 +1619,12 @@ export class GameLogic {
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
 
-    // 按钮文字
+    // 按钮文字（去除阴影）
     this.ctx.font = 'bold 20px Arial, sans-serif';
     this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    this.ctx.shadowBlur = 2;
-    this.ctx.fillText('重新开始', centerX, buttonY + buttonHeight / 2);
-    
-    // 重置阴影
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0)';
     this.ctx.shadowBlur = 0;
+    this.ctx.fillText('重新开始', centerX, buttonY + buttonHeight / 2);
 
     this.ctx.restore();
     
@@ -1481,6 +1637,57 @@ export class GameLogic {
     // 需求变更：移除排行榜与分享按钮（不绘制，不设置点击区域）
     this.rankButton = null;
     this.shareButton = null;
+  }
+
+  // 在游戏结束界面绘制水位线（位于“下一个”标签底部）
+  renderGameOverWaterline() {
+    try {
+      const labelY = 120 + 25 + 20 + 8; // 与 GameUI 的“下一个”标签对齐
+      const leftX = 0;
+      const rightX = this.canvas.width;
+      const amplitude = 6;
+      const wavelength = 60;
+      this.ctx.save();
+      // 背景水面填充
+      const grad = this.ctx.createLinearGradient(0, labelY, 0, this.canvas.height);
+      grad.addColorStop(0, 'rgba(64, 164, 223, 0.32)');
+      grad.addColorStop(0.5, 'rgba(64, 164, 223, 0.18)');
+      grad.addColorStop(1, 'rgba(64, 164, 223, 0.10)');
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(leftX, this.canvas.height);
+      this.ctx.lineTo(leftX, labelY);
+      for (let x = leftX; x <= rightX; x += 8) {
+        const dy = Math.sin(x / wavelength * Math.PI * 2) * amplitude;
+        this.ctx.lineTo(x, labelY + dy);
+      }
+      this.ctx.lineTo(rightX, this.canvas.height);
+      this.ctx.closePath();
+      this.ctx.fill();
+      // 波浪高光
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      for (let x = leftX; x <= rightX; x += 8) {
+        const dy = Math.sin(x / wavelength * Math.PI * 2) * amplitude;
+        if (x === leftX) this.ctx.moveTo(x, labelY + dy);
+        else this.ctx.lineTo(x, labelY + dy);
+      }
+      this.ctx.stroke();
+      // 次级蓝色波线
+      this.ctx.strokeStyle = 'rgba(64,164,223,0.7)';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      for (let x = leftX; x <= rightX; x += 8) {
+        const dy = Math.sin((x + 12) / wavelength * Math.PI * 2) * amplitude * 0.6;
+        if (x === leftX) this.ctx.moveTo(x, labelY + dy - 3);
+        else this.ctx.lineTo(x, labelY + dy - 3);
+      }
+      this.ctx.stroke();
+      this.ctx.restore();
+    } catch (error) {
+      console.warn('renderGameOverWaterline failed:', error);
+    }
   }
 
   // 保存最高分
@@ -1533,6 +1740,35 @@ export class GameLogic {
       return saved ? parseInt(saved, 10) : 0;
     } catch (e) {
       console.warn('Failed to load high score:', e);
+      return 0;
+    }
+  }
+  
+  // 新增：保存最高连击
+  setHighCombo(combo) {
+    if (combo > (this.highCombo || 0)) {
+      this.highCombo = combo;
+      this.saveHighCombo();
+    }
+  }
+
+  // 新增：保存/加载最高连击
+  saveHighCombo() {
+    try {
+      const storage = this._getStorageMethod();
+      storage.setItem('fruitMergeZ_highCombo', (this.highCombo || 0).toString());
+    } catch (e) {
+      console.warn('Failed to save high combo:', e);
+    }
+  }
+  
+  loadHighCombo() {
+    try {
+      const storage = this._getStorageMethod();
+      const saved = storage.getItem('fruitMergeZ_highCombo');
+      return saved ? parseInt(saved, 10) : 0;
+    } catch (e) {
+      console.warn('Failed to load high combo:', e);
       return 0;
     }
   }
@@ -1598,7 +1834,7 @@ export class GameLogic {
   // 显示本地排行榜
   showLocalRankings() {
     const gameData = this.loadGameData();
-    const message = `本地最高分: ${this.highScore}\n最大连击: ${this.maxCombo}\n游戏次数: ${gameData.totalGames || 1}`;
+    const message = `本地最高分: ${this.highScore}\n历史最高连击: ${this.highCombo || 0}\n本局最高连击: ${this.maxCombo || 0}\n游戏次数: ${gameData.totalGames || 1}`;
     alert(message);
   }
 

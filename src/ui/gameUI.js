@@ -15,6 +15,10 @@ export class GameUI {
     this.gameState = GAME_STATES.PLAYING;
     this.dangerLineFlash = false;
     this.flashTimer = 0;
+    // 连击状态
+    this.combo = 0;
+    this.highCombo = 0;
+    this.runMaxCombo = 0;
     
     // 动画相关
     this.scoreAnimation = {
@@ -25,8 +29,7 @@ export class GameUI {
     
     // 按钮区域
     this.buttons = {
-      pause: { x: 320, y: 30, width: 40, height: 40 },
-      sound: { x: 270, y: 30, width: 40, height: 40 }
+      power: { x: 12, y: 12, width: 40, height: 40, disabled: false }
     };
     
     // 触摸状态
@@ -44,6 +47,9 @@ export class GameUI {
     this.flashTimer = 0;
     this.scoreAnimation.current = 0;
     this.scoreAnimation.target = 0;
+    // 重置连击显示但保留历史最高连击
+    this.combo = 0;
+    this.runMaxCombo = 0;
   }
   
   // 更新UI状态
@@ -337,12 +343,12 @@ export class GameUI {
     // 标题描边 - 外层
     this.ctx.strokeStyle = '#8B4513';
     this.ctx.lineWidth = 4;
-    this.ctx.strokeText('合成水果', this.width / 2, 70);
+    this.ctx.strokeText('合成新水果', this.width / 2, 70);
     
     // 标题描边 - 内层
     this.ctx.strokeStyle = '#D2691E';
     this.ctx.lineWidth = 2;
-    this.ctx.strokeText('合成水果', this.width / 2, 70);
+    this.ctx.strokeText('合成新水果', this.width / 2, 70);
     
     // 标题渐变填充
     const titleGradient = this.ctx.createLinearGradient(0, 50, 0, 90);
@@ -353,7 +359,7 @@ export class GameUI {
     
     this.ctx.shadowColor = 'transparent';
     this.ctx.fillStyle = titleGradient;
-    this.ctx.fillText('合成水果', this.width / 2, 70);
+    this.ctx.fillText('合成新水果', this.width / 2, 70);
     
     // 标题高光效果
     const highlightGradient = this.ctx.createLinearGradient(0, 50, 0, 65);
@@ -361,7 +367,7 @@ export class GameUI {
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
     
     this.ctx.fillStyle = highlightGradient;
-    this.ctx.fillText('合成水果', this.width / 2, 68);
+    this.ctx.fillText('合成新水果', this.width / 2, 68);
     
     this.ctx.restore();
   }
@@ -453,20 +459,111 @@ export class GameUI {
     this.ctx.fillStyle = textGradient;
     this.ctx.fillText(scoreText, scoreX, scoreY);
     
-    // 最高分显示 - 优化样式
+    // 在当前分数右侧展示“本局最高连击”徽标，不增加行高
+    this.ctx.shadowColor = 'rgba(0,0,0,0)';
+    this.ctx.shadowBlur = 0;
+    const scoreTextWidth = this.ctx.measureText(scoreText).width;
+    const badgeX = scoreX + scoreTextWidth / 2 + scorePadding + 10;
+    const badgeY = scoreY - 14; // 与分数垂直居中对齐
+    const badgeText = `${Math.max(0, this.runMaxCombo || 0)}`;
+    this.ctx.font = '12px Arial, sans-serif';
+    const badgeW = Math.max(this.ctx.measureText(badgeText).width + 8, 32);
+    const badgeH = 22;
+    // 徽标背景（浅灰胶囊）
+    // this.ctx.fillStyle = '#EDF2F7';
+    // this.roundRect(badgeX - badgeW/2, badgeY+16, badgeW, badgeH, 11);
+    // this.ctx.fill();
+    // 徽标边框
+    this.ctx.strokeStyle = '#CBD5E0';
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+    // 徽标文字
+    this.ctx.fillStyle = '#2D3748';
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(badgeText, badgeX  - badgeW/2, badgeY + badgeH / 2 + 16);
+
+    // 恢复居中对齐，避免影响后续行的布局
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    // 最高分显示 + 历史最高连击（保持原在分数下方一行，不再增加第三行）
     if (this.highScore > 0) {
-      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-      this.ctx.shadowBlur = 2;
-      this.ctx.shadowOffsetX = 1;
-      this.ctx.shadowOffsetY = 1;
-      
+      this.ctx.shadowColor = 'rgba(0,0,0,0)';
+      this.ctx.shadowBlur = 0;
       this.ctx.font = 'bold 16px Arial, sans-serif';
-      this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-      this.ctx.lineWidth = 1;
-      this.ctx.strokeText(`最高: ${this.highScore}`, scoreX, scoreY + 35);
-      
+      const highLineText = `最高: ${this.highScore}  |  连击: ${this.highCombo || 0}`;
       this.ctx.fillStyle = UI_THEME.text.secondary;
-      this.ctx.fillText(`最高: ${this.highScore}`, scoreX, scoreY + 35);
+      this.ctx.fillText(highLineText, scoreX, scoreY + 35);
+    }
+    
+    this.ctx.restore();
+  }
+  
+  // 新增：渲染连击头部信息
+  renderComboHeader() {
+    const combo = Math.max(0, this.combo || 0);
+    const high = Math.max(0, this.highCombo || 0);
+    if (combo <= 0 && high <= 0) {
+      // 开局无连击且最高为0时，不显示以减少视觉噪音
+      return;
+    }
+    
+    this.ctx.save();
+    
+    // 位置：居中，置于分数之上、标题之下
+    const x = this.width / 2;
+    const y = 80; // 保持与分数(120, 高50)有约3px以上安全间距
+    const padding = 12;
+    
+    this.ctx.font = 'bold 18px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    const text = `连击: ${combo}   最高: ${high}`;
+    const metrics = this.ctx.measureText(text);
+    const bgWidth = Math.max(metrics.width + padding * 2, 160);
+    const bgHeight = 24;
+    
+    // 背景胶囊
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    this.ctx.shadowBlur = 4;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 2;
+    
+    const grad = this.ctx.createLinearGradient(
+      x - bgWidth/2, y - bgHeight/2,
+      x + bgWidth/2, y + bgHeight/2
+    );
+    grad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+    grad.addColorStop(1, 'rgba(255, 255, 255, 0.75)');
+    this.ctx.fillStyle = grad;
+    this.roundRect(x - bgWidth/2, y - bgHeight/2, bgWidth, bgHeight, 14);
+    this.ctx.fill();
+    
+    // 边框
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.15)';
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+    
+    // 文本
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.fillStyle = UI_THEME.text.primary;
+    this.ctx.fillText(text, x, y);
+    
+    // 高亮与图标（当有当前连击时显示）
+    if (combo > 0) {
+      this.ctx.font = '16px Arial, sans-serif';
+      this.ctx.fillText('🔥', x - bgWidth/2 + 16, y);
+      const highlight = this.ctx.createLinearGradient(
+        x - bgWidth/2, y - bgHeight/2,
+        x + bgWidth/2, y - bgHeight/2 + 8
+      );
+      highlight.addColorStop(0, 'rgba(255,255,255,0.35)');
+      highlight.addColorStop(1, 'rgba(255,255,255,0.1)');
+      this.ctx.fillStyle = highlight;
+      this.roundRect(x - bgWidth/2 + 2, y - bgHeight/2 + 2, bgWidth - 4, 8, 12);
+      this.ctx.fill();
     }
     
     this.ctx.restore();
@@ -678,16 +775,17 @@ export class GameUI {
   
   // 渲染按钮
   renderButtons() {
-    // 暂停按钮
-    this.renderButton(this.buttons.pause, '⏸️', UI_THEME.primary.main, '暂停');
-    
-    // 音效按钮
-    this.renderButton(this.buttons.sound, '🔊', UI_THEME.secondary.main, '音效');
+    // 道具按钮
+    const powerBtn = this.buttons.power;
+    const powerColor = powerBtn?.disabled ? this.darkenColor(UI_THEME.primary.main, 0.4) : UI_THEME.primary.main;
+    this.renderButton(powerBtn, '✨', powerColor, powerBtn?.disabled ? '已用' : '道具');
   }
   
   // 渲染单个按钮
   renderButton(button, icon, color, tooltip) {
     this.ctx.save();
+    const disabled = !!(button && button.disabled);
+    if (disabled) { this.ctx.globalAlpha = 0.6; }
     
     // 按钮阴影
     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
@@ -736,7 +834,7 @@ export class GameUI {
     
     // 按钮图标
     this.ctx.font = '22px Arial, sans-serif';
-    this.ctx.fillStyle = 'white';
+    this.ctx.fillStyle = (button && button.disabled) ? '#E5E7EB' : 'white';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -756,6 +854,21 @@ export class GameUI {
   // 设置最高分
   setHighScore(highScore) {
     this.highScore = highScore;
+  }
+  
+  // 新增：设置当前连击
+  setCombo(combo) {
+    this.combo = Number(combo) || 0;
+  }
+  
+  // 新增：设置最高连击
+  setHighCombo(highCombo) {
+    this.highCombo = Number(highCombo) || 0;
+  }
+  
+  // 新增：设置本局最高连击
+  setRunMaxCombo(maxCombo) {
+    this.runMaxCombo = Number(maxCombo) || 0;
   }
   
   // 设置下一个水果类型
@@ -821,6 +934,7 @@ export class GameUI {
   // 检查按钮点击
   checkButtonClick(x, y) {
     for (const [name, button] of Object.entries(this.buttons)) {
+      if (button && button.disabled) continue;
       if (x >= button.x && x <= button.x + button.width &&
           y >= button.y && y <= button.y + button.height) {
         return { type: 'button', name: name };

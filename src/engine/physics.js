@@ -166,7 +166,7 @@ export class PhysicsEngine {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const groundFriction = 0.85; // 减少地面摩擦，让水果能更快滑落 
+        const groundFriction = (GAME_CONFIG?.PHYSICS?.groundFriction ?? 0.96); // 使用可配置摩擦，接近1保留更多水平速度
         const groundBounceDamping = GAME_CONFIG.PHYSICS.groundBounceDamping;
 
         body.prevPosition.x = pos.x - (pos.x - prev.x) * groundFriction;
@@ -216,7 +216,7 @@ export class PhysicsEngine {
         body.position.x = leftWallX + body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const wallFriction = 0.9; // 墙壁摩擦力，减少阻碍让水果更快滑落
+        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.96); // 使用可配置墙摩擦以提升沿壁滑动速度
         body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
       }
 
@@ -224,7 +224,7 @@ export class PhysicsEngine {
         body.position.x = rightWallX - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const wallFriction = 0.9; // 墙壁摩擦力，减少阻碍让水果更快滑落
+        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.96); // 使用可配置墙摩擦以提升沿壁滑动速度
         body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
       }
 

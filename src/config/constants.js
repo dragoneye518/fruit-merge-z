@@ -10,8 +10,8 @@ export const GAME_CONFIG = {
   },
   // 尺寸全局缩放（用于统一调整水果半径）
   SIZE: {
-    // 统一缩小水果半径为原来的一半（0.5x）
-    radiusScale: 0.5
+    // 统一缩放为 0.65（相对原始半径）
+    radiusScale: 0.65
   },
   
   // 游戏区域配置
@@ -59,11 +59,13 @@ export const GAME_CONFIG = {
     gravity: 1200,       // 重力（提高整体下落速度）
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
-    airResistance: 0.995, // 空气阻力（进一步减小，让水果保持更多速度滑落）
+    airResistance: 0.997, // 空气阻力（更接近1，保留更多动量，提升滑落）
+    groundFriction: 0.985, // 地面摩擦（接近1，减少水平速度损失）
+    wallFriction: 0.985,   // 墙壁摩擦（接近1，沿壁滑动更顺畅）
     maxVelocity: 350,    // 最大速度
     settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.25, // 弹跳阻尼（减少阻尼，让水果碰撞后保持更多速度滑落）
+    bounceDamping: 0.25, // 弹跳阻尼（保留更多速度用于滑落）
     groundBounceDamping: 0.08, // 地面弹跳阻尼（减少弹跳，更快稳定）
     sleepVelThreshold: 5,   // 睡眠速度阈值
     solverIterations: 4     // 求解器迭代次数

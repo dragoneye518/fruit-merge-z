@@ -104,7 +104,7 @@ class FruitMergeZGame {
     this.ctx.fillStyle = '#FFFFFF';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('合成水果Z', centerX, centerY - 80);
+    this.ctx.fillText('合成新水果', centerX, centerY - 80);
     
     // 绘制加载进度条背景
     const progressBarWidth = 300;
@@ -682,8 +682,8 @@ class FruitMergeZGame {
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
     
-    this.ctx.strokeText('合成水果', centerX, centerY - 50);
-    this.ctx.fillText('合成水果', centerX, centerY - 50);
+    this.ctx.strokeText('合成新水果', centerX, centerY - 50);
+    this.ctx.fillText('合成新水果', centerX, centerY - 50);
     
     // 绘制开始提示
     this.ctx.font = '24px Arial, sans-serif';
