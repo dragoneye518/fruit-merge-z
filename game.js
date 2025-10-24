@@ -288,7 +288,7 @@ class FruitMergeZGame {
   // 设置全局错误处理
   setupGlobalErrorHandling() {
     // 捕获未处理的Promise拒绝
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && window.addEventListener) {
       window.addEventListener('unhandledrejection', (event) => {
         this.handleGlobalError(event.reason, 'unhandledrejection');
         event.preventDefault();
@@ -298,6 +298,25 @@ class FruitMergeZGame {
       window.addEventListener('error', (event) => {
         this.handleGlobalError(event.error || new Error(event.message), 'javascript');
       });
+    } else if (typeof tt !== 'undefined') {
+      // 抖音小程序环境的错误处理
+      console.log('Setting up Douyin miniprogram error handling');
+      
+      // 使用抖音小程序的错误监听
+      if (tt.onError) {
+        tt.onError((error) => {
+          this.handleGlobalError(new Error(error), 'douyin_error');
+        });
+      }
+      
+      // 使用抖音小程序的未处理Promise拒绝监听
+      if (tt.onUnhandledRejection) {
+        tt.onUnhandledRejection((event) => {
+          this.handleGlobalError(event.reason, 'douyin_unhandledrejection');
+        });
+      }
+    } else {
+      console.warn('No global error handling available in this environment');
     }
     
     // 抖音环境错误处理
@@ -967,8 +986,27 @@ class FruitMergeZGame {
     if (!this.ctx) {
       // 如果连Canvas都没有初始化，尝试基本初始化
       try {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
+        // 优先尝试通过document获取canvas
+        if (typeof document !== 'undefined') {
+          this.canvas = document.getElementById('gameCanvas');
+          if (this.canvas) {
+            this.ctx = this.canvas.getContext('2d');
+          }
+        }
+        
+        // 如果document不可用或canvas不存在，尝试抖音小程序方式
+        if (!this.canvas && typeof tt !== 'undefined') {
+          console.warn('Canvas not found via document, trying Douyin miniprogram canvas');
+          // 抖音小程序中可能需要不同的canvas获取方式
+          // 这里先记录错误，避免进一步的异常
+          console.error('Canvas initialization failed in Douyin environment');
+          return;
+        }
+        
+        if (!this.canvas) {
+          console.error('Canvas element not found');
+          return;
+        }
       } catch (canvasError) {
         console.error('Cannot initialize canvas for error display:', canvasError);
         return;

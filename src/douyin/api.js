@@ -632,6 +632,26 @@ export class DouyinAPI {
   }
   
   // 获取游戏数据
+  // 错误上报
+  reportError(errorData) {
+    if (this.isDouyinEnv && tt.reportAnalytics) {
+      try {
+        tt.reportAnalytics('game_error', {
+          error: errorData.error,
+          source: errorData.source,
+          timestamp: errorData.timestamp,
+          gameState: errorData.gameState
+        });
+        console.log('Error reported to Douyin analytics');
+      } catch (error) {
+        console.warn('Failed to report error to Douyin analytics:', error);
+      }
+    } else {
+      // 开发环境或非抖音环境，只记录到控制台
+      console.log('Mock error report:', errorData);
+    }
+  }
+
   getGameData() {
     return this.gameData;
   }

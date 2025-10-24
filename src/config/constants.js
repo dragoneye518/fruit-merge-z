@@ -28,19 +28,19 @@ export const GAME_CONFIG = {
   
   // 投放区域
   DROP_AREA: {
-    y: 200,
-    previewY: 150,
+    y: 111,  // 调整到屏幕1/6位置 (667 * 1/6 ≈ 111)
+    previewY: 80,  // 相应调整预览位置
     width: 300
   },
   
   // 兼容旧代码常量
-  DROP_LINE_Y: 200,
+  DROP_LINE_Y: 111,  // 调整到屏幕1/6位置
   DROP_COOLDOWN: 0.5,
   COMBO_DURATION: 2,
   
   // 危险线
   DANGER_LINE: {
-    y: 200,
+    y: 111,  // 调整到屏幕1/6位置 (667 * 1/6 ≈ 111)
     color: '#FF4444',
     flashDuration: 500
   },

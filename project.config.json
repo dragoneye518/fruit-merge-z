@@ -43,5 +43,10 @@
     },
     "compileType": "miniprogram",
     "libVersion": "",
-    "condition": {}
+    "condition": {
+        "game": {
+            "current": -1,
+            "list": []
+        }
+    }
 }

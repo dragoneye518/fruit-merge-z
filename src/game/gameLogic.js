@@ -217,15 +217,20 @@ export class GameLogic {
       }
     }
 
-    // 优先检查按钮点击 - 直接使用 checkButtonClick 避免重复处理
-    const buttonResult = this.gameUI.checkButtonClick(x, y);
-    if (buttonResult) {
-      console.log(`[TouchStart] Button clicked: ${buttonResult.name}`);
-      this.handleUIEvent(buttonResult);
-      return; // 按钮点击后直接返回，不进行投放预览
+    // 检查UI事件（包括下一个水果预览拖动）
+    const uiResult = this.gameUI.onTouchStart(x, y);
+    if (uiResult) {
+      if (uiResult.type === 'button') {
+        console.log(`[TouchStart] Button clicked: ${uiResult.name}`);
+        this.handleUIEvent(uiResult);
+        return; // 按钮点击后直接返回，不进行投放预览
+      } else if (uiResult.type === 'preview_drag') {
+        console.log(`[TouchStart] Preview drag started at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+        return; // 开始拖动预览水果，不进行投放预览
+      }
     }
 
-    // 只有在没有点击按钮时才开启投放幽灵预览
+    // 只有在没有点击按钮或拖动预览时才开启投放幽灵预览
     {
       const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
       const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
@@ -239,12 +244,17 @@ export class GameLogic {
   handleTouchMove(clientX, clientY) {
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
 
-    // 优先检查按钮点击
-    const buttonResult = this.gameUI.checkButtonClick(x, y);
-    if (buttonResult) {
-      console.log(`[TouchMove] Button touched: ${buttonResult.name}`);
-      // 在移动过程中不立即触发按钮，避免误触
-      return;
+    // 检查UI事件（包括下一个水果预览拖动）
+    const uiResult = this.gameUI.onTouchMove(x, y);
+    if (uiResult) {
+      if (uiResult.type === 'button') {
+        console.log(`[TouchMove] Button touched: ${uiResult.name}`);
+        // 在移动过程中不立即触发按钮，避免误触
+        return;
+      } else if (uiResult.type === 'preview_drag') {
+        console.log(`[TouchMove] Preview dragging to (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
+        return; // 正在拖动预览水果，不更新投放预览
+      }
     }
 
     // 更新投放幽灵预览位置
@@ -279,19 +289,28 @@ export class GameLogic {
       return;
     }
 
-    const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+    let { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
     console.log(`[TouchEnd] Normalized coords: (${x.toFixed(1)}, ${y.toFixed(1)})`);
 
     // 关闭投放幽灵预览
     this.previewActive = false;
     this.previewX = null;
 
-    // 优先检查按钮点击 - 在任何其他处理之前
-    const buttonResult = this.gameUI.checkButtonClick(x, y);
-    if (buttonResult) {
-      console.log(`[TouchEnd] Button clicked: ${buttonResult.name}`);
-      this.handleUIEvent(buttonResult);
-      return; // 按钮点击后直接返回，不处理投放
+    // 检查UI事件（包括下一个水果预览拖动结束）
+    const uiResult = this.gameUI.onTouchEnd(x, y);
+    if (uiResult) {
+      if (uiResult.type === 'button') {
+        console.log(`[TouchEnd] Button clicked: ${uiResult.name}`);
+        this.handleUIEvent(uiResult);
+        return; // 按钮点击后直接返回，不处理投放
+      } else if (uiResult.type === 'preview_drag_end') {
+        console.log(`[TouchEnd] Preview drag ended at (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
+        return; // 拖动结束，不处理投放
+      } else if (uiResult.type === 'drop') {
+        // 使用预览水果的X坐标进行投放
+        console.log(`[TouchEnd] Drop at preview position (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
+        x = uiResult.x; // 更新x坐标为预览水果的位置
+      }
     }
 
     // 全面的游戏状态检查
@@ -351,9 +370,13 @@ export class GameLogic {
       return;
     }
 
-    // 只有在没有点击按钮时才处理投放
-    console.log(`[TouchEnd] Processing drop request at (${x.toFixed(1)}, ${y.toFixed(1)})`);
-    this.dropFruit(x, y);
+    // 只有通过UI事件的drop类型才处理投放，不再直接处理投放
+    if (uiResult && uiResult.type === 'drop') {
+      console.log(`[TouchEnd] Processing drop request at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+      this.dropFruit(x, y);
+    } else {
+      console.log(`[TouchEnd] Touch end processed, no drop triggered`);
+    }
   }
 
   restartGame() {
@@ -548,14 +571,14 @@ export class GameLogic {
     // 锁定投放
     this.canDrop = false;
 
-    // 投放范围检查
+    // 使用拖放释放的X轴坐标和固定的Y轴位置作为投放位置
     const dropLeft = 50;
     const dropRight = this.canvas.width - 50;
-    const dropY = GAME_CONFIG.DROP_LINE_Y || 200;
-    x = Math.max(dropLeft, Math.min(dropRight, x));
+    const dropX = Math.max(dropLeft, Math.min(dropRight, x)); // 使用释放时的X坐标，但限制在安全范围内
+    const dropY = GAME_CONFIG.DROP_LINE_Y || 111; // 固定的Y轴位置（危险线位置）
 
     // 创建水果
-    const fruit = this.fruitManager.createFruit(this.nextFruitType, x, dropY);
+    const fruit = this.fruitManager.createFruit(this.nextFruitType, dropX, dropY);
     if (fruit) {
       // 为新生成的水果注入初始下落速度（修复抖音环境下第二次投放“几乎不动”的问题）
       try {

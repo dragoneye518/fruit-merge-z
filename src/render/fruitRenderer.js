@@ -211,10 +211,19 @@ export class FruitRenderer {
     return this.adjust(color, -amount);
   }
   adjust(hex, amount) {
+    if (!hex || typeof hex !== 'string') {
+      return '#CCCCCC'; // 默认颜色
+    }
     const c = hex.replace('#','');
+    if (c.length !== 6) {
+      return '#CCCCCC'; // 默认颜色
+    }
     const r = parseInt(c.substring(0,2),16);
     const g = parseInt(c.substring(2,4),16);
     const b = parseInt(c.substring(4,6),16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) {
+      return '#CCCCCC'; // 默认颜色
+    }
     const adj = v => Math.max(0, Math.min(255, Math.round(v + 255*amount)));
     const toHex = v => v.toString(16).padStart(2,'0');
     return `#${toHex(adj(r))}${toHex(adj(g))}${toHex(adj(b))}`;
