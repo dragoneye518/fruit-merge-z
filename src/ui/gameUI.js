@@ -102,7 +102,6 @@ export class GameUI {
     this.renderBackground();
     this.renderGrassWorldBottom();
     this.renderHeader();
-    this.renderDropPreview();
     this.renderDangerLine();
     this.renderNextFruitPreview();
     this.renderBombButton();
