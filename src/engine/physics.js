@@ -22,7 +22,7 @@ export class RigidBody {
     this.radius = radius;
     this.mass = mass > 0 ? mass : 1;
     this.invMass = 1 / this.mass;
-    this.restitution = 0.15; // 增加弹性，让水果碰撞后保持更多速度
+    this.restitution = 0.2; // 进一步增加弹性，让水果碰撞后更快滑落
     this.fruitType = fruitType;
     this.color = color;
     this.id = id || `rb_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
@@ -253,18 +253,46 @@ export class PhysicsEngine {
           const totalMass = bodyA.mass + bodyB.mass;
           const moveA = overlap * (bodyB.mass / totalMass);
           const moveB = overlap * (bodyA.mass / totalMass);
+
+          // 分离水果，避免穿透
           bodyA.position = bodyA.position.add(normal.multiply(moveA));
           bodyB.position = bodyB.position.subtract(normal.multiply(moveB));
 
+          // 主动添加滑落力！
+          const tangent = new Vector2(-normal.y, normal.x);
+
+          // 计算相对速度
+          const relVel = bodyA.velocity.subtract(bodyB.velocity);
+          const tangentSpeed = relVel.x * tangent.x + relVel.y * tangent.y;
+
+          // 如果有切向速度，添加主动滑落推力
+          if (Math.abs(tangentSpeed) > 10) {
+            // 大幅增加滑落力，让水果快速沿边缘滑落
+            const slideForce = Math.min(Math.abs(tangentSpeed) * 2.5, 400);
+            const slideDirection = tangentSpeed > 0 ? tangent : tangent.multiply(-1);
+
+            // 施加主动滑落力
+            const impulse = slideDirection.multiply(slideForce);
+            bodyA.velocity = bodyA.velocity.add(impulse.multiply(bodyB.invMass));
+            bodyB.velocity = bodyB.velocity.subtract(impulse.multiply(bodyA.invMass));
+
+            // 立即更新位置，实现快速滑落
+            const slideVelA = impulse.multiply(bodyB.invMass);
+            const slideVelB = impulse.multiply(-bodyA.invMass);
+            bodyA.prevPosition = bodyA.position.subtract(bodyA.velocity.subtract(slideVelA).multiply(0.016));
+            bodyB.prevPosition = bodyB.position.subtract(bodyB.velocity.subtract(slideVelB).multiply(0.016));
+          }
+
           // 碰撞耗能：在位置修正后，衰减两刚体的位移（从而降低下一帧速度），加速收敛
           try {
-            const damping = (GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.3);
+            const damping = (GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.15);
             if (damping > 0 && damping < 1) {
               const dispA = bodyA.position.subtract(bodyA.prevPosition);
               const dispB = bodyB.position.subtract(bodyB.prevPosition);
-              // 仅沿碰撞法线方向进行耗能，减少多余侧向抖动
+              // 仅沿碰撞法线方向进行耗能，保留切向速度用于滑落
               const dispAAlong = normal.multiply((dispA.x * normal.x + dispA.y * normal.y));
               const dispBAlong = normal.multiply((dispB.x * normal.x + dispB.y * normal.y));
+              // 保留更多切向速度，让水果能沿边缘更快滑落
               bodyA.prevPosition = bodyA.position.subtract(dispAAlong.multiply(damping));
               bodyB.prevPosition = bodyB.position.subtract(dispBAlong.multiply(damping));
             }

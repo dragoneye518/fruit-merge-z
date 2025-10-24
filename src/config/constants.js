@@ -60,12 +60,12 @@ export const GAME_CONFIG = {
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
     airResistance: 0.997, // 空气阻力（更接近1，保留更多动量，提升滑落）
-    groundFriction: 0.985, // 地面摩擦（接近1，减少水平速度损失）
-    wallFriction: 0.985,   // 墙壁摩擦（接近1，沿壁滑动更顺畅）
+    groundFriction: 0.998, // 地面摩擦（几乎无摩擦，水果能快速滑动）
+    wallFriction: 0.998,   // 墙壁摩擦（几乎无摩擦，沿壁快速滑动）
     maxVelocity: 350,    // 最大速度
     settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.25, // 弹跳阻尼（保留更多速度用于滑落）
+    bounceDamping: 0.05, // 弹跳阻尼（几乎不衰减，让水果保持最大能量用于滑落）
     groundBounceDamping: 0.08, // 地面弹跳阻尼（减少弹跳，更快稳定）
     sleepVelThreshold: 5,   // 睡眠速度阈值
     solverIterations: 4     // 求解器迭代次数

@@ -1,0 +1,118 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg5" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" style="stop-color:#87CEEB"/>
+      <stop offset="100%" style="stop-color:#4682B4"/>
+    </radialGradient>
+    <radialGradient id="apple5" cx="25%" cy="25%" r="75%">
+      <stop offset="0%" style="stop-color:#FF6B6B"/>
+      <stop offset="30%" style="stop-color:#FF4757"/>
+      <stop offset="100%" style="stop-color:#C44569"/>
+    </radialGradient>
+    <radialGradient id="orange5" cx="25%" cy="25%" r="75%">
+      <stop offset="0%" style="stop-color:#FFA726"/>
+      <stop offset="30%" style="stop-color:#FF9800"/>
+      <stop offset="100%" style="stop-color:#E65100"/>
+    </radialGradient>
+    <radialGradient id="pineapple5" cx="25%" cy="25%" r="75%">
+      <stop offset="0%" style="stop-color:#FFD54F"/>
+      <stop offset="30%" style="stop-color:#FFC107"/>
+      <stop offset="100%" style="stop-color:#FF8F00"/>
+    </radialGradient>
+    <filter id="shadow5">
+      <feDropShadow dx="8" dy="12" stdDeviation="6" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+    <filter id="innerShadow5">
+      <feOffset dx="0" dy="0"/>
+      <feGaussianBlur stdDeviation="3" result="offset-blur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.2"/>
+      <feComposite in2="offset-blur" operator="in"/>
+    </filter>
+  </defs>
+  
+  <!-- Background with sky gradient -->
+  <rect width="600" height="600" fill="url(#bg5)"/>
+  
+  <!-- Ground shadow -->
+  <ellipse cx="300" cy="550" rx="250" ry="30" fill="#000000" opacity="0.2"/>
+  
+  <!-- Left apple (3D effect) -->
+  <ellipse cx="180" cy="280" rx="55" ry="65" fill="url(#apple5)" filter="url(#shadow5)"/>
+  <!-- Apple highlight -->
+  <ellipse cx="160" cy="250" rx="20" ry="25" fill="#FFFFFF" opacity="0.4"/>
+  <ellipse cx="155" cy="245" rx="8" ry="10" fill="#FFFFFF" opacity="0.7"/>
+  <!-- Apple stem -->
+  <rect x="177" y="220" width="6" height="15" fill="#8B4513"/>
+  <ellipse cx="180" cy="222" rx="8" ry="4" fill="#228B22"/>
+  <!-- Apple leaf -->
+  <ellipse cx="190" cy="225" rx="12" ry="6" fill="#228B22" transform="rotate(30 190 225)"/>
+  
+  <!-- Right orange (3D effect) -->
+  <circle cx="420" cy="280" r="60" fill="url(#orange5)" filter="url(#shadow5)"/>
+  <!-- Orange texture -->
+  <circle cx="420" cy="280" r="50" fill="none" stroke="#FF7043" stroke-width="2" opacity="0.3"/>
+  <circle cx="420" cy="280" r="40" fill="none" stroke="#FF7043" stroke-width="1" opacity="0.2"/>
+  <!-- Orange highlight -->
+  <circle cx="395" cy="255" r="18" fill="#FFFFFF" opacity="0.5"/>
+  <circle cx="390" cy="250" r="8" fill="#FFFFFF" opacity="0.8"/>
+  <!-- Orange dimple -->
+  <circle cx="420" cy="230" r="8" fill="#E65100" opacity="0.6"/>
+  
+  <!-- Center fusion effect -->
+  <circle cx="300" cy="280" r="40" fill="#FFD700" filter="url(#shadow5)"/>
+  <circle cx="300" cy="280" r="30" fill="#FFFFFF" opacity="0.3"/>
+  <text x="300" y="290" text-anchor="middle" font-family="Arial Black" font-size="28" fill="#FF6B00" font-weight="bold">⚡</text>
+  
+  <!-- Fusion rays -->
+  <path d="M 240 280 L 260 280" stroke="#FFD700" stroke-width="6" fill="none" opacity="0.8"/>
+  <path d="M 340 280 L 360 280" stroke="#FFD700" stroke-width="6" fill="none" opacity="0.8"/>
+  <path d="M 300 240 L 300 260" stroke="#FFD700" stroke-width="6" fill="none" opacity="0.8"/>
+  <path d="M 300 300 L 300 320" stroke="#FFD700" stroke-width="6" fill="none" opacity="0.8"/>
+  
+  <!-- Result pineapple (3D effect) -->
+  <ellipse cx="300" cy="450" rx="70" ry="90" fill="url(#pineapple5)" filter="url(#shadow5)"/>
+  <!-- Pineapple pattern -->
+  <path d="M 250 400 Q 275 390 300 400 Q 325 390 350 400" stroke="#E65100" stroke-width="3" fill="none"/>
+  <path d="M 255 420 Q 275 410 300 420 Q 325 410 345 420" stroke="#E65100" stroke-width="3" fill="none"/>
+  <path d="M 260 440 Q 275 430 300 440 Q 325 430 340 440" stroke="#E65100" stroke-width="3" fill="none"/>
+  <path d="M 265 460 Q 275 450 300 460 Q 325 450 335 460" stroke="#E65100" stroke-width="3" fill="none"/>
+  <path d="M 270 480 Q 285 470 300 480 Q 315 470 330 480" stroke="#E65100" stroke-width="3" fill="none"/>
+  <path d="M 275 500 Q 290 490 300 500 Q 310 490 325 500" stroke="#E65100" stroke-width="3" fill="none"/>
+  <!-- Cross-hatch pattern -->
+  <path d="M 270 410 L 330 470" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 270 430 L 330 490" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 270 450 L 330 510" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 330 410 L 270 470" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 330 430 L 270 490" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  <path d="M 330 450 L 270 510" stroke="#E65100" stroke-width="2" fill="none" opacity="0.6"/>
+  
+  <!-- Pineapple crown -->
+  <path d="M 280 370 L 285 340 L 290 370" fill="#228B22"/>
+  <path d="M 290 370 L 295 335 L 300 370" fill="#228B22"/>
+  <path d="M 300 370 L 305 330 L 310 370" fill="#228B22"/>
+  <path d="M 310 370 L 315 335 L 320 370" fill="#228B22"/>
+  
+  <!-- Pineapple highlight -->
+  <ellipse cx="270" cy="420" rx="25" ry="35" fill="#FFFFFF" opacity="0.3"/>
+  <ellipse cx="265" cy="415" rx="12" ry="18" fill="#FFFFFF" opacity="0.6"/>
+  
+  <!-- 3D arrows -->
+  <path d="M 230 280 L 260 280" stroke="#4682B4" stroke-width="8" fill="none" marker-end="url(#arrow3d5)"/>
+  <path d="M 340 280 L 370 280" stroke="#4682B4" stroke-width="8" fill="none" marker-end="url(#arrow3d5)"/>
+  <path d="M 300 340 L 300 380" stroke="#4682B4" stroke-width="8" fill="none" marker-end="url(#arrow3d5)"/>
+  
+  <!-- 3D arrow marker -->
+  <defs>
+    <marker id="arrow3d5" markerWidth="16" markerHeight="12" refX="14" refY="6" orient="auto">
+      <path d="M 0 0 L 16 6 L 0 12 L 4 6 Z" fill="#4682B4"/>
+      <path d="M 2 2 L 14 6 L 2 10 L 5 6 Z" fill="#87CEEB"/>
+    </marker>
+  </defs>
+  
+  <!-- Title with 3D effect -->
+  <text x="302" y="562" text-anchor="middle" font-family="Arial Black" font-size="40" fill="#2C3E50" font-weight="bold">合成新水果</text>
+  <text x="300" y="560" text-anchor="middle" font-family="Arial Black" font-size="40" fill="#FFD700" font-weight="bold">合成新水果</text>
+  
+  <!-- Subtitle -->
+  <text x="300" y="585" text-anchor="middle" font-family="Arial" font-size="18" fill="#2C3E50">3D Fruit Merge</text>
+</svg>

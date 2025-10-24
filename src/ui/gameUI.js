@@ -27,9 +27,15 @@ export class GameUI {
       speed: 0.1
     };
     
-    // 按钮区域
+    // 按钮区域 - 针对抖音小游戏优化位置和大小
     this.buttons = {
-      power: { x: 12, y: 12, width: 40, height: 40, disabled: false }
+      power: {
+        x: this.width - 80, // 改为右上角，避免与其他UI元素冲突
+        y: 15,
+        width: 70,          // 增大按钮尺寸，适配抖音触摸精度
+        height: 70,
+        disabled: false
+      }
     };
     
     // 触摸状态
@@ -50,6 +56,12 @@ export class GameUI {
     // 重置连击显示但保留历史最高连击
     this.combo = 0;
     this.runMaxCombo = 0;
+
+    // 重置按钮状态 - 确保道具按钮在重开时可用
+    if (this.buttons && this.buttons.power) {
+      this.buttons.power.disabled = false;
+      console.log('[UI] Power button reset to enabled');
+    }
   }
   
   // 更新UI状态
@@ -778,7 +790,22 @@ export class GameUI {
     // 道具按钮
     const powerBtn = this.buttons.power;
     const powerColor = powerBtn?.disabled ? this.darkenColor(UI_THEME.primary.main, 0.4) : UI_THEME.primary.main;
-    this.renderButton(powerBtn, '✨', powerColor, powerBtn?.disabled ? '已用' : '道具');
+
+    // 抖音环境下增强按钮渲染
+    const isDouyinEnv = typeof tt !== 'undefined';
+
+    if (isDouyinEnv) {
+      // 抖音环境：移除调试边框，优化渲染性能
+      this.renderButton(powerBtn, '✨', powerColor, powerBtn?.disabled ? '已用' : '道具');
+    } else {
+      // 开发环境：保留调试边框
+      this.ctx.save();
+      this.ctx.strokeStyle = '#00FF00'; // 绿色边框便于调试
+      this.ctx.lineWidth = 2;
+      this.ctx.strokeRect(powerBtn.x, powerBtn.y, powerBtn.width, powerBtn.height);
+      this.ctx.restore();
+      this.renderButton(powerBtn, '✨', powerColor, powerBtn?.disabled ? '已用' : '道具');
+    }
   }
   
   // 渲染单个按钮
@@ -786,13 +813,24 @@ export class GameUI {
     this.ctx.save();
     const disabled = !!(button && button.disabled);
     if (disabled) { this.ctx.globalAlpha = 0.6; }
-    
-    // 按钮阴影
-    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    this.ctx.shadowBlur = 6;
-    this.ctx.shadowOffsetX = 0;
-    this.ctx.shadowOffsetY = 3;
-    
+
+    // 抖音环境：简化阴影和特效，提高性能
+    const isDouyinEnv = typeof tt !== 'undefined';
+
+    if (isDouyinEnv) {
+      // 抖音环境：使用简化的渲染方式
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+      this.ctx.shadowBlur = 4;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 2;
+    } else {
+      // 开发环境：保留完整特效
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+      this.ctx.shadowBlur = 6;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 3;
+    }
+
     // 按钮背景渐变
     const gradient = this.ctx.createRadialGradient(
       button.x + button.width/2, button.y + button.height/3,
@@ -803,11 +841,11 @@ export class GameUI {
     gradient.addColorStop(0, this.lightenColor(color, 0.3));
     gradient.addColorStop(0.7, color);
     gradient.addColorStop(1, this.darkenColor(color, 0.2));
-    
+
     this.ctx.fillStyle = gradient;
     this.roundRect(button.x, button.y, button.width, button.height, 12);
     this.ctx.fill();
-    
+
     // 按钮高光
     const highlightGradient = this.ctx.createLinearGradient(
       button.x, button.y,
@@ -815,34 +853,48 @@ export class GameUI {
     );
     highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
-    
+
     this.ctx.fillStyle = highlightGradient;
     this.roundRect(button.x, button.y, button.width, button.height/2, 12);
     this.ctx.fill();
-    
+
     // 按钮边框
     this.ctx.shadowColor = 'transparent';
     this.ctx.strokeStyle = this.darkenColor(color, 0.4);
     this.ctx.lineWidth = 2;
     this.ctx.stroke();
-    
+
     // 内边框高光
     this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     this.ctx.lineWidth = 1;
     this.roundRect(button.x + 1, button.y + 1, button.width - 2, button.height - 2, 11);
     this.ctx.stroke();
-    
-    // 按钮图标
-    this.ctx.font = '22px Arial, sans-serif';
+
+    // 按钮图标 - 抖音环境增大字体
+    const iconSize = isDouyinEnv ? '26px' : '22px';
+    this.ctx.font = `bold ${iconSize} Arial, sans-serif`;
     this.ctx.fillStyle = (button && button.disabled) ? '#E5E7EB' : 'white';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    this.ctx.shadowBlur = 2;
-    this.ctx.shadowOffsetX = 1;
-    this.ctx.shadowOffsetY = 1;
+
+    if (!isDouyinEnv) {
+      // 开发环境：保留文字阴影
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+      this.ctx.shadowBlur = 2;
+      this.ctx.shadowOffsetX = 1;
+      this.ctx.shadowOffsetY = 1;
+    }
+
     this.ctx.fillText(icon, button.x + button.width/2, button.y + button.height/2);
-    
+
+    // 抖音环境：添加简单的tooltip提示
+    if (isDouyinEnv && tooltip && !disabled) {
+      this.ctx.font = '12px Arial, sans-serif';
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      this.ctx.shadowColor = 'transparent';
+      this.ctx.fillText(tooltip, button.x + button.width/2, button.y + button.height + 15);
+    }
+
     this.ctx.restore();
   }
   
@@ -888,9 +940,18 @@ export class GameUI {
     this.touchState.startY = y;
     this.touchState.currentX = x;
     this.touchState.currentY = y;
-    
-    // 检查按钮点击
-    return this.checkButtonClick(x, y);
+
+    // 抖音环境：立即检查按钮点击，提高响应速度
+    const buttonClick = this.checkButtonClick(x, y);
+    if (buttonClick) {
+      const isDouyinEnv = typeof tt !== 'undefined';
+      if (isDouyinEnv) {
+        console.log(`[DouyinUI] TouchStart triggered button: ${buttonClick.name}`);
+      }
+      return buttonClick;
+    }
+
+    return null;
   }
   
   // 处理触摸移动
@@ -933,10 +994,28 @@ export class GameUI {
   
   // 检查按钮点击
   checkButtonClick(x, y) {
+    const isDouyinEnv = typeof tt !== 'undefined';
+
     for (const [name, button] of Object.entries(this.buttons)) {
       if (button && button.disabled) continue;
-      if (x >= button.x && x <= button.x + button.width &&
-          y >= button.y && y <= button.y + button.height) {
+
+      // 抖音环境：扩大点击区域，提升触摸精度容错
+      const clickArea = isDouyinEnv ? {
+        x: button.x - 5,
+        y: button.y - 5,
+        width: button.width + 10,
+        height: button.height + 10
+      } : button;
+
+      if (x >= clickArea.x && x <= clickArea.x + clickArea.width &&
+          y >= clickArea.y && y <= clickArea.y + clickArea.height) {
+
+        if (isDouyinEnv) {
+          console.log(`[DouyinUI] Button clicked: ${name} at (${x.toFixed(1)}, ${y.toFixed(1)}), expanded area:`, clickArea);
+        } else {
+          console.log(`[UI] Button clicked: ${name} at (${x.toFixed(1)}, ${y.toFixed(1)}), button:`, button);
+        }
+
         return { type: 'button', name: name };
       }
     }

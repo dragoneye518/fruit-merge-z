@@ -198,6 +198,15 @@ export class GameLogic {
   // 抖音/全局触摸事件桥接（供 game.js 调用）
   handleTouchStart(clientX, clientY) {
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+
+    // 调试：输出触摸坐标和按钮位置
+    const powerBtn = this.gameUI?.buttons?.power;
+    console.log(`[TouchStart] Original: (${clientX}, ${clientY}) -> Normalized: (${x.toFixed(1)}, ${y.toFixed(1)})`);
+    if (powerBtn) {
+      console.log(`[TouchStart] Power button: x=${powerBtn.x}, y=${powerBtn.y}, w=${powerBtn.width}, h=${powerBtn.height}`);
+      console.log(`[TouchStart] Touch in button area: ${x >= powerBtn.x && x <= powerBtn.x + powerBtn.width && y >= powerBtn.y && y <= powerBtn.y + powerBtn.height}`);
+    }
+
     // 游戏结束时，优先判断是否点击了重开按钮（兼容抖音 tt.onTouchStart 转发）
     if (this.gameState === GAME_STATES.GAME_OVER && this.restartButton) {
       const b = this.restartButton;
@@ -207,7 +216,16 @@ export class GameLogic {
         return;
       }
     }
-    // 开启投放幽灵预览
+
+    // 优先检查按钮点击 - 直接使用 checkButtonClick 避免重复处理
+    const buttonResult = this.gameUI.checkButtonClick(x, y);
+    if (buttonResult) {
+      console.log(`[TouchStart] Button clicked: ${buttonResult.name}`);
+      this.handleUIEvent(buttonResult);
+      return; // 按钮点击后直接返回，不进行投放预览
+    }
+
+    // 只有在没有点击按钮时才开启投放幽灵预览
     {
       const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
       const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
@@ -216,14 +234,19 @@ export class GameLogic {
       this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
       this.previewActive = true;
     }
-    const result = this.gameUI.onTouchStart(x, y);
-    if (result) {
-      this.handleUIEvent(result);
-    }
   }
 
   handleTouchMove(clientX, clientY) {
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+
+    // 优先检查按钮点击
+    const buttonResult = this.gameUI.checkButtonClick(x, y);
+    if (buttonResult) {
+      console.log(`[TouchMove] Button touched: ${buttonResult.name}`);
+      // 在移动过程中不立即触发按钮，避免误触
+      return;
+    }
+
     // 更新投放幽灵预览位置
     {
       const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
@@ -233,20 +256,11 @@ export class GameLogic {
       this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
       this.previewActive = true;
     }
-
-    // 处理UI事件，确保正确处理按钮点击
-    const result = this.gameUI.onTouchMove(x, y);
-    if (result) {
-      console.log(`[TouchMove] Processing UI event: ${result.type}`);
-      if (result.type === 'button') {
-        this.handleUIEvent(result);
-      }
-    }
   }
 
   handleTouchEnd(clientX, clientY) {
     console.log(`[TouchEnd] Processing touch end at (${clientX}, ${clientY})`);
-    
+
     // 游戏结束状态处理
     if (this.gameState === GAME_STATES.GAME_OVER) {
       const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
@@ -267,10 +281,18 @@ export class GameLogic {
 
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
     console.log(`[TouchEnd] Normalized coords: (${x.toFixed(1)}, ${y.toFixed(1)})`);
-    
+
     // 关闭投放幽灵预览
     this.previewActive = false;
     this.previewX = null;
+
+    // 优先检查按钮点击 - 在任何其他处理之前
+    const buttonResult = this.gameUI.checkButtonClick(x, y);
+    if (buttonResult) {
+      console.log(`[TouchEnd] Button clicked: ${buttonResult.name}`);
+      this.handleUIEvent(buttonResult);
+      return; // 按钮点击后直接返回，不处理投放
+    }
 
     // 全面的游戏状态检查
     if (this.gameState !== GAME_STATES.PLAYING) {
@@ -329,23 +351,9 @@ export class GameLogic {
       return;
     }
 
-    // 处理UI事件
-    const result = this.gameUI.onTouchEnd(x, y);
-    console.log(`[TouchEnd] UI result:`, result);
-    
-    if (result) {
-      if (result.type === 'button') {
-        console.log(`[TouchEnd] Processing button click: ${result.name}`);
-        this.handleUIEvent(result);
-      } else if (result.type === 'drop') {
-        console.log(`[TouchEnd] Processing drop request at (${result.x.toFixed(1)}, ${result.y.toFixed(1)})`);
-        this.dropFruit(result.x, result.y);
-      }
-    } else {
-      console.warn('[TouchEnd] No UI result returned, attempting direct drop');
-      // 如果UI没有返回结果，尝试直接投放
-      this.dropFruit(x, y);
-    }
+    // 只有在没有点击按钮时才处理投放
+    console.log(`[TouchEnd] Processing drop request at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+    this.dropFruit(x, y);
   }
 
   restartGame() {
@@ -369,19 +377,16 @@ export class GameLogic {
     // 鼠标事件（开发调试用）- 只在非抖音环境下启用
     if (typeof tt === 'undefined' && this.canvas && typeof this.canvas.addEventListener === 'function') {
       this.canvas.addEventListener('mousedown', (e) => {
-        const { x, y } = this.normalizeToCanvasCoords(e.clientX ?? 0, e.clientY ?? 0);
-        // 调用统一的触摸开始处理
-        this.handleTouchStart(x, y);
+        // 传递原始 client 坐标，由内部方法统一归一化
+        this.handleTouchStart(e.clientX ?? 0, e.clientY ?? 0);
       });
 
       this.canvas.addEventListener('mousemove', (e) => {
-        const { x, y } = this.normalizeToCanvasCoords(e.clientX ?? 0, e.clientY ?? 0);
-        this.handleTouchMove(x, y);
+        this.handleTouchMove(e.clientX ?? 0, e.clientY ?? 0);
       });
 
       this.canvas.addEventListener('mouseup', (e) => {
-        const { x, y } = this.normalizeToCanvasCoords(e.clientX ?? 0, e.clientY ?? 0);
-        this.handleTouchEnd(x, y);
+        this.handleTouchEnd(e.clientX ?? 0, e.clientY ?? 0);
       });
 
       console.log('[EventListeners] Mouse events added for development');

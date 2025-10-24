@@ -1,0 +1,91 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg3" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" style="stop-color:#FFE066"/>
+      <stop offset="100%" style="stop-color:#FF6B35"/>
+    </radialGradient>
+    <radialGradient id="strawberry3" cx="30%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#FF69B4"/>
+      <stop offset="100%" style="stop-color:#FF1493"/>
+    </radialGradient>
+    <radialGradient id="orange3" cx="30%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#FFA500"/>
+      <stop offset="100%" style="stop-color:#FF8C00"/>
+    </radialGradient>
+    <radialGradient id="watermelon3" cx="30%" cy="30%" r="60%">
+      <stop offset="0%" style="stop-color:#90EE90"/>
+      <stop offset="100%" style="stop-color:#32CD32"/>
+    </radialGradient>
+    <filter id="bounce3">
+      <feDropShadow dx="0" dy="8" stdDeviation="4" flood-color="#000000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <circle cx="300" cy="300" r="300" fill="url(#bg3)"/>
+  
+  <!-- Cute strawberry (left) -->
+  <ellipse cx="180" cy="250" rx="45" ry="55" fill="url(#strawberry3)" filter="url(#bounce3)"/>
+  <!-- Strawberry seeds -->
+  <ellipse cx="170" cy="240" rx="3" ry="4" fill="#FFE4B5"/>
+  <ellipse cx="185" cy="235" rx="3" ry="4" fill="#FFE4B5"/>
+  <ellipse cx="175" cy="255" rx="3" ry="4" fill="#FFE4B5"/>
+  <ellipse cx="190" cy="250" rx="3" ry="4" fill="#FFE4B5"/>
+  <ellipse cx="180" cy="270" rx="3" ry="4" fill="#FFE4B5"/>
+  <!-- Strawberry leaves -->
+  <path d="M 160 210 Q 180 200 200 210 Q 190 190 180 195 Q 170 190 160 210" fill="#32CD32"/>
+  <!-- Cute face -->
+  <circle cx="170" cy="235" r="4" fill="#000000"/>
+  <circle cx="190" cy="235" r="4" fill="#000000"/>
+  <path d="M 170 250 Q 180 260 190 250" stroke="#000000" stroke-width="2" fill="none"/>
+  
+  <!-- Cute orange (right) -->
+  <circle cx="420" cy="250" r="50" fill="url(#orange3)" filter="url(#bounce3)"/>
+  <!-- Orange texture -->
+  <circle cx="420" cy="250" r="40" fill="none" stroke="#FF7F00" stroke-width="2" opacity="0.5"/>
+  <circle cx="420" cy="250" r="30" fill="none" stroke="#FF7F00" stroke-width="1" opacity="0.3"/>
+  <!-- Orange leaf -->
+  <ellipse cx="425" cy="210" rx="8" ry="5" fill="#32CD32"/>
+  <!-- Cute face -->
+  <circle cx="405" cy="235" r="5" fill="#000000"/>
+  <circle cx="435" cy="235" r="5" fill="#000000"/>
+  <ellipse cx="420" cy="265" rx="8" ry="5" fill="#FF4500"/>
+  
+  <!-- Center magic sparkles -->
+  <circle cx="300" cy="200" r="8" fill="#FFD700"/>
+  <path d="M 300 185 L 305 195 L 315 190 L 305 200 L 300 210 L 295 200 L 285 190 L 295 195 Z" fill="#FFD700"/>
+  <circle cx="280" cy="180" r="5" fill="#FF69B4"/>
+  <circle cx="320" cy="185" r="6" fill="#00CED1"/>
+  
+  <!-- Big cute watermelon (bottom center) -->
+  <ellipse cx="300" cy="380" rx="70" ry="60" fill="url(#watermelon3)" filter="url(#bounce3)"/>
+  <!-- Watermelon stripes -->
+  <path d="M 250 380 Q 300 360 350 380" stroke="#228B22" stroke-width="4" fill="none"/>
+  <path d="M 260 395 Q 300 375 340 395" stroke="#228B22" stroke-width="3" fill="none"/>
+  <path d="M 270 405 Q 300 390 330 405" stroke="#228B22" stroke-width="2" fill="none"/>
+  <!-- Watermelon seeds -->
+  <ellipse cx="285" cy="375" rx="4" ry="6" fill="#000000"/>
+  <ellipse cx="315" cy="375" rx="4" ry="6" fill="#000000"/>
+  <ellipse cx="300" cy="390" rx="4" ry="6" fill="#000000"/>
+  <!-- Super cute face -->
+  <circle cx="280" cy="360" r="6" fill="#000000"/>
+  <circle cx="320" cy="360" r="6" fill="#000000"/>
+  <circle cx="275" cy="355" r="2" fill="#FFFFFF"/>
+  <circle cx="315" cy="355" r="2" fill="#FFFFFF"/>
+  <path d="M 285 385 Q 300 395 315 385" stroke="#000000" stroke-width="3" fill="none"/>
+  
+  <!-- Merge arrows with hearts -->
+  <path d="M 230 250 L 270 280" stroke="#FF1493" stroke-width="6" fill="none" marker-end="url(#heart3)"/>
+  <path d="M 370 250 L 330 280" stroke="#FF1493" stroke-width="6" fill="none" marker-end="url(#heart3)"/>
+  
+  <!-- Heart arrow marker -->
+  <defs>
+    <marker id="heart3" markerWidth="16" markerHeight="14" refX="14" refY="7" orient="auto">
+      <path d="M 2,7 C 2,3 6,0 10,3 C 14,0 18,3 18,7 C 18,11 10,18 10,18 C 10,18 2,11 2,7 Z" fill="#FF1493"/>
+    </marker>
+  </defs>
+  
+  <!-- Title with cute font -->
+  <text x="300" y="500" text-anchor="middle" font-family="Comic Sans MS, Arial Black" font-size="38" fill="#FFFFFF" font-weight="bold" stroke="#FF1493" stroke-width="2">合成新水果</text>
+  <text x="300" y="535" text-anchor="middle" font-family="Comic Sans MS, Arial" font-size="20" fill="#FFE4B5">🍓+🍊=🍉</text>
+</svg>

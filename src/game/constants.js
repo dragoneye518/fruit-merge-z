@@ -59,7 +59,7 @@ export const GAME_CONFIG = {
     gravity: 1000,       // 重力（提高整体下落速度）
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
-    airResistance: 0.985,// 空气阻力（减小空气阻力，提升下落与碰撞速度）
+    airResistance: 0.993,// 空气阻力（提高保留速度，增强沿边缘下滑速度）
     maxVelocity: 300,    // 最大速度
     settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
     mergeDistance: 2.0,  // 合成距离

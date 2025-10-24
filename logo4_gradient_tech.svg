@@ -1,0 +1,113 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0F0C29"/>
+      <stop offset="50%" style="stop-color:#24243e"/>
+      <stop offset="100%" style="stop-color:#302B63"/>
+    </linearGradient>
+    <linearGradient id="neon4a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00F5FF"/>
+      <stop offset="100%" style="stop-color:#0080FF"/>
+    </linearGradient>
+    <linearGradient id="neon4b" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF00FF"/>
+      <stop offset="100%" style="stop-color:#8A2BE2"/>
+    </linearGradient>
+    <linearGradient id="neon4c" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00FF7F"/>
+      <stop offset="100%" style="stop-color:#32CD32"/>
+    </linearGradient>
+    <linearGradient id="gold4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#FFA500"/>
+    </linearGradient>
+    <filter id="neonGlow4">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="strongGlow4">
+      <feGaussianBlur stdDeviation="10" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="600" height="600" fill="url(#bg4)"/>
+  
+  <!-- Tech grid pattern -->
+  <defs>
+    <pattern id="grid4" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#FFFFFF" stroke-width="0.5" opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="600" height="600" fill="url(#grid4)"/>
+  
+  <!-- Central hexagon container -->
+  <polygon points="300,100 400,150 400,250 300,300 200,250 200,150" fill="none" stroke="url(#gold4)" stroke-width="4" filter="url(#neonGlow4)"/>
+  
+  <!-- Left tech fruit (circuit style) -->
+  <circle cx="200" cy="200" r="40" fill="url(#neon4a)" filter="url(#neonGlow4)"/>
+  <circle cx="200" cy="200" r="30" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <circle cx="200" cy="200" r="20" fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.4"/>
+  <circle cx="200" cy="200" r="10" fill="#FFFFFF" opacity="0.8"/>
+  <!-- Circuit lines -->
+  <path d="M 180 180 L 190 190 L 210 190 L 220 180" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.8"/>
+  <path d="M 180 220 L 190 210 L 210 210 L 220 220" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.8"/>
+  
+  <!-- Right tech fruit (hologram style) -->
+  <circle cx="400" cy="200" r="40" fill="url(#neon4b)" filter="url(#neonGlow4)"/>
+  <polygon points="400,170 420,185 420,215 400,230 380,215 380,185" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.8"/>
+  <polygon points="400,180 410,190 410,210 400,220 390,210 390,190" fill="#FFFFFF" opacity="0.6"/>
+  <!-- Hologram lines -->
+  <path d="M 380 175 L 420 175" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+  <path d="M 380 185 L 420 185" stroke="#FFFFFF" stroke-width="1" opacity="0.3"/>
+  <path d="M 380 195 L 420 195" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+  <path d="M 380 205 L 420 205" stroke="#FFFFFF" stroke-width="1" opacity="0.3"/>
+  <path d="M 380 215 L 420 215" stroke="#FFFFFF" stroke-width="1" opacity="0.5"/>
+  <path d="M 380 225 L 420 225" stroke="#FFFFFF" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Center fusion core -->
+  <circle cx="300" cy="200" r="25" fill="url(#gold4)" filter="url(#strongGlow4)"/>
+  <circle cx="300" cy="200" r="15" fill="#FFFFFF" opacity="0.9"/>
+  <text x="300" y="208" text-anchor="middle" font-family="Arial Black" font-size="18" fill="#0F0C29" font-weight="bold">⚡</text>
+  
+  <!-- Result tech fruit (bottom) -->
+  <circle cx="300" cy="380" r="60" fill="url(#neon4c)" filter="url(#strongGlow4)"/>
+  <circle cx="300" cy="380" r="45" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.7"/>
+  <circle cx="300" cy="380" r="30" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.5"/>
+  <circle cx="300" cy="380" r="15" fill="#FFFFFF" opacity="0.8"/>
+  <!-- Tech pattern -->
+  <path d="M 270 350 Q 300 340 330 350 Q 320 380 300 390 Q 280 380 270 350" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
+  <path d="M 280 360 L 320 360 M 285 370 L 315 370 M 290 380 L 310 380" stroke="#FFFFFF" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Energy flow arrows -->
+  <path d="M 240 200 L 275 200" stroke="url(#gold4)" stroke-width="4" fill="none" marker-end="url(#techArrow4)" filter="url(#neonGlow4)"/>
+  <path d="M 325 200 L 360 200" stroke="url(#gold4)" stroke-width="4" fill="none" marker-start="url(#techArrow4)" filter="url(#neonGlow4)"/>
+  <path d="M 300 240 L 300 320" stroke="url(#gold4)" stroke-width="4" fill="none" marker-end="url(#techArrow4)" filter="url(#neonGlow4)"/>
+  
+  <!-- Tech arrow marker -->
+  <defs>
+    <marker id="techArrow4" markerWidth="14" markerHeight="10" refX="12" refY="5" orient="auto">
+      <polygon points="0 0, 14 5, 0 10, 3 5" fill="url(#gold4)"/>
+    </marker>
+  </defs>
+  
+  <!-- Energy particles -->
+  <circle cx="250" cy="150" r="3" fill="#00F5FF" filter="url(#neonGlow4)"/>
+  <circle cx="350" cy="160" r="2" fill="#FF00FF" filter="url(#neonGlow4)"/>
+  <circle cx="320" cy="130" r="2" fill="#00FF7F" filter="url(#neonGlow4)"/>
+  <circle cx="280" cy="140" r="3" fill="#FFD700" filter="url(#neonGlow4)"/>
+  
+  <!-- Title with tech font -->
+  <text x="300" y="500" text-anchor="middle" font-family="Arial Black" font-size="36" fill="url(#gold4)" font-weight="bold" filter="url(#neonGlow4)">合成新水果</text>
+  <text x="300" y="530" text-anchor="middle" font-family="Arial" font-size="16" fill="#00F5FF" opacity="0.8">FRUIT FUSION TECH</text>
+  
+  <!-- Tech border -->
+  <rect x="20" y="20" width="560" height="560" rx="20" fill="none" stroke="url(#gold4)" stroke-width="2" opacity="0.6"/>
+</svg>

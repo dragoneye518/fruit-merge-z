@@ -1,0 +1,168 @@
+<svg width="600" height="600" viewBox="0 0 600 600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 抖音风格渐变 -->
+    <linearGradient id="tiktokGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF0050"/>
+      <stop offset="50%" style="stop-color:#FF4081"/>
+      <stop offset="100%" style="stop-color:#00F5FF"/>
+    </linearGradient>
+    
+    <!-- 霓虹渐变 -->
+    <radialGradient id="neon" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#FF6EC7"/>
+      <stop offset="50%" style="stop-color:#BF59CF"/>
+      <stop offset="100%" style="stop-color:#8E44AD"/>
+    </radialGradient>
+    
+    <!-- 分享箭头渐变 -->
+    <linearGradient id="shareArrow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#00E676"/>
+      <stop offset="100%" style="stop-color:#00BCD4"/>
+    </linearGradient>
+    
+    <!-- 霓虹发光 -->
+    <filter id="neonGlow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 强烈发光 -->
+    <filter id="strongGlow">
+      <feGaussianBlur stdDeviation="12" result="coloredBlur"/>
+      <feMerge> 
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 动感模糊 -->
+    <filter id="motionBlur">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3,0"/>
+    </filter>
+  </defs>
+  
+  <!-- 深色背景 -->
+  <rect width="600" height="600" fill="#0D1117"/>
+  
+  <!-- 霓虹网格背景 -->
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="url(#neon)" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  <rect width="600" height="600" fill="url(#grid)"/>
+  
+  <!-- 中心发光圈 -->
+  <circle cx="300" cy="300" r="200" fill="none" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.6" filter="url(#neonGlow)"/>
+  <circle cx="300" cy="300" r="150" fill="none" stroke="url(#neon)" stroke-width="2" opacity="0.4" filter="url(#neonGlow)"/>
+  
+  <!-- 分享网络节点 -->
+  <g filter="url(#strongGlow)">
+    <!-- 中心主节点 -->
+    <circle cx="300" cy="300" r="25" fill="url(#tiktokGrad)"/>
+    
+    <!-- 周围分享节点 -->
+    <circle cx="200" cy="200" r="15" fill="url(#shareArrow)"/>
+    <circle cx="400" cy="200" r="15" fill="url(#shareArrow)"/>
+    <circle cx="500" cy="300" r="15" fill="url(#shareArrow)"/>
+    <circle cx="400" cy="400" r="15" fill="url(#shareArrow)"/>
+    <circle cx="200" cy="400" r="15" fill="url(#shareArrow)"/>
+    <circle cx="100" cy="300" r="15" fill="url(#shareArrow)"/>
+    
+    <!-- 连接线 -->
+    <line x1="300" y1="300" x2="200" y2="200" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+    <line x1="300" y1="300" x2="400" y2="200" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+    <line x1="300" y1="300" x2="500" y2="300" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+    <line x1="300" y1="300" x2="400" y2="400" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+    <line x1="300" y1="300" x2="200" y2="400" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+    <line x1="300" y1="300" x2="100" y2="300" stroke="url(#tiktokGrad)" stroke-width="3" opacity="0.8"/>
+  </g>
+  
+  <!-- 水果图标在节点上 -->
+  <g filter="url(#neonGlow)">
+    <!-- 中心超级水果 -->
+    <circle cx="300" cy="300" r="20" fill="#FFD700" opacity="0.9"/>
+    <circle cx="295" cy="295" r="3" fill="#FF6B6B"/>
+    <circle cx="305" cy="295" r="3" fill="#4CAF50"/>
+    <circle cx="300" cy="305" r="3" fill="#2196F3"/>
+    
+    <!-- 分享节点水果 -->
+    <circle cx="200" cy="200" r="8" fill="#FF6B6B"/>
+    <circle cx="400" cy="200" r="8" fill="#4CAF50"/>
+    <circle cx="500" cy="300" r="8" fill="#FF9800"/>
+    <circle cx="400" cy="400" r="8" fill="#9C27B0"/>
+    <circle cx="200" cy="400" r="8" fill="#00BCD4"/>
+    <circle cx="100" cy="300" r="8" fill="#FFEB3B"/>
+  </g>
+  
+  <!-- 病毒式传播箭头 -->
+  <g filter="url(#motionBlur)">
+    <!-- 向外扩散的箭头 -->
+    <path d="M 320 280 L 340 290 L 330 300 L 350 300 L 330 310 L 340 320 L 320 310 Z" 
+          fill="url(#shareArrow)" opacity="0.8"/>
+    <path d="M 280 320 L 290 340 L 300 330 L 300 350 L 310 330 L 320 340 L 310 320 Z" 
+          fill="url(#shareArrow)" opacity="0.8" transform="rotate(90 300 300)"/>
+    <path d="M 280 280 L 290 260 L 300 270 L 300 250 L 310 270 L 320 260 L 310 280 Z" 
+          fill="url(#shareArrow)" opacity="0.8" transform="rotate(180 300 300)"/>
+    <path d="M 320 320 L 340 310 L 330 300 L 350 300 L 330 290 L 340 280 L 320 290 Z" 
+          fill="url(#shareArrow)" opacity="0.8" transform="rotate(270 300 300)"/>
+  </g>
+  
+  <!-- 社交媒体风格图标 -->
+  <g transform="translate(150,150)" filter="url(#neonGlow)">
+    <!-- 点赞图标 -->
+    <path d="M 0 10 Q 0 0 10 0 Q 20 0 20 10 L 20 20 Q 20 30 10 30 L 0 30 Z" 
+          fill="url(#tiktokGrad)" opacity="0.7"/>
+    <text x="10" y="20" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF">👍</text>
+  </g>
+  
+  <g transform="translate(430,150)" filter="url(#neonGlow)">
+    <!-- 分享图标 -->
+    <circle r="15" fill="url(#shareArrow)" opacity="0.7"/>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF">📤</text>
+  </g>
+  
+  <g transform="translate(150,430)" filter="url(#neonGlow)">
+    <!-- 评论图标 -->
+    <circle r="15" fill="url(#neon)" opacity="0.7"/>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF">💬</text>
+  </g>
+  
+  <g transform="translate(430,430)" filter="url(#neonGlow)">
+    <!-- 收藏图标 -->
+    <circle r="15" fill="url(#tiktokGrad)" opacity="0.7"/>
+    <text x="0" y="5" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF">⭐</text>
+  </g>
+  
+  <!-- 流行趋势波浪 -->
+  <path d="M 50 500 Q 150 480 250 500 T 450 500 T 650 500" 
+        stroke="url(#tiktokGrad)" stroke-width="4" fill="none" filter="url(#neonGlow)" opacity="0.6"/>
+  <path d="M 50 520 Q 150 500 250 520 T 450 520 T 650 520" 
+        stroke="url(#neon)" stroke-width="3" fill="none" filter="url(#neonGlow)" opacity="0.4"/>
+  
+  <!-- 热门标签 -->
+  <rect x="50" y="50" width="80" height="25" rx="12" fill="url(#tiktokGrad)" filter="url(#neonGlow)"/>
+  <text x="90" y="67" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">#热门</text>
+  
+  <rect x="470" y="50" width="80" height="25" rx="12" fill="url(#shareArrow)" filter="url(#neonGlow)"/>
+  <text x="510" y="67" text-anchor="middle" font-family="Arial" font-size="12" fill="#FFFFFF" font-weight="bold">#挑战</text>
+  
+  <!-- 主标题 -->
+  <text x="300" y="540" text-anchor="middle" font-family="Arial Black" font-size="36" fill="url(#tiktokGrad)" font-weight="bold" filter="url(#strongGlow)">合成新水果</text>
+  <text x="300" y="565" text-anchor="middle" font-family="Arial" font-size="14" fill="#00F5FF" opacity="0.9">VIRAL FRUIT FUSION</text>
+  
+  <!-- 装饰粒子 -->
+  <g opacity="0.6">
+    <circle cx="80" cy="120" r="2" fill="url(#tiktokGrad)" filter="url(#neonGlow)"/>
+    <circle cx="520" cy="120" r="2" fill="url(#shareArrow)" filter="url(#neonGlow)"/>
+    <circle cx="80" cy="480" r="2" fill="url(#neon)" filter="url(#neonGlow)"/>
+    <circle cx="520" cy="480" r="2" fill="url(#tiktokGrad)" filter="url(#neonGlow)"/>
+    <circle cx="150" cy="80" r="1.5" fill="url(#shareArrow)" filter="url(#neonGlow)"/>
+    <circle cx="450" cy="80" r="1.5" fill="url(#neon)" filter="url(#neonGlow)"/>
+    <circle cx="150" cy="520" r="1.5" fill="url(#tiktokGrad)" filter="url(#neonGlow)"/>
+    <circle cx="450" cy="520" r="1.5" fill="url(#shareArrow)" filter="url(#neonGlow)"/>
+  </g>
+</svg>
