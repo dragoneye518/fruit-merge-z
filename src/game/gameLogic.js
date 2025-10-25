@@ -571,16 +571,42 @@ export class GameLogic {
     // 锁定投放
     this.canDrop = false;
 
-    // 使用拖放释放的X轴坐标和固定的Y轴位置作为投放位置
+    // 水果始终从屏幕顶部中间生成，但会移动到用户指定的X位置
+    const centerX = this.canvas.width / 2; // 屏幕中间X坐标
+    const spawnY = 30; // 屏幕顶部生成位置
+    
+    // 用户指定的投放X位置（限制在安全范围内）
     const dropLeft = 50;
     const dropRight = this.canvas.width - 50;
-    const dropX = Math.max(dropLeft, Math.min(dropRight, x)); // 使用释放时的X坐标，但限制在安全范围内
-    const dropY = GAME_CONFIG.DROP_LINE_Y || 111; // 固定的Y轴位置（危险线位置）
+    const targetX = Math.max(dropLeft, Math.min(dropRight, x)); // 目标X坐标
 
     // 创建水果
-    const fruit = this.fruitManager.createFruit(this.nextFruitType, dropX, dropY);
+    const fruit = this.fruitManager.createFruit(this.nextFruitType, centerX, spawnY);
     if (fruit) {
-      // 为新生成的水果注入初始下落速度（修复抖音环境下第二次投放“几乎不动”的问题）
+      // 设置水果的目标位置和移动状态
+      fruit.body.targetX = targetX;
+      fruit.body.isMovingToTarget = true;
+      fruit.body.moveSpeed = 8; // 移动速度（像素/帧）
+      
+      // 添加水果生成动效
+      if (this.effectSystem) {
+        // 生成闪光特效
+        this.effectSystem.createSparkle(centerX, spawnY, {
+          particleCount: 12,
+          colors: ['#FFD700', '#FFA500', '#FF6347', '#FFFFFF'],
+          size: 3,
+          life: 0.8,
+          spread: 30
+        });
+        
+        // 生成下落轨迹特效
+        this.effectSystem.createDropTrail(centerX, spawnY, {
+          particleCount: 6,
+          colors: ['#87CEEB', '#B0E0E6', '#E0F6FF']
+        });
+      }
+      
+      // 为新生成的水果注入初始下落速度（修复抖音环境下第二次投放"几乎不动"的问题）
       try {
         const rb = fruit.body;
         const initialVy = (GAME_CONFIG?.DROP?.initialVelocityY ?? 420);
@@ -591,7 +617,7 @@ export class GameLogic {
         rb.prevPosition.y = rb.position.y - initialVy * dt0;
       } catch (_) { /* ignore initial velocity injection errors */ }
 
-      console.log(`[DropFruit] SUCCESS: Dropped fruit type=${this.nextFruitType} at (${x.toFixed(1)}, ${dropY})`);
+      console.log(`[DropFruit] SUCCESS: Spawned fruit type=${this.nextFruitType} at center (${centerX}, ${spawnY}), moving to target (${targetX}, ${spawnY})`);
 
       // 设置当前下落的水果，并记录投放时间
       this.currentDroppingFruit = fruit.body;
@@ -1359,6 +1385,33 @@ export class GameLogic {
     console.log(`Play merge sound for ${fruitType}`);
   }
   
+  // 检查水果是否与其他水果发生碰撞
+  checkFruitCollision(targetFruit) {
+    if (!this.physicsEngine || !this.physicsEngine.bodies) {
+      return false;
+    }
+    
+    for (const body of this.physicsEngine.bodies) {
+      // 跳过自己和已标记移除的水果
+      if (body === targetFruit || body.isMarkedForRemoval) {
+        continue;
+      }
+      
+      // 计算距离
+      const dx = targetFruit.position.x - body.position.x;
+      const dy = targetFruit.position.y - body.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const minDistance = targetFruit.radius + body.radius;
+      
+      // 如果距离小于半径之和，说明发生碰撞
+      if (distance < minDistance + 2) { // 2px容差
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
   // 更新游戏逻辑（重构版）
   update(deltaTime) {
     // 某些宿主环境可能返回0或负的delta时间，使用安全的最小值
@@ -1559,14 +1612,10 @@ export class GameLogic {
     if (typeof this.ctx.roundRect === 'function') {
       this.ctx.roundRect(panelX, panelY, panelWidth, panelHeight, panelRadius);
     } else {
-      const r = panelRadius; const x = panelX; const y = panelY; const w = panelWidth; const h = panelHeight;
-      this.ctx.moveTo(x + r, y);
-      this.ctx.arcTo(x + w, y, x + w, y + h, r);
-      this.ctx.arcTo(x + w, y + h, x, y + h, r);
-      this.ctx.arcTo(x, y + h, x, y, r);
-      this.ctx.arcTo(x, y, x + w, y, r);
-      this.ctx.closePath();
+      // 使用简单矩形代替圆角矩形
+      this.ctx.rect(panelX, panelY, panelWidth, panelHeight);
     }
+    this.ctx.closePath();
     this.ctx.fill();
     this.ctx.stroke();
     // 关闭阴影影响后续文本
@@ -1632,14 +1681,10 @@ export class GameLogic {
     if (typeof this.ctx.roundRect === 'function') {
       this.ctx.roundRect(buttonX, buttonY, buttonWidth, buttonHeight, 10);
     } else {
-      const r = 10;
-      this.ctx.moveTo(buttonX + r, buttonY);
-      this.ctx.arcTo(buttonX + buttonWidth, buttonY, buttonX + buttonWidth, buttonY + buttonHeight, r);
-      this.ctx.arcTo(buttonX + buttonWidth, buttonY + buttonHeight, buttonX, buttonY + buttonHeight, r);
-      this.ctx.arcTo(buttonX, buttonY + buttonHeight, buttonX, buttonY, r);
-      this.ctx.arcTo(buttonX, buttonY, buttonX + buttonWidth, buttonY, r);
-      this.ctx.closePath();
+      // 使用简单矩形代替圆角矩形
+      this.ctx.rect(buttonX, buttonY, buttonWidth, buttonHeight);
     }
+    this.ctx.closePath();
     this.ctx.fill();
     
     // 按钮边框

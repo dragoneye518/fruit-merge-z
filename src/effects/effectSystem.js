@@ -661,6 +661,36 @@ export class EffectSystem {
     }
   }
   
+  // 创建闪光特效
+  createSparkle(x, y, options = {}) {
+    const particleCount = options.particleCount || 12;
+    const colors = options.colors || ['#FFD700', '#FFA500', '#FF6347', '#FFFFFF'];
+    const size = options.size || 3;
+    const life = options.life || 0.8;
+    const spread = options.spread || 30;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 50 + Math.random() * 100;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      
+      this.particles.push(new Particle(x, y, {
+        velocityX: Math.cos(angle) * speed,
+        velocityY: Math.sin(angle) * speed,
+        accelerationY: 80,
+        life: life * (0.8 + Math.random() * 0.4),
+        size: size * (0.5 + Math.random() * 0.5),
+        color: color,
+        friction: 0.96,
+        type: 'spark',
+        glow: true,
+        glowSize: 8,
+        rotationSpeed: (Math.random() - 0.5) * 10,
+        scaleSpeed: -0.8
+      }));
+    }
+  }
+
   // 增强版水果掉落轨迹特效
   createDropTrail(x, y, options = {}) {
     const particleCount = options.particleCount || 8;

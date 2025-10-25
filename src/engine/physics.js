@@ -149,6 +149,32 @@ export class PhysicsEngine {
 
   updatePositions(dt) {
     for (const body of this.bodies) {
+      // 处理水果移动到目标位置的逻辑
+      if (body.isMovingToTarget && body.targetX !== undefined) {
+        const currentX = body.position.x;
+        const targetX = body.targetX;
+        const moveSpeed = body.moveSpeed || 8;
+        
+        const distance = Math.abs(targetX - currentX);
+        if (distance > 1) {
+          // 计算移动方向和距离
+          const direction = targetX > currentX ? 1 : -1;
+          const moveDistance = Math.min(moveSpeed, distance);
+          
+          // 更新位置
+          body.position.x += direction * moveDistance;
+          body.prevPosition.x = body.position.x; // 保持一致性
+        } else {
+          // 到达目标位置，停止移动
+          body.position.x = targetX;
+          body.prevPosition.x = targetX;
+          body.isMovingToTarget = false;
+          body.targetX = undefined;
+          
+          console.log(`[Physics] Fruit reached target position: ${targetX}`);
+        }
+      }
+      
       body.updatePosition(dt);
     }
   }

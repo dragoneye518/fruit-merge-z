@@ -826,36 +826,19 @@ export class GameUI {
       return buttonClick;
     }
 
-    // 检查是否点击了下一个水果预览区域（危险线上方的投放区）
-    const previewX = this.nextFruitDragState.currentX;
-    const previewY = 50;
-    const previewRadius = 38; // 稍微扩大点击区域
+    // 全屏拖拽支持 - 在任何位置按住屏幕都可以开始拖拽
+    this.nextFruitDragState.isDragging = true;
+    this.nextFruitDragState.startX = x;
+    this.nextFruitDragState.currentX = x; // 设置新的X位置
     
-    const distToPreview = Math.sqrt((x - previewX) ** 2 + (y - previewY) ** 2);
-    if (distToPreview <= previewRadius) {
-      this.nextFruitDragState.isDragging = true;
-      this.nextFruitDragState.startX = x;
-      return { type: 'preview_drag', x, y };
-    }
-    
-    // 检查是否在危险线上方区域（投放区）进行拖动调整
-    const dangerLineY = GAME_CONFIG.DANGER_LINE.y || 111;
-    if (y <= dangerLineY) {
-      // 在危险线上方，开始拖动调整投放位置
-      this.nextFruitDragState.isDragging = true;
-      this.nextFruitDragState.startX = x;
-      this.nextFruitDragState.currentX = x; // 设置新的X位置
-      return { type: 'preview_drag', x, y };
-    }
-    
-    // 记录触摸状态，用于危险线下方的投放判断
+    // 记录触摸状态
     this.touchState.isDown = true;
     this.touchState.startX = x;
     this.touchState.startY = y;
     this.touchState.currentX = x;
     this.touchState.currentY = y;
 
-    return null;
+    return { type: 'preview_drag', x, y };
   }
   
   onTouchMove(x, y) {
@@ -885,7 +868,13 @@ export class GameUI {
     // 结束下一个水果预览拖动
     if (this.nextFruitDragState.isDragging) {
       this.nextFruitDragState.isDragging = false;
-      return { type: 'preview_drag_end', x: this.nextFruitDragState.currentX, y };
+      
+      // 拖拽结束时触发投放
+      return {
+        type: 'drop',
+        x: this.nextFruitDragState.currentX, // 使用拖拽的X坐标
+        y: y // 使用释放时的Y坐标
+      };
     }
     
     this.touchState.isDown = false;
@@ -896,17 +885,20 @@ export class GameUI {
       return buttonClick;
     }
 
-    // 只有在危险线下方点击才触发投放，水果从投放区位置投放
-    const dangerLineY = GAME_CONFIG.DANGER_LINE.y || 111;
-    if (y > dangerLineY) {
+    // 检查是否是有效的点击投放（需要在游戏区域内且不是按钮点击）
+    const gameAreaTop = GAME_CONFIG?.GAME_AREA?.top || 100;
+    const gameAreaBottom = GAME_CONFIG?.GAME_AREA?.bottom || this.canvas.height - 50;
+    
+    // 只有在游戏区域内的点击才触发投放
+    if (y >= gameAreaTop && y <= gameAreaBottom) {
       return {
         type: 'drop',
-        x: this.nextFruitDragState.currentX, // 使用投放区的X坐标
-        y: dangerLineY // 使用危险线Y坐标作为投放起始位置
+        x: this.nextFruitDragState.currentX, // 使用当前预览位置的X坐标
+        y: y // 使用点击的Y坐标
       };
     }
 
-    // 在危险线上方释放触摸时不触发投放
+    // 其他情况不触发投放
     return null;
   }
   
@@ -944,24 +936,21 @@ export class GameUI {
   roundRect(x, y, width, height, radius) {
     const ctx = this.ctx;
     if (!ctx) return;
-    const r = Math.max(0, Math.min(radius || 0, Math.min(width, height) / 2));
     
-    if (typeof ctx.moveTo !== 'function' || typeof ctx.quadraticCurveTo !== 'function') {
+    // 检查是否支持roundRect原生方法
+    if (typeof ctx.roundRect === 'function') {
       ctx.beginPath();
-      ctx.rect(x, y, width, height);
-      ctx.closePath();
+      ctx.roundRect(x, y, width, height, radius);
       return;
     }
+    
+    const r = Math.max(0, Math.min(radius || 0, Math.min(width, height) / 2));
+    
+    // 完全跳过复杂的圆角绘制，直接使用简单矩形
     ctx.beginPath();
-    ctx.moveTo(x + r, y);
-    ctx.lineTo(x + width - r, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-    ctx.lineTo(x + width, y + height - r);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-    ctx.lineTo(x + r, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-    ctx.lineTo(x, y + r);
-    ctx.quadraticCurveTo(x, y, x + r, y);
+    if (ctx.rect) {
+      ctx.rect(x, y, width, height);
+    }
     ctx.closePath();
   }
   
