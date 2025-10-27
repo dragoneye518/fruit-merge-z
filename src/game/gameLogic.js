@@ -81,9 +81,32 @@ export class GameLogic {
     // 投放控制
     this.canDrop = true;
     this.dropCooldown = 0;
-    this.nextFruitType = this.getRandomStarterFruit();
+    
+    // 预生成水果系统：当前要投放的水果和下一个水果
+    this.currentFruitType = this.getRandomStarterFruit(); // 当前要投放的水果
+    this.nextFruitType = this.getRandomStarterFruit();    // 下一个水果（预生成）
+    this.waitingForUserAction = true; // 等待用户操作投放当前水果
+    
     // 当前正在下落的水果（用于投放锁定）
     this.currentDroppingFruit = null;
+    
+    // 预生成的水果对象
+    this.previewFruit = null;
+    this.previewFruitX = this.canvas.width / 2; // 预览水果的X位置
+    this.previewFruitY = 80; // 预览水果的Y位置（屏幕顶部）
+    
+    // 拖动系统相关
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.dragOffsetX = 0;
+    this.dragOffsetY = 0;
+    this.dragBounds = {
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0
+    };
     
     // 危险检测
     this.dangerTimer = 0;
@@ -183,7 +206,7 @@ export class GameLogic {
     // 初始化UI
     this.gameUI.setScore(this.score);
     this.gameUI.setHighScore(this.highScore);
-    this.gameUI.setNextFruitType(this.nextFruitType);
+    this.gameUI.setNextFruitType(this.currentFruitType); // 显示当前要投放的水果
     if (typeof this.gameUI.setCombo === 'function') {
       this.gameUI.setCombo(this.combo || 0);
     }
@@ -193,11 +216,20 @@ export class GameLogic {
     if (typeof this.gameUI.setRunMaxCombo === 'function') {
       this.gameUI.setRunMaxCombo(this.maxCombo || 0);
     }
+    
+    // 创建预生成的水果
+    this.createPreviewFruit();
   }
 
   // 抖音/全局触摸事件桥接（供 game.js 调用）
   handleTouchStart(clientX, clientY) {
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+
+    // 优先处理确认对话框
+    if (this.confirmDialog && this.confirmDialog.visible) {
+      this.handleConfirmDialogClick(x, y);
+      return;
+    }
 
     // 调试：输出触摸坐标和按钮位置
     const powerBtn = this.gameUI?.buttons?.power;
@@ -217,54 +249,94 @@ export class GameLogic {
       }
     }
 
-    // 检查UI事件（包括下一个水果预览拖动）
+    // 检查UI事件（包括按钮点击）
     const uiResult = this.gameUI.onTouchStart(x, y);
     if (uiResult) {
       if (uiResult.type === 'button') {
-        console.log(`[TouchStart] Button clicked: ${uiResult.name}`);
-        this.handleUIEvent(uiResult);
-        return; // 按钮点击后直接返回，不进行投放预览
-      } else if (uiResult.type === 'preview_drag') {
-        console.log(`[TouchStart] Preview drag started at (${x.toFixed(1)}, ${y.toFixed(1)})`);
-        return; // 开始拖动预览水果，不进行投放预览
+        console.log(`[TouchStart] Button detected: ${uiResult.name} - will handle in touchEnd`);
+        // 标记按钮被按下，但不立即处理，等待touchEnd确认
+        this.buttonPressed = uiResult.name;
+        return; // 按钮检测后直接返回，不进行投放预览
       }
     }
 
-    // 只有在没有点击按钮或拖动预览时才开启投放幽灵预览
-    {
+    // 只有在游戏进行中且等待用户操作时才处理水果交互
+    if (this.gameState === GAME_STATES.PLAYING && this.waitingForUserAction && this.canDrop) {
+      // 检查是否点击在预生成水果上
+      if (this.isPointInPreviewFruit(x, y)) {
+        // 开始拖动
+        this.isDragging = true;
+        this.dragStartX = x;
+        this.dragStartY = y;
+        this.dragOffsetX = x - this.previewFruit.x;
+        this.dragOffsetY = y - this.previewFruit.y;
+        
+        console.log(`[TouchStart] Started dragging fruit at (${x.toFixed(1)}, ${y.toFixed(1)})`);
+        return;
+      }
+      
+      // 如果没有点击在水果上，则使用原有的预览逻辑（兼容性）
       const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
       const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
       const dropLeft = centerX - width / 2;
       const dropRight = centerX + width / 2;
       this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
       this.previewActive = true;
+      
+      // 更新预生成水果的位置
+      if (this.previewFruit) {
+        this.previewFruit.x = this.previewX;
+      }
+      
+      console.log(`[TouchStart] Preview activated at x=${this.previewX.toFixed(1)}`);
     }
   }
 
   handleTouchMove(clientX, clientY) {
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
 
-    // 检查UI事件（包括下一个水果预览拖动）
+    // 检查UI事件（包括按钮）
     const uiResult = this.gameUI.onTouchMove(x, y);
     if (uiResult) {
       if (uiResult.type === 'button') {
         console.log(`[TouchMove] Button touched: ${uiResult.name}`);
         // 在移动过程中不立即触发按钮，避免误触
         return;
-      } else if (uiResult.type === 'preview_drag') {
-        console.log(`[TouchMove] Preview dragging to (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
-        return; // 正在拖动预览水果，不更新投放预览
       }
     }
 
-    // 更新投放幽灵预览位置
-    {
+    // 处理拖动
+    if (this.isDragging && this.previewFruit) {
+      // 计算新位置
+      const newX = x - this.dragOffsetX;
+      const newY = y - this.dragOffsetY;
+      
+      // 限制在拖动边界内
+      const constrainedX = Math.max(this.dragBounds.left, Math.min(this.dragBounds.right, newX));
+      const constrainedY = Math.max(this.dragBounds.top, Math.min(this.dragBounds.bottom, newY));
+      
+      // 更新预生成水果位置
+      this.previewFruit.x = constrainedX;
+      this.previewFruit.y = constrainedY;
+      
+      console.log(`[TouchMove] Dragging fruit to (${constrainedX.toFixed(1)}, ${constrainedY.toFixed(1)})`);
+      return;
+    }
+
+    // 只有在游戏进行中且等待用户操作时才更新投放预览位置（兼容性）
+    if (this.gameState === GAME_STATES.PLAYING && this.waitingForUserAction && this.canDrop && this.previewActive) {
       const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
       const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
       const dropLeft = centerX - width / 2;
       const dropRight = centerX + width / 2;
       this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
-      this.previewActive = true;
+      
+      // 更新预生成水果的位置
+      if (this.previewFruit) {
+        this.previewFruit.x = this.previewX;
+      }
+      
+      console.log(`[TouchMove] Preview updated to x=${this.previewX.toFixed(1)}`);
     }
   }
 
@@ -292,30 +364,58 @@ export class GameLogic {
     let { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
     console.log(`[TouchEnd] Normalized coords: (${x.toFixed(1)}, ${y.toFixed(1)})`);
 
-    // 关闭投放幽灵预览
+    // 处理拖动结束
+    if (this.isDragging) {
+      this.isDragging = false;
+      
+      // 投放水果到当前拖动位置
+      if (this.previewFruit) {
+        const dropX = this.previewFruit.x;
+        const dropY = this.previewFruit.y;
+        
+        console.log(`[TouchEnd] Dropping dragged fruit at (${dropX.toFixed(1)}, ${dropY.toFixed(1)})`);
+        
+        // 投放水果
+        this.dropFruit(dropX, dropY);
+        
+        // 清理拖动状态
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.dragOffsetX = 0;
+        this.dragOffsetY = 0;
+      }
+      return;
+    }
+
+    // 关闭投放预览（兼容性）
     this.previewActive = false;
+    const dropX = this.previewX; // 保存投放位置
     this.previewX = null;
 
-    // 检查UI事件（包括下一个水果预览拖动结束）
-    const uiResult = this.gameUI.onTouchEnd(x, y);
-    if (uiResult) {
-      if (uiResult.type === 'button') {
+    // 检查是否有按钮被按下且在touchEnd时仍在按钮区域内
+    if (this.buttonPressed) {
+      const uiResult = this.gameUI.onTouchStart(x, y); // 重新检查位置
+      if (uiResult && uiResult.type === 'button' && uiResult.name === this.buttonPressed) {
         console.log(`[TouchEnd] Button clicked: ${uiResult.name}`);
         this.handleUIEvent(uiResult);
-        return; // 按钮点击后直接返回，不处理投放
-      } else if (uiResult.type === 'preview_drag_end') {
-        console.log(`[TouchEnd] Preview drag ended at (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
-        return; // 拖动结束，不处理投放
-      } else if (uiResult.type === 'drop') {
-        // 使用预览水果的X坐标进行投放
-        console.log(`[TouchEnd] Drop at preview position (${uiResult.x.toFixed(1)}, ${y.toFixed(1)})`);
-        x = uiResult.x; // 更新x坐标为预览水果的位置
+        this.buttonPressed = null; // 清除按钮状态
+        return;
+      } else {
+        // 如果touchEnd时不在按钮区域，取消按钮点击
+        console.log(`[TouchEnd] Button press cancelled: ${this.buttonPressed}`);
+        this.buttonPressed = null;
       }
     }
 
     // 全面的游戏状态检查
     if (this.gameState !== GAME_STATES.PLAYING) {
       console.warn('[TouchEnd] Game not in playing state:', this.gameState);
+      return;
+    }
+
+    // 检查是否等待用户操作
+    if (!this.waitingForUserAction) {
+      console.warn('[TouchEnd] Not waiting for user action');
       return;
     }
 
@@ -370,10 +470,11 @@ export class GameLogic {
       return;
     }
 
-    // 只有通过UI事件的drop类型才处理投放，不再直接处理投放
-    if (uiResult && uiResult.type === 'drop') {
-      console.log(`[TouchEnd] Processing drop request at (${x.toFixed(1)}, ${y.toFixed(1)})`);
-      this.dropFruit(x, y);
+    // 使用保存的投放位置进行投放
+    if (dropX !== null) {
+      console.log(`[TouchEnd] Processing drop request at (${dropX.toFixed(1)}, ${y.toFixed(1)})`);
+      this.waitingForUserAction = false; // 标记不再等待用户操作
+      this.dropFruit(dropX, y);
     } else {
       console.log(`[TouchEnd] Touch end processed, no drop triggered`);
     }
@@ -386,10 +487,72 @@ export class GameLogic {
 
   // 生成下一个水果类型并更新UI
   prepareNextFruit() {
+    // 将下一个水果设为当前要投放的水果
+    this.currentFruitType = this.nextFruitType;
+    // 生成新的下一个水果
     this.nextFruitType = this.getRandomStarterFruit();
+    // 重置等待用户操作状态
+    this.waitingForUserAction = true;
+    
     if (this.gameUI && typeof this.gameUI.setNextFruitType === 'function') {
-      this.gameUI.setNextFruitType(this.nextFruitType);
+      this.gameUI.setNextFruitType(this.currentFruitType); // 显示当前要投放的水果
     }
+    
+    // 重新创建预生成的水果
+    this.createPreviewFruit();
+  }
+
+  // 创建预生成的水果对象
+  createPreviewFruit() {
+    // 清理之前的预生成水果
+    if (this.previewFruit) {
+      this.previewFruit = null;
+    }
+    
+    // 创建新的预生成水果（不添加到物理世界）
+    const fruitConfig = FRUIT_CONFIG[this.currentFruitType];
+    if (fruitConfig) {
+      this.previewFruit = {
+        type: this.currentFruitType,
+        x: this.previewFruitX,
+        y: this.previewFruitY,
+        radius: fruitConfig.radius,
+        color: fruitConfig.color,
+        texture: fruitConfig.texture
+      };
+      
+      // 设置拖动边界
+      this.updateDragBounds();
+      
+      console.log(`[CreatePreviewFruit] Created preview fruit: ${this.currentFruitType} at (${this.previewFruitX}, ${this.previewFruitY})`);
+    }
+  }
+
+  // 更新拖动边界
+  updateDragBounds() {
+    if (!this.previewFruit) return;
+    
+    const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
+    const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
+    const radius = this.previewFruit.radius;
+    
+    this.dragBounds = {
+      left: centerX - width / 2 + radius,
+      right: centerX + width / 2 - radius,
+      top: this.previewFruitY - 20,
+      bottom: this.previewFruitY + 20
+    };
+  }
+
+  // 检查点是否在预生成水果内
+  isPointInPreviewFruit(x, y) {
+    if (!this.previewFruit) return false;
+    
+    const dx = x - this.previewFruit.x;
+    const dy = y - this.previewFruit.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    return distance <= this.previewFruit.radius;
   }
 
   // 设置事件监听（简化版本）
@@ -489,6 +652,9 @@ export class GameLogic {
         console.log(`[${timestamp}] [DouyinEnv] Unlock completed with enhanced safety checks`);
       }
 
+      // 水果落地后准备下一个水果
+      this.prepareNextFruit();
+
       console.log(`[${timestamp}] [UnlockDrop] Drop unlocked successfully - ready for next fruit`);
       console.log(`[${timestamp}] [UnlockDrop] Final state: canDrop=${this.canDrop}, cooldown=${this.dropCooldown}, nextFruit=${this.nextFruitType}`);
 
@@ -521,38 +687,9 @@ export class GameLogic {
           if (this.gameState !== GAME_STATES.PLAYING) {
             return;
           }
-          try {
-            // 清除当前所有水果（不影响世界边界），游戏继续
-            this.fruitManager.clear();
-            if (this.physicsEngine) {
-              this.physicsEngine.activeBody = null;
-            }
-            // 安全复位危险状态与连击计时器
-            this.dangerTimer = 0;
-            this.isDangerous = false;
-            this.comboTimer = 0;
-            // 标记道具已使用并禁用按钮
-            this.powerUsed = true;
-            if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
-              this.gameUI.buttons.power.disabled = true;
-            }
-            // 视觉反馈：轻微震屏 + 爆裂与环形特效
-            const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
-            const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
-            if (this.effectSystem) {
-              if (typeof this.effectSystem.createExplosion === 'function') {
-                this.effectSystem.createExplosion(centerX, centerY, { particleCount: 36, colors: ['#4ECDC4', '#FFD700', '#9F7AEA'], life: 1.2, speed: 220 });
-              }
-              if (typeof this.effectSystem.createRingEffect === 'function') {
-                this.effectSystem.createRingEffect(centerX, centerY, { startRadius: 12, endRadius: 90, life: 0.5, color: '#4ECDC4', lineWidth: 3 });
-              }
-              if (typeof this.effectSystem.triggerScreenShake === 'function') {
-                this.effectSystem.triggerScreenShake(4, 0.18);
-              }
-            }
-          } catch (e) {
-            console.warn('[Power] Failed to clear fruits:', e);
-          }
+          
+          // 显示确认对话框，防止误触
+          this.showPowerConfirmDialog();
           audioManager.playSound('CLICK');
           break;
         }
@@ -560,6 +697,91 @@ export class GameLogic {
     }
   }
   
+  // 显示power道具确认对话框
+  showPowerConfirmDialog() {
+    const dialogWidth = 300;
+    const dialogHeight = 200;
+    const dialogX = (this.canvas.width - dialogWidth) / 2;
+    const dialogY = (this.canvas.height - dialogHeight) / 2;
+    
+    const buttonWidth = 80;
+    const buttonHeight = 40;
+    const buttonY = dialogY + dialogHeight - 60;
+    
+    this.confirmDialog = {
+      visible: true,
+      title: '使用清除道具',
+      message: '确定要清除所有水果吗？\n此道具每局只能使用一次！',
+      x: dialogX,
+      y: dialogY,
+      width: dialogWidth,
+      height: dialogHeight,
+      confirmBtn: {
+        x: dialogX + dialogWidth / 2 - buttonWidth - 10,
+        y: buttonY,
+        width: buttonWidth,
+        height: buttonHeight
+      },
+      cancelBtn: {
+        x: dialogX + dialogWidth / 2 + 10,
+        y: buttonY,
+        width: buttonWidth,
+        height: buttonHeight
+      },
+      confirmText: '确定',
+      cancelText: '取消',
+      onConfirm: () => {
+        this.executePowerAction();
+        this.hideConfirmDialog();
+      },
+      onCancel: () => {
+        this.hideConfirmDialog();
+      }
+    };
+  }
+  
+  // 隐藏确认对话框
+  hideConfirmDialog() {
+    this.confirmDialog = null;
+  }
+  
+  // 执行power道具功能
+  executePowerAction() {
+    try {
+      // 清除当前所有水果（不影响世界边界），游戏继续
+      this.fruitManager.clear();
+      if (this.physicsEngine) {
+        this.physicsEngine.activeBody = null;
+      }
+      // 安全复位危险状态与连击计时器
+      this.dangerTimer = 0;
+      this.isDangerous = false;
+      this.comboTimer = 0;
+      // 标记道具已使用并禁用按钮
+      this.powerUsed = true;
+      if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
+        this.gameUI.buttons.power.disabled = true;
+      }
+      // 视觉反馈：轻微震屏 + 爆裂与环形特效
+      const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
+      const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
+      if (this.effectSystem) {
+        if (typeof this.effectSystem.createExplosion === 'function') {
+          this.effectSystem.createExplosion(centerX, centerY, { particleCount: 36, colors: ['#4ECDC4', '#FFD700', '#9F7AEA'], life: 1.2, speed: 220 });
+        }
+        if (typeof this.effectSystem.createRingEffect === 'function') {
+          this.effectSystem.createRingEffect(centerX, centerY, { startRadius: 12, endRadius: 90, life: 0.5, color: '#4ECDC4', lineWidth: 3 });
+        }
+        if (typeof this.effectSystem.triggerScreenShake === 'function') {
+          this.effectSystem.triggerScreenShake(4, 0.18);
+        }
+      }
+      audioManager.playSound('POWER_USE');
+    } catch (e) {
+      console.warn('[Power] Failed to clear fruits:', e);
+    }
+  }
+
   // 投放水果（重构版）
   dropFruit(x, y) {
     // 检查游戏状态和投放许可
@@ -571,27 +793,25 @@ export class GameLogic {
     // 锁定投放
     this.canDrop = false;
 
-    // 水果始终从屏幕顶部中间生成，但会移动到用户指定的X位置
-    const centerX = this.canvas.width / 2; // 屏幕中间X坐标
-    const spawnY = 30; // 屏幕顶部生成位置
-    
-    // 用户指定的投放X位置（限制在安全范围内）
-    const dropLeft = 50;
-    const dropRight = this.canvas.width - 50;
-    const targetX = Math.max(dropLeft, Math.min(dropRight, x)); // 目标X坐标
+    // 使用预生成水果的位置进行投放
+    const dropLineY = GAME_CONFIG?.DROP_LINE_Y ?? 111; // 投放线位置
+    const targetX = this.previewFruit ? this.previewFruit.x : x; // 使用预生成水果的X位置
 
-    // 创建水果
-    const fruit = this.fruitManager.createFruit(this.nextFruitType, centerX, spawnY);
+    // 创建水果 - 使用当前要投放的水果类型
+    const fruit = this.fruitManager.createFruit(this.currentFruitType, targetX, dropLineY);
     if (fruit) {
-      // 设置水果的目标位置和移动状态
+      // 直接在目标位置投放，不需要移动
       fruit.body.targetX = targetX;
-      fruit.body.isMovingToTarget = true;
-      fruit.body.moveSpeed = 8; // 移动速度（像素/帧）
+      fruit.body.isMovingToTarget = false;
+      fruit.body.shouldDropAfterMove = false;
+      
+      // 启用重力，让水果立即下落
+      fruit.body.gravityDisabled = false;
       
       // 添加水果生成动效
       if (this.effectSystem) {
         // 生成闪光特效
-        this.effectSystem.createSparkle(centerX, spawnY, {
+        this.effectSystem.createSparkle(targetX, dropLineY, {
           particleCount: 12,
           colors: ['#FFD700', '#FFA500', '#FF6347', '#FFFFFF'],
           size: 3,
@@ -600,52 +820,43 @@ export class GameLogic {
         });
         
         // 生成下落轨迹特效
-        this.effectSystem.createDropTrail(centerX, spawnY, {
+        this.effectSystem.createDropTrail(targetX, dropLineY, {
           particleCount: 6,
           colors: ['#87CEEB', '#B0E0E6', '#E0F6FF']
         });
       }
+
+      console.log(`[DropFruit] SUCCESS: Spawned fruit type=${this.currentFruitType} at target (${targetX}, ${dropLineY})`);
       
-      // 为新生成的水果注入初始下落速度（修复抖音环境下第二次投放"几乎不动"的问题）
-      try {
-        const rb = fruit.body;
-        const initialVy = (GAME_CONFIG?.DROP?.initialVelocityY ?? 420);
-        const dt0 = (this.physicsEngine?.lastDt && isFinite(this.physicsEngine.lastDt) && this.physicsEngine.lastDt > 0)
-          ? this.physicsEngine.lastDt
-          : (1 / 60);
-        // 通过调整 prevPosition 来赋予初速度，使下一步更新时速度为 initialVy
-        rb.prevPosition.y = rb.position.y - initialVy * dt0;
-      } catch (_) { /* ignore initial velocity injection errors */ }
-
-      console.log(`[DropFruit] SUCCESS: Spawned fruit type=${this.nextFruitType} at center (${centerX}, ${spawnY}), moving to target (${targetX}, ${spawnY})`);
-
       // 设置当前下落的水果，并记录投放时间
       this.currentDroppingFruit = fruit.body;
       this.currentDroppingFruit.dropTime = Date.now();
+      
       // 将当前下落水果标记为物理引擎的活动刚体，避免全局稳定判定误伤
       if (this.physicsEngine) {
         this.physicsEngine.activeBody = this.currentDroppingFruit;
       }
-
-      // 播放音效
-      audioManager.playSound('DROP');
-
-      // 设置投放冷却，防止高频触发导致的状态错乱
-      const cd = (GAME_CONFIG?.LIMITS?.DROP_COOLDOWN ?? GAME_CONFIG?.DROP_COOLDOWN ?? 0.35);
-      this.dropCooldown = Math.max(0, Number(cd) || 0);
-
-      // 准备下一个水果
-      this.prepareNextFruit();
       
-      // 重置连击
-      this.combo = 0;
-      if (this.gameUI && typeof this.gameUI.setCombo === 'function') {
-        this.gameUI.setCombo(0);
-      }
+      // 播放投放音效
+      audioManager.playSound('DROP');
+      
+      // 设置投放冷却时间
+      this.dropCooldown = 300; // 300ms冷却
+      
+      // 重置连击计时器
+      this.comboTimer = 0;
+      
+      // 设置等待状态为false，因为水果已经投放
+      this.waitingForUserAction = false;
+      
+      // 清除预览状态
+      this.previewActive = false;
+      
+      console.log(`[DropFruit] Drop completed, waiting for fruit to land`);
     } else {
-      console.error('[DropFruit] Failed to create fruit, unlocking drop.');
-      // 如果创建失败，必须解锁
-      this.unlockDrop();
+      // 如果创建失败，重新允许投放
+      this.canDrop = true;
+      console.error(`[DropFruit] FAILED: Could not create fruit type=${this.currentFruitType}`);
     }
   }
 
@@ -909,45 +1120,6 @@ export class GameLogic {
   
   // （移除重复的 dropFruit 实现）
   
-  // 处理UI事件
-  handleUIEvent(event) {
-    if (event.type === 'button') {
-      switch (event.name) {
-        case 'power': {
-          // 单次使用限制与禁用检查
-          if (this.powerUsed || (this.gameUI?.buttons?.power?.disabled)) {
-            audioManager.playSound('CLICK');
-            return;
-          }
-          // 仅在游戏进行中可用
-          if (this.gameState !== GAME_STATES.PLAYING) {
-            return;
-          }
-          try {
-            // 清除当前所有水果（不影响世界边界），游戏继续
-            this.fruitManager.clear();
-            if (this.physicsEngine) {
-              this.physicsEngine.activeBody = null;
-            }
-            // 安全复位危险状态与连击计时器
-            this.dangerTimer = 0;
-            this.isDangerous = false;
-            this.comboTimer = 0;
-            // 标记道具已使用并禁用按钮
-            this.powerUsed = true;
-            if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
-              this.gameUI.buttons.power.disabled = true;
-            }
-          } catch (e) {
-            console.warn('[Power] Failed to clear fruits:', e);
-          }
-          audioManager.playSound('CLICK');
-          break;
-        }
-      }
-    }
-  }
-  
   // 检查游戏结束（简化版本）
   checkGameOver() {
     // 基本安全检查
@@ -966,70 +1138,75 @@ export class GameLogic {
       return;
     }
 
-    // 简化的参数
+    // 游戏结束判断参数
     const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? 4;
     const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 1.0;
-    const dangerY = this.physicsEngine?.dangerLineY ?? 200;
+    const dangerY = this.physicsEngine?.dangerLineY ?? 500; // 危险线位置
+    const groundY = GAME_CONFIG?.GROUND?.y ?? 639; // 草地顶部位置
 
-    // 找到最高的水果
-    let topBody = null;
-    let topY = Infinity;
+    // 检查是否有水果从草地堆叠到危险线
+    let hasDangerousFruit = false;
+    let dangerousFruit = null;
+    
     try {
       const bodies = this.physicsEngine?.bodies || [];
       for (let i = 0; i < Math.min(bodies.length, 50); i++) {
-        const b = bodies[i];
-        if (!b || b.isMarkedForRemoval || !b.position || !isFinite(b.position.y) || !isFinite(b.radius)) {
+        const body = bodies[i];
+        if (!body || body.isMarkedForRemoval || !body.position || !isFinite(body.position.y) || !isFinite(body.radius)) {
           continue;
         }
-        const yTop = b.position.y - b.radius;
-        if (yTop < topY) {
-          topY = yTop;
-          topBody = b;
+
+        // 检查水果是否接触草地（底部接触）
+        const fruitBottom = body.position.y + body.radius;
+        const isOnGround = fruitBottom >= (groundY - tolerancePx);
+        
+        // 检查水果顶部是否达到或超过危险线
+        const fruitTop = body.position.y - body.radius;
+        const reachesDangerLine = fruitTop <= (dangerY + tolerancePx);
+        
+        // 如果水果既接触草地又达到危险线，说明水果从草地堆叠到了危险线
+        if (isOnGround && reachesDangerLine) {
+          hasDangerousFruit = true;
+          dangerousFruit = body;
+          break;
         }
       }
     } catch (error) {
-      console.warn('[CheckGameOver] Error finding top body:', error);
+      console.warn('[CheckGameOver] Error checking dangerous fruits:', error);
       this.dangerTimer = 0;
       return;
     }
 
-    // 没有水果
-    if (!topBody || !isFinite(topY)) {
+    // 如果没有危险水果，重置计时器
+    if (!hasDangerousFruit || !dangerousFruit) {
       this.dangerTimer = 0;
       return;
     }
 
-    // 简化的条件判断
-    const beyond = topY <= (dangerY - tolerancePx);
-
-    if (!beyond) {
-      this.dangerTimer = 0;
-      return;
-    }
-
-    // 简化的静止判断
+    // 检查危险水果是否静止
     let isStatic = false;
     try {
-      const vy = Math.abs(topBody.velocity?.y || 0);
+      const velocity = dangerousFruit.velocity || { x: 0, y: 0 };
+      const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
       const speedThreshold = GAME_CONFIG?.DANGER?.settleSpeedY ?? 36;
-      isStatic = vy <= speedThreshold;
+      isStatic = speed <= speedThreshold;
     } catch (_) {
       isStatic = false;
     }
 
-    // 新水果宽限
+    // 新投放水果的宽限期
     let graceActive = false;
     try {
-      const dropAgeSec = ((Date.now() - (topBody.dropTime || 0)) / 1000) || 0;
+      const dropAgeSec = ((Date.now() - (dangerousFruit.dropTime || 0)) / 1000) || 0;
       const spawnGraceSec = GAME_CONFIG?.DANGER?.spawnGraceSec ?? 0.3;
-      const isActiveTop = !!(this.physicsEngine?.activeBody && topBody === this.physicsEngine.activeBody);
-      graceActive = isActiveTop && (dropAgeSec < spawnGraceSec);
+      const isActiveFruit = !!(this.physicsEngine?.activeBody && dangerousFruit === this.physicsEngine.activeBody);
+      graceActive = isActiveFruit && (dropAgeSec < spawnGraceSec);
     } catch (_) {
       graceActive = false;
     }
 
     // 累计危险时间
-    if (beyond && isStatic && !graceActive) {
+    if (hasDangerousFruit && isStatic && !graceActive) {
       this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
     } else {
       this.dangerTimer = 0;
@@ -1037,17 +1214,18 @@ export class GameLogic {
 
     // 调试日志
     try {
-      const ts = Date.now();
+      const fruitTop = dangerousFruit.position.y - dangerousFruit.radius;
+      const fruitBottom = dangerousFruit.position.y + dangerousFruit.radius;
       const prevTimer = (this.dangerTimer || 0);
       let label = graceActive ? '宽限期中' : (isStatic ? (prevTimer > 0 ? '计时中' : '开始计时') : '未静止');
-      console.log(`[${ts}] [CheckGameOver] 状态=${label}, topY=${topY.toFixed(1)}, dangerY=${dangerY}, 计时=${prevTimer.toFixed(2)}`);
+      console.log(`[CheckGameOver] 状态=${label}, 水果顶部=${fruitTop.toFixed(1)}, 水果底部=${fruitBottom.toFixed(1)}, 危险线=${dangerY}, 草地=${groundY}, 计时=${prevTimer.toFixed(2)}`);
     } catch (_) {
       // 忽略日志错误
     }
 
     // 检查是否应该结束游戏
     if (this.dangerTimer >= sustainSec && this.gameState === GAME_STATES.PLAYING) {
-      console.log(`[CheckGameOver] Triggering game over`);
+      console.log(`[CheckGameOver] 游戏结束：水果从草地堆叠到危险线`);
 
       try {
         this.gameOver();
@@ -1333,13 +1511,8 @@ export class GameLogic {
     this.prepareNextFruit();
     this.gameUI.setDangerLineFlash(false);
     
-    // 准备下一个水果
-    this.nextFruitType = this.getRandomStarterFruit();
-    // 与水果管理器保持一致，以避免显示与实际不同步
-    if (this.fruitManager) {
-      this.fruitManager.nextFruitType = this.nextFruitType;
-    }
-    this.gameUI.setNextFruitType(this.nextFruitType);
+    // 创建预生成水果，确保重新开始时就显示
+    this.createPreviewFruit();
     
     // 播放重新开始音效
     audioManager.playSound('CLICK');
@@ -1520,14 +1693,123 @@ export class GameLogic {
     this.fruitManager.render(this.ctx);
     this.ctx.restore();
 
+    // 渲染预生成的水果（在屏幕顶部）
+    this.renderPreviewFruit();
+
     // 渲染游戏状态覆盖层
     if (this.gameState === GAME_STATES.PAUSED) {
       this.renderPauseOverlay();
     } else if (this.gameState === GAME_STATES.GAME_OVER) {
       this.renderGameOverOverlay();
     }
+
+    // 渲染确认对话框（最后渲染，确保在最上层）
+    if (this.confirmDialog && this.confirmDialog.visible) {
+      this.renderConfirmDialog();
+    }
   }
-  
+
+  // 渲染预生成的水果
+  renderPreviewFruit() {
+    if (!this.previewFruit || this.gameState !== GAME_STATES.PLAYING || !this.waitingForUserAction) {
+      return;
+    }
+
+    this.ctx.save();
+    
+    // 设置半透明效果，拖动时更明显
+    this.ctx.globalAlpha = this.isDragging ? 0.9 : 0.8;
+    
+    const fruit = this.previewFruit;
+    
+    // 渲染水果
+    this.ctx.fillStyle = fruit.color;
+    this.ctx.beginPath();
+    this.ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // 添加边框，拖动时使用不同颜色
+    this.ctx.strokeStyle = this.isDragging ? '#FFD700' : '#ffffff';
+    this.ctx.lineWidth = this.isDragging ? 3 : 2;
+    this.ctx.stroke();
+    
+    // 拖动时添加阴影效果
+    if (this.isDragging) {
+      this.ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowOffsetX = 2;
+      this.ctx.shadowOffsetY = 2;
+      
+      // 重新绘制一遍以应用阴影
+      this.ctx.beginPath();
+      this.ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+    }
+    
+    this.ctx.restore();
+  }
+
+  // 渲染确认对话框
+  renderConfirmDialog() {
+    if (!this.confirmDialog || !this.confirmDialog.visible) return;
+
+    const dialog = this.confirmDialog;
+    this.ctx.save();
+
+    // 绘制半透明背景遮罩
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // 绘制对话框背景
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.strokeStyle = '#FF6B35';
+    this.ctx.lineWidth = 3;
+    this.ctx.fillRect(dialog.x, dialog.y, dialog.width, dialog.height);
+    this.ctx.strokeRect(dialog.x, dialog.y, dialog.width, dialog.height);
+
+    // 绘制标题
+    this.ctx.fillStyle = '#FF6B35';
+    this.ctx.font = 'bold 24px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(dialog.title, dialog.x + dialog.width / 2, dialog.y + 40);
+
+    // 绘制消息文本
+    this.ctx.fillStyle = '#333333';
+    this.ctx.font = '18px Arial, sans-serif';
+    const lines = dialog.message.split('\n');
+    lines.forEach((line, index) => {
+      this.ctx.fillText(line, dialog.x + dialog.width / 2, dialog.y + 80 + index * 25);
+    });
+
+    // 绘制确认按钮
+    const confirmBtn = dialog.confirmBtn;
+    this.ctx.fillStyle = '#FF6B35';
+    this.ctx.fillRect(confirmBtn.x, confirmBtn.y, confirmBtn.width, confirmBtn.height);
+    this.ctx.strokeStyle = '#E55A2B';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(confirmBtn.x, confirmBtn.y, confirmBtn.width, confirmBtn.height);
+    
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.font = 'bold 16px Arial, sans-serif';
+    this.ctx.fillText('确认', confirmBtn.x + confirmBtn.width / 2, confirmBtn.y + confirmBtn.height / 2);
+
+    // 绘制取消按钮
+    const cancelBtn = dialog.cancelBtn;
+    this.ctx.fillStyle = '#CCCCCC';
+    this.ctx.fillRect(cancelBtn.x, cancelBtn.y, cancelBtn.width, cancelBtn.height);
+    this.ctx.strokeStyle = '#999999';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(cancelBtn.x, cancelBtn.y, cancelBtn.width, cancelBtn.height);
+    
+    this.ctx.fillStyle = '#333333';
+    this.ctx.font = 'bold 16px Arial, sans-serif';
+    this.ctx.fillText('取消', cancelBtn.x + cancelBtn.width / 2, cancelBtn.y + cancelBtn.height / 2);
+
+    this.ctx.restore();
+  }
+
   // 渲染暂停覆盖层
   renderPauseOverlay() {
     this.ctx.save();
@@ -1981,6 +2263,36 @@ export class GameLogic {
     }
   }
 
+  // 处理确认对话框点击
+  handleConfirmDialogClick(x, y) {
+    if (!this.confirmDialog || !this.confirmDialog.visible) return;
+
+    const dialog = this.confirmDialog;
+    
+    // 检查确认按钮
+    if (x >= dialog.confirmBtn.x && x <= dialog.confirmBtn.x + dialog.confirmBtn.width &&
+        y >= dialog.confirmBtn.y && y <= dialog.confirmBtn.y + dialog.confirmBtn.height) {
+      audioManager.playSound('CLICK');
+      this.executePowerAction();
+      this.hideConfirmDialog();
+      return;
+    }
+    
+    // 检查取消按钮
+    if (x >= dialog.cancelBtn.x && x <= dialog.cancelBtn.x + dialog.cancelBtn.width &&
+        y >= dialog.cancelBtn.y && y <= dialog.cancelBtn.y + dialog.cancelBtn.height) {
+      audioManager.playSound('CLICK');
+      this.hideConfirmDialog();
+      return;
+    }
+    
+    // 点击对话框外部区域也取消
+    if (x < dialog.x || x > dialog.x + dialog.width ||
+        y < dialog.y || y > dialog.y + dialog.height) {
+      this.hideConfirmDialog();
+    }
+  }
+
   // 启动游戏（修复版本）
   start() {
     // 世界参数同步
@@ -2021,6 +2333,9 @@ export class GameLogic {
     if (this.gameUI && typeof this.gameUI.setNextFruitType === 'function') {
       this.gameUI.setNextFruitType(this.nextFruitType);
     }
+
+    // 创建预生成水果，确保游戏开始时就显示
+    this.createPreviewFruit();
 
     console.log('Game started successfully - all drop states reset');
   }

@@ -183,52 +183,71 @@ export class DouyinAPI {
     });
   }
   
-  // 保存游戏数据到云端
+  // 保存游戏数据到本地存储
   async saveGameData(data) {
     try {
-      const saveData = {
-        ...data,
-        timestamp: Date.now(),
-        version: '1.0.0'
-      };
-      
-      if (this.isDouyinEnv) {
-        // 使用抖音云存储
-        await this.setCloudStorage('gameData', saveData);
+      if (this.isDouyinEnv && typeof tt.setStorage === 'function') {
+        // 抖音环境使用tt.setStorage
+        return new Promise((resolve, reject) => {
+          tt.setStorage({
+            key: 'gameData',
+            data: data,
+            success: () => {
+              console.log('Game data saved to Douyin storage');
+              resolve();
+            },
+            fail: (err) => {
+              console.error('Failed to save game data to Douyin storage:', err);
+              reject(err);
+            }
+          });
+        });
       } else {
-        // 使用本地存储
-        localStorage.setItem('fruitMergeZ_cloudData', JSON.stringify(saveData));
+        // 开发环境或浏览器环境
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem('gameData', JSON.stringify(data));
+          console.log('Game data saved to localStorage');
+        } else {
+          // Node.js环境或其他不支持localStorage的环境
+          console.log('localStorage not available, game data not saved');
+        }
       }
-      
-      this.gameData = saveData;
-      console.log('Game data saved:', saveData);
-      return true;
     } catch (error) {
       console.error('Failed to save game data:', error);
-      return false;
+      throw error;
     }
   }
   
-  // 从云端加载游戏数据
+  // 从本地存储加载游戏数据
   async loadGameData() {
     try {
-      let data;
-      
-      if (this.isDouyinEnv) {
-        // 从抖音云存储加载
-        data = await this.getCloudStorage('gameData');
+      if (this.isDouyinEnv && typeof tt.getStorage === 'function') {
+        // 抖音环境使用tt.getStorage
+        return new Promise((resolve, reject) => {
+          tt.getStorage({
+            key: 'gameData',
+            success: (res) => {
+              console.log('Game data loaded from Douyin storage');
+              resolve(res.data);
+            },
+            fail: (err) => {
+              console.log('No game data found in Douyin storage');
+              resolve(null);
+            }
+          });
+        });
       } else {
-        // 从本地存储加载
-        const saved = localStorage.getItem('fruitMergeZ_cloudData');
-        data = saved ? JSON.parse(saved) : null;
-      }
-      
-      if (data) {
-        this.gameData = data;
-        console.log('Game data loaded:', data);
-        return data;
-      } else {
-        console.log('No saved game data found');
+        // 开发环境或浏览器环境
+        if (typeof localStorage !== 'undefined') {
+          const data = localStorage.getItem('gameData');
+          if (data) {
+            console.log('Game data loaded from localStorage');
+            return JSON.parse(data);
+          }
+        } else {
+          // Node.js环境或其他不支持localStorage的环境
+          console.log('localStorage not available, no game data loaded');
+        }
         return null;
       }
     } catch (error) {
@@ -351,17 +370,23 @@ export class DouyinAPI {
 
         // 如果是游戏结束事件，额外上报排行榜数据
         if (data.event === 'game_over' && reportData.score > 0) {
-          tt.setRankData({
-            score: reportData.score,
-            costTime: reportData.playTime,
-            dataType: 1, // 分数类型
-            success: (res) => {
-              console.log('Rank data uploaded:', res);
-            },
-            fail: (err) => {
-              console.warn('Failed to upload rank data:', err);
-            }
-          });
+          // 检查tt.setRankData是否存在
+          if (typeof tt.setRankData === 'function') {
+            tt.setRankData({
+              score: reportData.score,
+              costTime: reportData.playTime,
+              dataType: 1, // 分数类型
+              success: (res) => {
+                console.log('Rank data uploaded:', res);
+              },
+              fail: (err) => {
+                console.warn('Failed to upload rank data:', err);
+              }
+            });
+          } else {
+            console.warn('tt.setRankData is not available in current environment');
+            // 可以在这里添加其他的排行榜上报方式
+          }
         }
 
         console.log('Game data reported:', reportData);

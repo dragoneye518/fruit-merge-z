@@ -40,7 +40,7 @@ export const GAME_CONFIG = {
   
   // 危险线
   DANGER_LINE: {
-    y: 111,  // 调整到屏幕1/6位置 (667 * 1/6 ≈ 111)
+    y: 500,  // 设置到草地上方合适位置 (667 - 28 - 140 = 499，约为屏幕3/4位置)
     color: '#FF4444',
     flashDuration: 500
   },
@@ -90,7 +90,7 @@ export const GAME_CONFIG = {
     // 主玩法模式：'tetris' 俄罗斯方块式堆叠消行 | 'physics' 物理堆叠 | 'match3' 网格三消
     MODE: 'physics',
     // 可选值：'upgrade' | 'eliminate' | 'eliminate_on_bottom'
-    // 改为“升级合成”模式：相同水果碰撞后消失并在中点生成更高级水果
+    // 升级模式：相同水果碰撞后合成更高级水果
     MERGE_BEHAVIOR: 'upgrade',
     // 物理模式/自由投放的可生成水果列表（仅限可升级链条，最高级不直接出现）
     STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT'],

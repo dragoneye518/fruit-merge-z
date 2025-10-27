@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas Fix Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            border: 1px solid #ccc;
+            background: white;
+        }
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Canvas Fix Test</h1>
+    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <div id="status">Loading...</div>
+
+    <script type="module">
+        import { GameUI } from './src/ui/gameUI.js?v=1.0.2';
+        
+        const canvas = document.getElementById('gameCanvas');
+        const statusDiv = document.getElementById('status');
+        
+        try {
+            const gameUI = new GameUI(canvas);
+            statusDiv.innerHTML = 'GameUI created successfully!<br>';
+            
+            // Test roundRect method
+            const ctx = canvas.getContext('2d');
+            statusDiv.innerHTML += 'Canvas context: ' + (ctx ? 'OK' : 'FAILED') + '<br>';
+            
+            // Test our roundRect method
+            try {
+                gameUI.roundRect(10, 10, 100, 50, 10);
+                statusDiv.innerHTML += 'roundRect method: OK<br>';
+            } catch (error) {
+                statusDiv.innerHTML += 'roundRect method: FAILED - ' + error.message + '<br>';
+            }
+            
+            // Test basic rendering
+            try {
+                gameUI.render();
+                statusDiv.innerHTML += 'render method: OK<br>';
+            } catch (error) {
+                statusDiv.innerHTML += 'render method: FAILED - ' + error.message + '<br>';
+            }
+            
+        } catch (error) {
+            statusDiv.innerHTML = 'Error: ' + error.message;
+            console.error('Test failed:', error);
+        }
+    </script>
+</body>
+</html>

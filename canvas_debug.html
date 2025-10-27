@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas Debug Test</title>
+</head>
+<body>
+    <canvas id="testCanvas" width="400" height="300"></canvas>
+    <div id="output"></div>
+    
+    <script>
+        const canvas = document.getElementById('testCanvas');
+        const ctx = canvas.getContext('2d');
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.innerHTML += message + '<br>';
+            console.log(message);
+        }
+        
+        log('Canvas: ' + (canvas ? 'OK' : 'FAIL'));
+        log('Context: ' + (ctx ? 'OK' : 'FAIL'));
+        
+        if (ctx) {
+            const methods = ['moveTo', 'lineTo', 'beginPath', 'closePath', 'fillRect', 'strokeRect', 'arc', 'fill', 'stroke'];
+            methods.forEach(method => {
+                log(method + ': ' + (typeof ctx[method] === 'function' ? 'OK' : 'MISSING'));
+            });
+            
+            // Test basic drawing
+            try {
+                ctx.fillStyle = 'red';
+                ctx.fillRect(10, 10, 50, 50);
+                log('Basic fillRect: OK');
+            } catch (e) {
+                log('Basic fillRect: ERROR - ' + e.message);
+            }
+            
+            // Test path methods
+            try {
+                ctx.beginPath();
+                ctx.moveTo(100, 100);
+                ctx.lineTo(150, 150);
+                ctx.stroke();
+                log('Path methods: OK');
+            } catch (e) {
+                log('Path methods: ERROR - ' + e.message);
+            }
+        }
+    </script>
+</body>
+</html>

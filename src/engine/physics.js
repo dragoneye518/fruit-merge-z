@@ -143,6 +143,10 @@ export class PhysicsEngine {
 
   applyGravity() {
     for (const body of this.bodies) {
+      // 如果重力被禁用，跳过重力应用
+      if (body.gravityDisabled) {
+        continue;
+      }
       body.applyForce(this.world.gravity);
     }
   }
@@ -170,6 +174,22 @@ export class PhysicsEngine {
           body.prevPosition.x = targetX;
           body.isMovingToTarget = false;
           body.targetX = undefined;
+          
+          // 如果水果需要在移动完成后开始下落，重新启用重力并给予初始下落速度
+          if (body.shouldDropAfterMove) {
+            body.gravityDisabled = false;
+            body.shouldDropAfterMove = false;
+            
+            // 给予初始下落速度
+            try {
+              const initialVy = (GAME_CONFIG?.DROP?.initialVelocityY ?? 420);
+              const dt0 = (this.lastDt && isFinite(this.lastDt) && this.lastDt > 0)
+                ? this.lastDt
+                : (1 / 60);
+              // 通过调整 prevPosition 来赋予初速度，使下一步更新时速度为 initialVy
+              body.prevPosition.y = body.position.y - initialVy * dt0;
+            } catch (_) { /* ignore initial velocity injection errors */ }
+          }
           
           console.log(`[Physics] Fruit reached target position: ${targetX}`);
         }

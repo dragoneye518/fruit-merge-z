@@ -10,7 +10,26 @@ const mockTT = {
       fillRect: () => {},
       clearRect: () => {},
       drawImage: () => {},
-      fillText: () => {}
+      fillText: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      beginPath: () => {},
+      closePath: () => {},
+      stroke: () => {},
+      fill: () => {},
+      arc: () => {},
+      rect: () => {},
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      rotate: () => {},
+      scale: () => {},
+      createLinearGradient: () => ({
+        addColorStop: () => {}
+      }),
+      createRadialGradient: () => ({
+        addColorStop: () => {}
+      })
     })
   }),
   onTouchStart: (callback) => {

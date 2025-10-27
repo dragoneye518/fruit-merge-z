@@ -100,50 +100,59 @@ class iOSPerformanceMonitor {
       const context = originalGetContext.call(this, contextType, ...args);
       
       if (contextType === '2d' && context) {
-        // 包装渲染方法
-        const originalClearRect = context.clearRect;
-        const originalFillRect = context.fillRect;
-        const originalDrawImage = context.drawImage;
+        // 只检查Canvas方法是否存在，不覆盖已有的方法
+        const requiredMethods = ['moveTo', 'lineTo', 'beginPath', 'closePath', 'stroke', 'fill', 'arc', 'rect', 'save', 'restore', 'translate', 'rotate', 'scale', 'setLineDash', 'clearRect', 'fillRect', 'drawImage'];
         
-        context.clearRect = function(...args) {
-          renderStartTime = performance.now();
-          const result = originalClearRect.apply(this, args);
-          const renderTime = performance.now() - renderStartTime;
-          totalRenderTime += renderTime;
-          renderCount++;
-          
-          // 每100次渲染统计一次
-          if (renderCount >= 100) {
-            const avgRenderTime = totalRenderTime / renderCount;
-            if (avgRenderTime > 5) { // 超过5ms警告
-              console.warn(`  ⚠️ 渲染性能较差，平均耗时: ${avgRenderTime.toFixed(2)}ms`);
+        // 只记录缺失的方法，不添加空操作的fallback
+        for (const methodName of requiredMethods) {
+          if (typeof context[methodName] !== 'function') {
+            console.warn(`Canvas context missing method: ${methodName}`);
+          }
+        }
+        
+        // 性能监控包装 - 只包装存在的方法
+        if (typeof context.clearRect === 'function') {
+          const originalClearRect = context.clearRect;
+          context.clearRect = function(...args) {
+            renderStartTime = performance.now();
+            const result = originalClearRect.apply(this, args);
+            const renderTime = performance.now() - renderStartTime;
+            totalRenderTime += renderTime;
+            renderCount++;
+            
+            // 每100次渲染统计一次
+            if (renderCount >= 100) {
+              const avgRenderTime = totalRenderTime / renderCount;
+              if (avgRenderTime > 5) { // 超过5ms警告
+                console.warn(`  ⚠️ 渲染性能较差，平均耗时: ${avgRenderTime.toFixed(2)}ms`);
+              }
+              renderCount = 0;
+              totalRenderTime = 0;
             }
-            renderCount = 0;
-            totalRenderTime = 0;
-          }
-          
-          return result;
-        };
+            
+            return result;
+          };
+        }
         
-        context.fillRect = function(...args) {
-          const start = performance.now();
-          const result = originalFillRect.apply(this, args);
-          const time = performance.now() - start;
-          if (time > 2) {
-            console.warn(`  ⚠️ fillRect耗时过长: ${time.toFixed(2)}ms`);
-          }
-          return result;
-        };
+        if (typeof context.fillRect === 'function') {
+          const originalFillRect = context.fillRect;
+          context.fillRect = function(...args) {
+            const start = performance.now();
+            const result = originalFillRect.apply(this, args);
+            this._renderTime = (this._renderTime || 0) + (performance.now() - start);
+            return result;
+          };
+        }
         
-        context.drawImage = function(...args) {
-          const start = performance.now();
-          const result = originalDrawImage.apply(this, args);
-          const time = performance.now() - start;
-          if (time > 3) {
-            console.warn(`  ⚠️ drawImage耗时过长: ${time.toFixed(2)}ms`);
-          }
-          return result;
-        };
+        if (typeof context.drawImage === 'function') {
+          const originalDrawImage = context.drawImage;
+          context.drawImage = function(...args) {
+            const start = performance.now();
+            const result = originalDrawImage.apply(this, args);
+            this._renderTime = (this._renderTime || 0) + (performance.now() - start);
+            return result;
+          };
+        }
       }
       
       return context;
