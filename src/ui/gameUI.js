@@ -162,7 +162,7 @@ export class GameUI {
     this.renderHeader();
     this.renderDangerLine();
     // 移除 renderNextFruitPreview() - 不再显示下一个水果预览
-    this.renderBombButton();
+    // 移除 renderBombButton() - 现在由gameLogic统一管理渲染顺序
     // this.renderButtons();
   }
   
@@ -659,11 +659,15 @@ export class GameUI {
   renderBombButton() {
     this.ctx.save();
     
-    // 炸弹按钮位置：右上角，向下移动避免与其他UI重叠
+    // 炸弹按钮位置：危险线附近靠右
     const buttonSize = 50;
     const margin = 20;
-    const buttonX = this.width - margin - buttonSize;
-    const buttonY = margin + 80; // 向下移动80像素
+    const dangerY = GAME_CONFIG.DANGER_LINE?.y || GAME_CONFIG.DROP_LINE_Y || 200;
+    const buttonX = this.width - margin - buttonSize; // 靠右
+    const buttonY = dangerY - 10; // 危险线下方10像素，确保按钮完全可见
+    
+    // 添加调试日志
+    console.log(`[BombButton] Rendering at x=${buttonX}, y=${buttonY}, size=${buttonSize}, dangerY=${dangerY}, canvas=${this.width}x${this.height}`);
     
     // 检查Canvas方法是否存在
     if (typeof this.ctx.createRadialGradient === 'function') {
@@ -971,29 +975,26 @@ export class GameUI {
   }
   
   onTouchStart(x, y) {
-    // 检查是否点击了按钮
-    const buttonClick = this.checkButtonClick(x, y);
-    if (buttonClick) {
-      const isDouyinEnv = typeof tt !== 'undefined';
-      if (isDouyinEnv) {
-        console.log(`[DouyinUI] TouchStart triggered button: ${buttonClick.name}`);
-      }
-      return buttonClick;
+    // 检查炸弹按钮
+    const bombResult = this.checkButtonClick(x, y);
+    if (bombResult && bombResult.type === 'bomb') {
+      console.log(`[GameUI] Bomb button clicked at (${x}, ${y})`);
+      return bombResult;
     }
 
-    // 全屏拖拽支持 - 在任何位置按住屏幕都可以开始拖拽
-    this.nextFruitDragState.isDragging = true;
-    this.nextFruitDragState.startX = x;
-    this.nextFruitDragState.currentX = x; // 设置新的X位置
-    
-    // 记录触摸状态
-    this.touchState.isDown = true;
-    this.touchState.startX = x;
-    this.touchState.startY = y;
-    this.touchState.currentX = x;
-    this.touchState.currentY = y;
+    // 检查其他按钮
+    for (const [name, button] of Object.entries(this.buttons)) {
+      if (x >= button.x && x <= button.x + button.width &&
+          y >= button.y && y <= button.y + button.height) {
+        const isDouyinEnv = typeof tt !== 'undefined';
+        if (isDouyinEnv) {
+          console.log(`[DouyinUI] TouchStart triggered button: ${name}`);
+        }
+        return { name, type: 'button' };
+      }
+    }
 
-    return { type: 'preview_drag', x, y };
+    return null;
   }
   
   onTouchMove(x, y) {
@@ -1060,11 +1061,32 @@ export class GameUI {
   checkButtonClick(x, y) {
     const isDouyinEnv = typeof tt !== 'undefined';
 
-    // 检查炸弹按钮点击
-    if (this.bombButton && 
-        x >= this.bombButton.x && x <= this.bombButton.x + this.bombButton.width &&
-        y >= this.bombButton.y && y <= this.bombButton.y + this.bombButton.height) {
-      return { name: 'bomb', type: 'bomb' };
+    // 添加调试日志
+    console.log(`[TouchDebug] Click at (${x}, ${y})`);
+    
+    // 检查炸弹按钮点击 - 扩大点击区域
+    if (this.bombButton) {
+      // 扩大点击区域：上下左右各增加20像素的边距
+      const expandedMargin = 20;
+      const expandedX = this.bombButton.x - expandedMargin;
+      const expandedY = this.bombButton.y - expandedMargin;
+      const expandedWidth = this.bombButton.width + (expandedMargin * 2);
+      const expandedHeight = this.bombButton.height + (expandedMargin * 2);
+      
+      console.log(`[TouchDebug] Bomb button original bounds: x=${this.bombButton.x}, y=${this.bombButton.y}, width=${this.bombButton.width}, height=${this.bombButton.height}`);
+      console.log(`[TouchDebug] Bomb button expanded bounds: x=${expandedX}, y=${expandedY}, width=${expandedWidth}, height=${expandedHeight}`);
+      console.log(`[TouchDebug] Click in expanded bomb button? x: ${x >= expandedX && x <= expandedX + expandedWidth}, y: ${y >= expandedY && y <= expandedY + expandedHeight}`);
+      console.log(`[TouchDebug] Expanded X range: ${expandedX} <= ${x} <= ${expandedX + expandedWidth} = ${x >= expandedX && x <= expandedX + expandedWidth}`);
+      console.log(`[TouchDebug] Expanded Y range: ${expandedY} <= ${y} <= ${expandedY + expandedHeight} = ${y >= expandedY && y <= expandedY + expandedHeight}`);
+      
+      // 使用扩大的点击区域进行检测
+      if (x >= expandedX && x <= expandedX + expandedWidth &&
+          y >= expandedY && y <= expandedY + expandedHeight) {
+        console.log(`[TouchDebug] Bomb button clicked in expanded area!`);
+        return { name: 'bomb', type: 'bomb' };
+      }
+    } else {
+      console.log(`[TouchDebug] Bomb button not found!`);
     }
 
     for (const [name, button] of Object.entries(this.buttons)) {

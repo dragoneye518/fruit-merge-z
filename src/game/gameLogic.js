@@ -234,10 +234,15 @@ export class GameLogic {
 
     // 调试：输出触摸坐标和按钮位置
     const powerBtn = this.gameUI?.buttons?.power;
+    const bombBtn = this.gameUI?.bombButton;
     console.log(`[TouchStart] Original: (${clientX}, ${clientY}) -> Normalized: (${x.toFixed(1)}, ${y.toFixed(1)})`);
     if (powerBtn) {
       console.log(`[TouchStart] Power button: x=${powerBtn.x}, y=${powerBtn.y}, w=${powerBtn.width}, h=${powerBtn.height}`);
-      console.log(`[TouchStart] Touch in button area: ${x >= powerBtn.x && x <= powerBtn.x + powerBtn.width && y >= powerBtn.y && y <= powerBtn.y + powerBtn.height}`);
+      console.log(`[TouchStart] Touch in power button area: ${x >= powerBtn.x && x <= powerBtn.x + powerBtn.width && y >= powerBtn.y && y <= powerBtn.y + powerBtn.height}`);
+    }
+    if (bombBtn) {
+      console.log(`[TouchStart] Bomb button: x=${bombBtn.x}, y=${bombBtn.y}, w=${bombBtn.width}, h=${bombBtn.height}`);
+      console.log(`[TouchStart] Touch in bomb button area: ${x >= bombBtn.x && x <= bombBtn.x + bombBtn.width && y >= bombBtn.y && y <= bombBtn.y + bombBtn.height}`);
     }
 
     // 游戏结束时，优先判断是否点击了重开按钮（兼容抖音 tt.onTouchStart 转发）
@@ -258,6 +263,11 @@ export class GameLogic {
         // 标记按钮被按下，但不立即处理，等待touchEnd确认
         this.buttonPressed = uiResult.name;
         return; // 按钮检测后直接返回，不进行投放预览
+      } else if (uiResult.type === 'bomb') {
+        console.log(`[TouchStart] Bomb button detected - will handle in touchEnd`);
+        // 标记炸弹按钮被按下
+        this.buttonPressed = 'bomb';
+        return; // 炸弹按钮检测后直接返回，不进行投放预览
       }
     }
 
@@ -406,16 +416,30 @@ export class GameLogic {
 
     // 检查是否有按钮被按下且在touchEnd时仍在按钮区域内
     if (this.buttonPressed) {
-      const buttonCheck = this.gameUI.checkButtonClick(x, y); // 只检查按钮位置，不触发onTouchStart
-      if (buttonCheck && buttonCheck.type === 'button' && buttonCheck.name === this.buttonPressed) {
-        console.log(`[TouchEnd] Button clicked: ${buttonCheck.name}`);
-        this.handleUIEvent(buttonCheck);
-        this.buttonPressed = null; // 清除按钮状态
-        return;
+      if (this.buttonPressed === 'bomb') {
+        // 炸弹按钮特殊处理
+        const bombCheck = this.gameUI.checkButtonClick(x, y);
+        if (bombCheck && bombCheck.type === 'bomb') {
+          console.log(`[TouchEnd] Bomb button clicked!`);
+          this.handleUIEvent({ name: 'bomb', type: 'bomb' });
+          this.buttonPressed = null;
+          return;
+        } else {
+          console.log(`[TouchEnd] Bomb button press cancelled`);
+          this.buttonPressed = null;
+        }
       } else {
-        // 如果touchEnd时不在按钮区域，取消按钮点击
-        console.log(`[TouchEnd] Button press cancelled: ${this.buttonPressed}`);
-        this.buttonPressed = null;
+        // 普通按钮处理
+        const buttonCheck = this.gameUI.checkButtonClick(x, y);
+        if (buttonCheck && buttonCheck.type === 'button' && buttonCheck.name === this.buttonPressed) {
+          console.log(`[TouchEnd] Button clicked: ${buttonCheck.name}`);
+          this.handleUIEvent(buttonCheck);
+          this.buttonPressed = null;
+          return;
+        } else {
+          console.log(`[TouchEnd] Button press cancelled: ${this.buttonPressed}`);
+          this.buttonPressed = null;
+        }
       }
     }
 
@@ -719,6 +743,15 @@ export class GameLogic {
           break;
         }
       }
+    } else if (event.type === 'bomb') {
+      // 处理炸弹按钮点击
+      if (this.gameState !== GAME_STATES.PLAYING) {
+        return;
+      }
+      
+      // 显示炸弹道具确认对话框
+      this.showBombConfirmDialog();
+      audioManager.playSound('CLICK');
     }
   }
   
@@ -768,6 +801,91 @@ export class GameLogic {
   // 隐藏确认对话框
   hideConfirmDialog() {
     this.confirmDialog = null;
+  }
+  
+  // 显示炸弹道具确认对话框
+  showBombConfirmDialog() {
+    const dialogWidth = 300;
+    const dialogHeight = 200;
+    const dialogX = (this.canvas.width - dialogWidth) / 2;
+    const dialogY = (this.canvas.height - dialogHeight) / 2;
+    
+    const buttonWidth = 80;
+    const buttonHeight = 40;
+    const buttonY = dialogY + dialogHeight - 60;
+    
+    this.confirmDialog = {
+      visible: true,
+      title: '使用炸弹道具',
+      message: '确定要使用炸弹清除水果吗？\n此道具每局只能使用一次！',
+      x: dialogX,
+      y: dialogY,
+      width: dialogWidth,
+      height: dialogHeight,
+      confirmBtn: {
+        x: dialogX + dialogWidth / 2 - buttonWidth - 10,
+        y: buttonY,
+        width: buttonWidth,
+        height: buttonHeight
+      },
+      cancelBtn: {
+        x: dialogX + dialogWidth / 2 + 10,
+        y: buttonY,
+        width: buttonWidth,
+        height: buttonHeight
+      },
+      onConfirm: () => {
+        this.executeBombAction();
+        this.hideConfirmDialog();
+      },
+      onCancel: () => {
+        this.hideConfirmDialog();
+      }
+    };
+  }
+  
+  // 执行炸弹道具功能
+  executeBombAction() {
+    try {
+      // 清除当前所有水果（不影响世界边界），游戏继续
+      this.fruitManager.clear();
+      if (this.physicsEngine) {
+        this.physicsEngine.activeBody = null;
+      }
+      // 安全复位危险状态与连击计时器
+      this.dangerTimer = 0;
+      this.isDangerous = false;
+      this.comboTimer = 0;
+      
+      // 视觉反馈：爆炸特效
+      const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
+      const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
+      if (this.effectSystem) {
+        if (typeof this.effectSystem.createExplosion === 'function') {
+          this.effectSystem.createExplosion(centerX, centerY, { 
+            particleCount: 50, 
+            colors: ['#FF6B6B', '#FFD93D', '#FF8E53'], 
+            life: 1.5, 
+            speed: 300 
+          });
+        }
+        if (typeof this.effectSystem.createRingEffect === 'function') {
+          this.effectSystem.createRingEffect(centerX, centerY, { 
+            startRadius: 20, 
+            endRadius: 120, 
+            life: 0.8, 
+            color: '#FF6B6B', 
+            lineWidth: 4 
+          });
+        }
+        if (typeof this.effectSystem.triggerScreenShake === 'function') {
+          this.effectSystem.triggerScreenShake(6, 0.25);
+        }
+      }
+      audioManager.playSound('POWER_USE');
+    } catch (e) {
+      console.warn('[Bomb] Failed to clear fruits:', e);
+    }
   }
   
   // 执行power道具功能
@@ -1713,8 +1831,13 @@ export class GameLogic {
   
   // 渲染游戏（简化版本）
   render() {
-    // 渲染UI背景
-    this.gameUI.render();
+    // 渲染UI背景（不包括炸弹按钮）
+    this.ctx.save();
+    this.gameUI.renderBackground();
+    this.gameUI.renderGrassWorldBottom();
+    this.gameUI.renderHeader();
+    this.gameUI.renderDangerLine();
+    this.ctx.restore();
 
     // 渲染水果（应用震屏偏移）
     this.ctx.save();
@@ -1737,10 +1860,13 @@ export class GameLogic {
       this.renderGameOverOverlay();
     }
 
-    // 渲染确认对话框（最后渲染，确保在最上层）
+    // 渲染确认对话框
     if (this.confirmDialog && this.confirmDialog.visible) {
       this.renderConfirmDialog();
     }
+
+    // 渲染炸弹按钮（绝对最顶层，确保没有任何元素遮挡）
+    this.gameUI.renderBombButton();
   }
 
   // 渲染预生成的水果（贴图版 + UX增强）
