@@ -1630,15 +1630,18 @@ export class GameLogic {
           const timeSinceDrop = (Date.now() - fruit.dropTime) / 1000;
 
           // 更严格的解锁：必须“速度低 + 持续触地稳定”才视为完成掉落
-          const settled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 6);
-          const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.35; // 提高接触稳定时间
+          const settled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 4);
+          const stableSec = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.15; // 降低接触稳定时间要求
           const settledByContact = !!(fruit.bottomContact && (fruit.bottomContactDuration || 0) >= stableSec);
 
           // 水果已被标记移除（例如同类消除后），无需继续等待
           const removed = !!fruit.isMarkedForRemoval;
 
-          if (removed || settledByContact) {
-            console.log(`[UpdateUnlock] Unlocking: contactStable=${settledByContact}, speed=${speed.toFixed(2)}, contactSec=${(fruit.bottomContactDuration||0).toFixed(2)}`);
+          // 增加速度条件：如果速度足够低，即使接触时间不够也可以解锁
+          const speedSettled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 4) * 0.5; // 速度低于阈值一半时
+
+          if (removed || settledByContact || speedSettled) {
+            console.log(`[UpdateUnlock] Unlocking: contactStable=${settledByContact}, speedSettled=${speedSettled}, speed=${speed.toFixed(2)}, contactSec=${(fruit.bottomContactDuration||0).toFixed(2)}`);
             this.unlockDrop();
           }
         } else {

@@ -484,23 +484,28 @@ class FruitMergeZGame {
                 const stillLocked = (!gl.canDrop) && (!!gl.currentDroppingFruit);
                 const stableSec = (gl.currentDroppingFruit?.bottomContactDuration || 0);
 
-                // 抖音环境使用更短的阈值
+                // 抖音环境使用更短的阈值，但增加额外的稳定性检查
                 const isDouyinEnv = typeof tt !== 'undefined';
-                const threshold = isDouyinEnv ? 0.15 : 0.3;
-                const timeoutThreshold = isDouyinEnv ? 0.4 : 0.6;
+                const threshold = isDouyinEnv ? 0.25 : 0.4;
+                const timeoutThreshold = isDouyinEnv ? 0.6 : 0.8;
 
-                // 依据稳定触地时长或超时解锁；不再使用“世界已稳定”以避免忽略活动刚体
-                if (stillLocked && (stableSec >= threshold)) {
-                  console.warn('[Watchdog] Forcing unlock after stable ground contact');
+                // 检查物理世界是否真正稳定
+                const worldSettled = gl.physicsEngine?.isWorldSettled?.() ?? false;
+                const fruitSpeed = gl.currentDroppingFruit?.velocity?.magnitude?.() ?? 0;
+                const isPhysicallyStable = worldSettled && fruitSpeed < 15;
+
+                // 依据稳定触地时长和物理稳定性解锁
+                if (stillLocked && stableSec >= threshold && isPhysicallyStable) {
+                  console.warn('[Watchdog] Forcing unlock after stable contact and physics settled');
                   gl.unlockDrop();
                 }
-                // 超时兜底：抖音环境使用更短的超时时间
+                // 超时兜底：但只在物理确实稳定时触发
                 const sinceDropSec = gl.currentDroppingFruit?.dropTime ? ((Date.now() - gl.currentDroppingFruit.dropTime) / 1000) : 0;
-                if (stillLocked && sinceDropSec >= timeoutThreshold) {
-                  console.warn('[Watchdog/timeout] Forcing unlock after timeout');
+                if (stillLocked && sinceDropSec >= timeoutThreshold && isPhysicallyStable) {
+                  console.warn('[Watchdog/timeout] Forcing unlock after timeout with physics check');
                   gl.unlockDrop();
                 }
-              }, 200); // 进一步缩短看门狗延迟时间
+              }, 300); // 进一步缩短看门狗延迟时间
             } catch (_) { /* ignore watchdog errors */ }
           }
         }
@@ -1346,9 +1351,11 @@ class FruitMergeZGame {
   // 动态调整性能设置
   adjustPerformanceSettings() {
     const fallbackFps = (GAME_CONFIG?.QUALITY?.autoFallbackFps ?? 28);
-    if (this.fps < Math.max(24, fallbackFps)) {
-      // 降低目标帧率
-      this.targetFPS = Math.max(30, this.targetFPS - 5);
+    
+    // 增加性能调节的阈值，避免过于频繁的调节
+    if (this.fps < Math.max(20, fallbackFps - 4) && !this._recentlyAdjusted) {
+      // 降低目标帧率，但不要过于激进
+      this.targetFPS = Math.max(25, this.targetFPS - 3);
       this.frameInterval = 1000 / this.targetFPS;
       
       // 降低特效质量
@@ -1374,11 +1381,17 @@ class FruitMergeZGame {
           this.gameLogic.renderAdapter.quality = { ...(this.gameLogic.renderAdapter.quality || {}), tier: 'low' };
         }
         this._perfDegraded = true;
+        this._recentlyAdjusted = true;
+        
+        // 设置冷却时间，避免频繁调节
+        setTimeout(() => {
+          this._recentlyAdjusted = false;
+        }, 3000);
       } catch (_) {}
       
       console.log('Performance adjusted: target FPS =', this.targetFPS);
-    } else if (this.fps > 55 && this.targetFPS < 60) {
-      // 恢复目标帧率
+    } else if (this.fps > 50 && this.targetFPS < 60 && this._perfDegraded && !this._recentlyAdjusted) {
+      // 恢复目标帧率，但要求更高的FPS才恢复
       this.targetFPS = Math.min(60, this.targetFPS + 5);
       this.frameInterval = 1000 / this.targetFPS;
       
@@ -1401,6 +1414,12 @@ class FruitMergeZGame {
             this.gameLogic.renderAdapter.quality = { ...(this.gameLogic.renderAdapter.quality || {}), tier: 'auto' };
           }
           this._perfDegraded = false;
+          this._recentlyAdjusted = true;
+          
+          // 设置冷却时间
+          setTimeout(() => {
+            this._recentlyAdjusted = false;
+          }, 5000);
         }
       } catch (_) {}
       

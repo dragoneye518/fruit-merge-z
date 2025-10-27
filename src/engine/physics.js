@@ -131,9 +131,16 @@ export class PhysicsEngine {
 
   step(dt) {
     this.lastDt = dt;
+    
+    // 性能优化：限制deltaTime避免大跳跃
+    const clampedDt = Math.min(dt, 0.033); // 最大30FPS等效
+    
     this.applyGravity();
-    this.updatePositions(dt);
-    for (let i = 0; i < this.solverIterations; i++) {
+    this.updatePositions(clampedDt);
+    
+    // 应用约束（减少迭代次数以提升性能）
+    const iterations = Math.max(1, Math.min(this.solverIterations || 3, 2));
+    for (let i = 0; i < iterations; i++) {
       this.solveCollisions();
       this.applyConstraints();
     }
@@ -262,6 +269,54 @@ export class PhysicsEngine {
         }
       }
       
+      // 检查是否被其他水果稳定支撑（作为下方水果）
+      let beingSupportedDuration = 0;
+      for (const otherBody of this.bodies) {
+        if (otherBody === body) continue;
+        
+        const dx = body.position.x - otherBody.position.x;
+        const dy = body.position.y - otherBody.position.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const minDistance = body.radius + otherBody.radius;
+        
+        // 如果接触且当前水果在下方（被支撑）
+        if (distance <= minDistance * 1.05 && dy > 0) {
+          // 初始化被支撑追踪
+          if (!body.beingSupportedContacts) body.beingSupportedContacts = new Map();
+          
+          const contactKey = otherBody.id || `body_${this.bodies.indexOf(otherBody)}`;
+          const existingContact = body.beingSupportedContacts.get(contactKey);
+          
+          if (existingContact) {
+            existingContact.duration += (this.lastDt || 0);
+            beingSupportedDuration = Math.max(beingSupportedDuration, existingContact.duration);
+          } else {
+            body.beingSupportedContacts.set(contactKey, { duration: this.lastDt || 0, otherBody });
+            beingSupportedDuration = Math.max(beingSupportedDuration, this.lastDt || 0);
+          }
+        }
+      }
+      
+      // 清理不再被支撑的记录
+      if (body.beingSupportedContacts) {
+        for (const [key, contact] of body.beingSupportedContacts.entries()) {
+          const otherBody = contact.otherBody;
+          if (!otherBody || !this.bodies.includes(otherBody)) {
+            body.beingSupportedContacts.delete(key);
+            continue;
+          }
+          
+          const dx = body.position.x - otherBody.position.x;
+          const dy = body.position.y - otherBody.position.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = body.radius + otherBody.radius;
+          
+          if (distance > minDistance * 1.15 || dy <= 0) {
+            body.beingSupportedContacts.delete(key);
+          }
+        }
+      }
+      
       if (onGround) {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
@@ -301,11 +356,12 @@ export class PhysicsEngine {
       } else {
         if (body.bottomContact) {
           body.bottomContact = false;
-          body.bottomContactDuration = 0;
         }
         
         // 更新支撑接触时长（用于稳定性判断）
-        body.bottomContactDuration = supportContactDuration;
+        const totalContactDuration = Math.max(supportContactDuration, beingSupportedDuration);
+        // 保持bottomContactDuration的连续性，不要重置为0
+        body.bottomContactDuration = Math.max(body.bottomContactDuration || 0, totalContactDuration);
         
         const prev = body.prevPosition;
         const pos = body.position;

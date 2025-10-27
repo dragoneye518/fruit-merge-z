@@ -54,21 +54,22 @@ export const GAME_CONFIG = {
     marginPx: 3
   },
   
-  // 物理参数（简化版本）
+  // 物理引擎参数
   PHYSICS: {
     gravity: 1200,       // 重力（提高整体下落速度）
     friction: 0.95,      // 摩擦力
     restitution: 0.1,    // 弹性系数
-    airResistance: 0.997, // 空气阻力（更接近1，保留更多动量，提升滑落）
-    groundFriction: 0.998, // 地面摩擦（几乎无摩擦，水果能快速滑动）
-    wallFriction: 0.998,   // 墙壁摩擦（几乎无摩擦，沿壁快速滑动）
-    maxVelocity: 350,    // 最大速度
-    settleThreshold: 12,  // 静止阈值 (increased from 8 to allow more movement)
+    airResistance: 0.988, // 空气阻力（增加阻力，帮助快速稳定）
+    groundFriction: 0.988, // 地面摩擦（增加摩擦，帮助稳定）
+    wallFriction: 0.988,   // 墙壁摩擦（增加摩擦）
+    maxVelocity: 300,    // 最大速度（降低最大速度）
+    settleThreshold: 8,  // 静止阈值（进一步降低）
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.05, // 弹跳阻尼（几乎不衰减，让水果保持最大能量用于滑落）
-    groundBounceDamping: 0.08, // 地面弹跳阻尼（减少弹跳，更快稳定）
-    sleepVelThreshold: 5,   // 睡眠速度阈值
-    solverIterations: 4     // 求解器迭代次数
+    bounceDamping: 0.15, // 弹跳阻尼（增加阻尼，减少弹跳）
+    groundBounceDamping: 0.20, // 地面弹跳阻尼（增加阻尼）
+    sleepVelThreshold: 4,   // 睡眠速度阈值（降低阈值）
+    solverIterations: 3,    // 求解器迭代次数
+    stableContactSec: 0.15  // 接触稳定时间要求（降低到0.15秒）
   },
   
   // 性能限制
