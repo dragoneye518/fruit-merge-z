@@ -4,6 +4,7 @@ import { FruitManager } from './fruit.js';
 import { GameUI } from '../ui/gameUI.js';
 import RendererAdapter from '../render/rendererAdapter.js';
 import { audioManager } from '../managers/audioManager.js';
+import { imageLoader } from '../utils/imageLoader.js';
 
 // 游戏逻辑主类
 export class GameLogic {
@@ -1709,44 +1710,104 @@ export class GameLogic {
     }
   }
 
-  // 渲染预生成的水果
+  // 渲染预生成的水果（贴图版 + UX增强）
   renderPreviewFruit() {
     if (!this.previewFruit || this.gameState !== GAME_STATES.PLAYING || !this.waitingForUserAction) {
       return;
     }
 
-    this.ctx.save();
-    
-    // 设置半透明效果，拖动时更明显
-    this.ctx.globalAlpha = this.isDragging ? 0.9 : 0.8;
-    
     const fruit = this.previewFruit;
-    
-    // 渲染水果
-    this.ctx.fillStyle = fruit.color;
-    this.ctx.beginPath();
-    this.ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
-    this.ctx.fill();
-    
-    // 添加边框，拖动时使用不同颜色
-    this.ctx.strokeStyle = this.isDragging ? '#FFD700' : '#ffffff';
-    this.ctx.lineWidth = this.isDragging ? 3 : 2;
-    this.ctx.stroke();
-    
-    // 拖动时添加阴影效果
-    if (this.isDragging) {
-      this.ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
-      this.ctx.shadowBlur = 10;
-      this.ctx.shadowOffsetX = 2;
-      this.ctx.shadowOffsetY = 2;
-      
-      // 重新绘制一遍以应用阴影
+    const texturePath = fruit.texture || this.texturesByType[fruit.type];
+    const img = texturePath ? imageLoader.getImage(texturePath) : null;
+
+    const baseY = fruit.y;
+    const bobOffset = this.isDragging ? 0 : Math.sin((this.gameTime || 0) * 2) * 2; // 轻微悬浮动画
+    const y = baseY + bobOffset;
+    const x = fruit.x;
+    const size = fruit.radius * 2 * (this.isDragging ? 1.06 : 1.0); // 拖动时微放大
+
+    this.ctx.save();
+    this.ctx.globalAlpha = this.isDragging ? 0.95 : 0.88;
+
+    // 使用圆形裁剪，确保预览边界与物理半径一致
+    if (typeof this.ctx.beginPath === 'function' && typeof this.ctx.arc === 'function' && typeof this.ctx.clip === 'function') {
       this.ctx.beginPath();
-      this.ctx.arc(fruit.x, fruit.y, fruit.radius, 0, Math.PI * 2);
+      this.ctx.arc(x, y, fruit.radius, 0, Math.PI * 2);
+      this.ctx.clip();
+    }
+
+    if (img && typeof this.ctx.drawImage === 'function') {
+      // 优先使用贴图渲染
+      try {
+        // 若有不透明边界，进行裁剪以去除透明留白
+        const bounds = imageLoader.computeOpaqueBounds ? imageLoader.computeOpaqueBounds(img) : null;
+        if (bounds && bounds.sw && bounds.sh) {
+          this.ctx.drawImage(img, bounds.sx, bounds.sy, bounds.sw, bounds.sh, x - size / 2, y - size / 2, size, size);
+        } else {
+          this.ctx.drawImage(img, x - size / 2, y - size / 2, size, size);
+        }
+      } catch (e) {
+        // 贴图失败时回退到圆形
+        this.ctx.fillStyle = fruit.color;
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, fruit.radius, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    } else {
+      // 无贴图或尚未加载：回退到圆形渐变填充
+      this.ctx.fillStyle = fruit.color;
+      if (typeof this.ctx.createRadialGradient === 'function') {
+        const grad = this.ctx.createRadialGradient(x - fruit.radius * 0.3, y - fruit.radius * 0.3, 0, x, y, fruit.radius);
+        grad.addColorStop(0, 'rgba(255,255,255,0.35)');
+        grad.addColorStop(1, fruit.color);
+        this.ctx.fillStyle = grad;
+      }
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, fruit.radius, 0, Math.PI * 2);
       this.ctx.fill();
+    }
+
+    // 边缘光与边框（拖动时更亮）
+    if (typeof this.ctx.stroke === 'function') {
+      this.ctx.strokeStyle = this.isDragging ? '#FFD85A' : 'rgba(255,255,255,0.85)';
+      this.ctx.lineWidth = this.isDragging ? 3 : 2;
+      this.ctx.beginPath();
+      this.ctx.arc(x, y, fruit.radius, 0, Math.PI * 2);
       this.ctx.stroke();
     }
-    
+
+    // 拖动阴影与高光
+    if (this.isDragging) {
+      this.ctx.save();
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+      this.ctx.shadowBlur = 12;
+      this.ctx.shadowOffsetX = 0;
+      this.ctx.shadowOffsetY = 6;
+      // 用一个透明填充触发阴影渲染
+      this.ctx.beginPath();
+      this.ctx.arc(x, y + fruit.radius * 0.6, fruit.radius * 0.85, 0, Math.PI * 2);
+      this.ctx.globalAlpha = 0.22;
+      this.ctx.fillStyle = '#000';
+      this.ctx.fill();
+      this.ctx.restore();
+    }
+
+    // 对齐参考线（提升定位感）：仅拖动时显示，且方法存在再绘制
+    if (this.isDragging && typeof this.ctx.beginPath === 'function' && typeof this.ctx.moveTo === 'function' && typeof this.ctx.lineTo === 'function' && typeof this.ctx.stroke === 'function') {
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x, this.canvas.height);
+      this.ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      if (typeof this.ctx.setLineDash === 'function') {
+        this.ctx.setLineDash([5, 6]);
+      }
+      this.ctx.lineWidth = 1.5;
+      this.ctx.stroke();
+      if (typeof this.ctx.setLineDash === 'function') {
+        this.ctx.setLineDash([]);
+      }
+    }
+
     this.ctx.restore();
   }
 
