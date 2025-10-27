@@ -444,16 +444,12 @@ class FruitMergeZGame {
             const y = (touch.y ?? touch.clientY ?? touch.pageY);
             console.log('[DouyinTouch] touchstart', { x, y });
             this.gameLogic.handleTouchStart(x, y);
-            // 兜底：某些设备可能不触发 touchend，延时触发一次投放
-            if (this._douyinTapDropTimer) { clearTimeout(this._douyinTapDropTimer); }
-            this._douyinTapDropTimer = setTimeout(() => {
-              try {
-                if (!this.gameLogic) return;
-                const canFallbackDrop = this.gameLogic.gameState === GAME_STATES.PLAYING &&
-                  !this.gameLogic.currentDroppingFruit && this.isRunning;
-                if (canFallbackDrop) { this.gameLogic.handleTouchEnd(x, y); }
-              } catch (_) {}
-            }, 200);
+            // 移除兜底机制 - 只有真正的touchend事件才应该投放水果
+            // 清理任何之前的定时器
+            if (this._douyinTapDropTimer) { 
+              clearTimeout(this._douyinTapDropTimer); 
+              this._douyinTapDropTimer = null;
+            }
           }
         }
       });

@@ -98,16 +98,16 @@ export class GameLogic {
     
     // 拖动系统相关
     this.isDragging = false;
+    this.isDragMoving = false; // 防止意外释放的标记
     this.dragStartX = 0;
     this.dragStartY = 0;
     this.dragOffsetX = 0;
     this.dragOffsetY = 0;
-    this.dragBounds = {
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0
-    };
+    this.dragBounds = { left: 0, right: 0, top: 0, bottom: 0 };
+    
+    // 触摸事件相关
+    this.touchStartX = undefined; // 记录按下位置
+    this.touchStartY = undefined;
     
     // 危险检测
     this.dangerTimer = 0;
@@ -276,20 +276,16 @@ export class GameLogic {
         return;
       }
       
-      // 如果没有点击在水果上，则使用原有的预览逻辑（兼容性）
-      const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
-      const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
-      const dropLeft = centerX - width / 2;
-      const dropRight = centerX + width / 2;
-      this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
+      // 按住屏幕准备投放 - 不立即设置投放位置，等待touchend确认
       this.previewActive = true;
+      this.touchStartX = x; // 记录按下位置
+      this.touchStartY = y;
       
-      // 更新预生成水果的位置
-      if (this.previewFruit) {
-        this.previewFruit.x = this.previewX;
-      }
+      // 初始化拖动检测相关变量
+      this.lastPreviewX = x;
+      this.isDragMoving = false;
       
-      console.log(`[TouchStart] Preview activated at x=${this.previewX.toFixed(1)}`);
+      console.log(`[TouchStart] Touch down at (${x.toFixed(1)}, ${y.toFixed(1)}), waiting for release to drop`);
     }
   }
 
@@ -338,6 +334,15 @@ export class GameLogic {
       }
       
       console.log(`[TouchMove] Preview updated to x=${this.previewX.toFixed(1)}`);
+      
+      // 只在实际移动距离较大时才设置拖动状态标记
+      const moveDistance = Math.abs(x - (this.lastPreviewX || x));
+      if (moveDistance > 5) { // 只有移动距离大于5像素才认为是真正的拖动
+        this.isDragMoving = true;
+        this.lastMoveTime = Date.now();
+        console.log(`[TouchMove] Significant movement detected (${moveDistance.toFixed(1)}px), setting drag state`);
+      }
+      this.lastPreviewX = x;
     }
   }
 
@@ -388,10 +393,16 @@ export class GameLogic {
       return;
     }
 
-    // 关闭投放预览（兼容性）
-    this.previewActive = false;
-    const dropX = this.previewX; // 保存投放位置
-    this.previewX = null;
+    // 检查是否刚刚在移动中 - 防止意外释放
+    if (this.isDragMoving) {
+      const timeSinceMove = Date.now() - (this.lastMoveTime || 0);
+      if (timeSinceMove < 50) { // 减少到50ms，只防止非常快速的意外触发
+        console.log(`[TouchEnd] User was just moving (isDragMoving=${this.isDragMoving}, timeSinceMove=${timeSinceMove}ms), ignoring touchend`);
+        return;
+      }
+      console.log(`[TouchEnd] Sufficient time since move (${timeSinceMove}ms), processing touchend`);
+      this.isDragMoving = false; // 重置标记
+    }
 
     // 检查是否有按钮被按下且在touchEnd时仍在按钮区域内
     if (this.buttonPressed) {
@@ -471,13 +482,26 @@ export class GameLogic {
       return;
     }
 
-    // 使用保存的投放位置进行投放
-    if (dropX !== null) {
+    // 检查是否有有效的触摸开始位置（确保是按住-释放的操作）
+    if (this.previewActive && this.touchStartX !== undefined && this.touchStartY !== undefined) {
+      // 计算投放位置 - 使用释放时的位置
+      const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
+      const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
+      const dropLeft = centerX - width / 2;
+      const dropRight = centerX + width / 2;
+      const dropX = Math.max(dropLeft, Math.min(dropRight, x));
+      
       console.log(`[TouchEnd] Processing drop request at (${dropX.toFixed(1)}, ${y.toFixed(1)})`);
+      
+      // 关闭投放预览
+      this.previewActive = false;
+      this.touchStartX = undefined;
+      this.touchStartY = undefined;
+      
       this.waitingForUserAction = false; // 标记不再等待用户操作
       this.dropFruit(dropX, y);
     } else {
-      console.log(`[TouchEnd] Touch end processed, no drop triggered`);
+      console.log(`[TouchEnd] Touch end processed, no drop triggered (previewActive=${this.previewActive})`);
     }
   }
 
