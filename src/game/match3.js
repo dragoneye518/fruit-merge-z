@@ -204,7 +204,10 @@ export class Match3Logic {
         this.effectSystem.createComboEffect(this.boardLeft + this.boardWidth/2, this.boardTop - 32, this.combo, {});
       }
     } else {
-      // 没有消除则重置连击计时
+      // 没有消除则重置连击计时，但先更新maxCombo
+      if (this.combo > this.maxCombo) {
+        this.maxCombo = this.combo;
+      }
       this.comboTimer = 0;
       this.combo = 0;
     }

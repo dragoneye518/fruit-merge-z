@@ -51,10 +51,10 @@ export class GameUI {
     
     this.buttons = {
       power: {
-        x: this.width - 100,  // 进一步增加距离右边缘的距离
-        y: this.height - 140, // 进一步增加距离底部的距离
-        width: 60,           // 减小按钮尺寸，减少误触
-        height: 60,          // 减小按钮尺寸，减少误触
+        x: this.width - 80,   // 移动到右上角，距离右边缘80像素
+        y: 20,                // 移动到顶部，距离顶部20像素，远离游戏操作区域
+        width: 50,            // 进一步减小按钮尺寸，减少误触
+        height: 50,           // 进一步减小按钮尺寸，减少误触
         disabled: false
       }
     };

@@ -395,10 +395,10 @@ export class GameLogic {
 
     // 检查是否有按钮被按下且在touchEnd时仍在按钮区域内
     if (this.buttonPressed) {
-      const uiResult = this.gameUI.onTouchStart(x, y); // 重新检查位置
-      if (uiResult && uiResult.type === 'button' && uiResult.name === this.buttonPressed) {
-        console.log(`[TouchEnd] Button clicked: ${uiResult.name}`);
-        this.handleUIEvent(uiResult);
+      const buttonCheck = this.gameUI.checkButtonClick(x, y); // 只检查按钮位置，不触发onTouchStart
+      if (buttonCheck && buttonCheck.type === 'button' && buttonCheck.name === this.buttonPressed) {
+        console.log(`[TouchEnd] Button clicked: ${buttonCheck.name}`);
+        this.handleUIEvent(buttonCheck);
         this.buttonPressed = null; // 清除按钮状态
         return;
       } else {
@@ -1140,12 +1140,12 @@ export class GameLogic {
     }
 
     // 游戏结束判断参数
-    const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? 4;
-    const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 1.0;
-    const dangerY = this.physicsEngine?.dangerLineY ?? 500; // 危险线位置
-    const groundY = GAME_CONFIG?.GROUND?.y ?? 639; // 草地顶部位置
+    const tolerancePx = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_TOLERANCE_PX ?? 8;
+    const sustainSec = GAME_CONFIG?.GAMEPLAY?.GAMEOVER_SUSTAIN_SEC ?? 0.8;
+    const dangerY = GAME_CONFIG?.DANGER_LINE?.y ?? 200; // 使用配置中的危险线位置
+    const groundY = this.canvas.height - (GAME_CONFIG?.GROUND?.height ?? 28); // 计算地面位置
 
-    // 检查是否有水果从草地堆叠到危险线
+    // 检查是否有水果超过危险线
     let hasDangerousFruit = false;
     let dangerousFruit = null;
     
@@ -1157,16 +1157,12 @@ export class GameLogic {
           continue;
         }
 
-        // 检查水果是否接触草地（底部接触）
-        const fruitBottom = body.position.y + body.radius;
-        const isOnGround = fruitBottom >= (groundY - tolerancePx);
-        
         // 检查水果顶部是否达到或超过危险线
         const fruitTop = body.position.y - body.radius;
         const reachesDangerLine = fruitTop <= (dangerY + tolerancePx);
         
-        // 如果水果既接触草地又达到危险线，说明水果从草地堆叠到了危险线
-        if (isOnGround && reachesDangerLine) {
+        // 如果水果达到危险线，就认为是危险状态
+        if (reachesDangerLine) {
           hasDangerousFruit = true;
           dangerousFruit = body;
           break;
@@ -1181,6 +1177,7 @@ export class GameLogic {
     // 如果没有危险水果，重置计时器
     if (!hasDangerousFruit || !dangerousFruit) {
       this.dangerTimer = 0;
+      this.isDangerous = false;
       return;
     }
 
@@ -1189,7 +1186,7 @@ export class GameLogic {
     try {
       const velocity = dangerousFruit.velocity || { x: 0, y: 0 };
       const speed = Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
-      const speedThreshold = GAME_CONFIG?.DANGER?.settleSpeedY ?? 36;
+      const speedThreshold = GAME_CONFIG?.DANGER?.settleSpeedY ?? 50;
       isStatic = speed <= speedThreshold;
     } catch (_) {
       isStatic = false;
@@ -1209,8 +1206,10 @@ export class GameLogic {
     // 累计危险时间
     if (hasDangerousFruit && isStatic && !graceActive) {
       this.dangerTimer = (this.dangerTimer || 0) + this.deltaTime;
+      this.isDangerous = true;
     } else {
       this.dangerTimer = 0;
+      this.isDangerous = false;
     }
 
     // 调试日志
@@ -1219,14 +1218,14 @@ export class GameLogic {
       const fruitBottom = dangerousFruit.position.y + dangerousFruit.radius;
       const prevTimer = (this.dangerTimer || 0);
       let label = graceActive ? '宽限期中' : (isStatic ? (prevTimer > 0 ? '计时中' : '开始计时') : '未静止');
-      console.log(`[CheckGameOver] 状态=${label}, 水果顶部=${fruitTop.toFixed(1)}, 水果底部=${fruitBottom.toFixed(1)}, 危险线=${dangerY}, 草地=${groundY}, 计时=${prevTimer.toFixed(2)}`);
+      console.log(`[CheckGameOver] 状态=${label}, 水果顶部=${fruitTop.toFixed(1)}, 水果底部=${fruitBottom.toFixed(1)}, 危险线=${dangerY}, 地面=${groundY}, 计时=${prevTimer.toFixed(2)}`);
     } catch (_) {
       // 忽略日志错误
     }
 
     // 检查是否应该结束游戏
     if (this.dangerTimer >= sustainSec && this.gameState === GAME_STATES.PLAYING) {
-      console.log(`[CheckGameOver] 游戏结束：水果从草地堆叠到危险线`);
+      console.log(`[CheckGameOver] 游戏结束：水果超过危险线持续${this.dangerTimer.toFixed(2)}秒`);
 
       try {
         this.gameOver();
@@ -1658,6 +1657,13 @@ export class GameLogic {
       if (this.comboTimer > 0) {
         this.comboTimer -= deltaTime;
         if (this.comboTimer <= 0) {
+          // 在重置combo前，先更新maxCombo
+          if (this.combo > this.maxCombo) {
+            this.maxCombo = this.combo;
+            if (this.gameUI && typeof this.gameUI.setRunMaxCombo === 'function') {
+              this.gameUI.setRunMaxCombo(this.maxCombo);
+            }
+          }
           this.combo = 0;
           if (this.gameUI && typeof this.gameUI.setCombo === 'function') {
             this.gameUI.setCombo(0);

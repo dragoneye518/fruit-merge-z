@@ -40,7 +40,7 @@ export const GAME_CONFIG = {
   
   // 危险线
   DANGER_LINE: {
-    y: 500,  // 设置到草地上方合适位置 (667 - 28 - 140 = 499，约为屏幕3/4位置)
+    y: 200,  // 调整到更合理的位置，约为屏幕上方1/3处
     color: '#FF4444',
     flashDuration: 500
   },
@@ -49,9 +49,9 @@ export const GAME_CONFIG = {
     // 新生成水果的危险判定宽限时间（秒），避免顶部生成瞬间被判定危险
     spawnGraceSec: 0.3,
     // 仅在顶部接近停滞时才计入危险（垂直速度阈值，px/s）
-    settleSpeedY: 24,
+    settleSpeedY: 50,  // 提高速度阈值，让更多静止的水果被检测到
     // 顶部危险线的判定边距（像素），小幅越线不立即计入
-    marginPx: 3
+    marginPx: 8  // 增加容错边距
   },
   
   // 物理引擎参数
@@ -104,9 +104,9 @@ export const GAME_CONFIG = {
     // 开局宽限时间（秒），避免初始化时误判游戏结束
     BOOT_GRACE_SEC: 1.5,
     // 游戏结束判定容差（像素）
-    GAMEOVER_TOLERANCE_PX: 4,
-    // 游戏结束持续时间（秒）
-    GAMEOVER_SUSTAIN_SEC: 1.0,
+    GAMEOVER_TOLERANCE_PX: 8,  // 增加容错像素
+    // 游戏结束持续时间（秒）- 降低以更快触发游戏结束
+    GAMEOVER_SUSTAIN_SEC: 0.8,
     // 网格三消配置
     MATCH3: {
       cols: 7,
