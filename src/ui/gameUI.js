@@ -659,60 +659,39 @@ export class GameUI {
   renderBombButton() {
     this.ctx.save();
     
-    // 炸弹按钮位置：危险线附近靠右
-    const buttonSize = 50;
-    const margin = 20;
-    const dangerY = GAME_CONFIG.DANGER_LINE?.y || GAME_CONFIG.DROP_LINE_Y || 200;
+    // 炸弹按钮位置：移动到屏幕右上角
+    const buttonSize = 70;
+    const margin = 15; // 减小边距，更靠近右上角
     const buttonX = this.width - margin - buttonSize; // 靠右
-    const buttonY = dangerY - 10; // 危险线下方10像素，确保按钮完全可见
+    const buttonY = margin; // 移动到顶部，距离顶部15像素
     
     // 添加调试日志
-    console.log(`[BombButton] Rendering at x=${buttonX}, y=${buttonY}, size=${buttonSize}, dangerY=${dangerY}, canvas=${this.width}x${this.height}`);
+    console.log(`[BombButton] Rendering at x=${buttonX}, y=${buttonY}, size=${buttonSize}, canvas=${this.width}x${this.height}`);
     
-    // 检查Canvas方法是否存在
-    if (typeof this.ctx.createRadialGradient === 'function') {
-      // 绘制按钮背景
-      const gradient = this.ctx.createRadialGradient(
-        buttonX + buttonSize/2, buttonY + buttonSize/2, 0,
-        buttonX + buttonSize/2, buttonY + buttonSize/2, buttonSize/2
-      );
-      gradient.addColorStop(0, '#ff6b6b');
-      gradient.addColorStop(0.7, '#ff5252');
-      gradient.addColorStop(1, '#d32f2f');
-      
-      this.ctx.fillStyle = gradient;
-    } else {
-      this.ctx.fillStyle = '#ff6b6b';
-    }
-    
-    if (typeof this.ctx.beginPath === 'function' && 
-        typeof this.ctx.arc === 'function' && 
-        typeof this.ctx.fill === 'function') {
-      this.ctx.beginPath();
-      this.ctx.arc(buttonX + buttonSize/2, buttonY + buttonSize/2, buttonSize/2, 0, Math.PI * 2);
-      this.ctx.fill();
-      
-      // 绘制按钮边框
-      if (typeof this.ctx.stroke === 'function') {
-        this.ctx.strokeStyle = '#b71c1c';
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
-      }
-    }
-    
-    // 绘制炸弹图标（简化版）
+    // 完全透明的背景，只保留微弱的边框
     const centerX = buttonX + buttonSize/2;
     const centerY = buttonY + buttonSize/2;
     
-    // 炸弹图标 - 检查绘制方法是否存在
+    // 极简透明边框（缩小到原来的一半）
+    if (typeof this.ctx.beginPath === 'function' && 
+        typeof this.ctx.arc === 'function' && 
+        typeof this.ctx.stroke === 'function') {
+      this.ctx.strokeStyle = 'rgba(128, 128, 128, 0.2)'; // 非常淡的灰色边框
+      this.ctx.lineWidth = 1; // 从2缩小到1
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, buttonSize/2 - 2, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
+    
+    // 绘制放大的炸弹图标（保持原有大小和细节）
     if (typeof this.ctx.beginPath === 'function' && 
         typeof this.ctx.arc === 'function' && 
         typeof this.ctx.fill === 'function') {
       
-      // 炸弹主体
+      // 炸弹主体（保持原有大小）
       this.ctx.fillStyle = '#2c2c2c';
       this.ctx.beginPath();
-      this.ctx.arc(centerX, centerY + 3, 12, 0, Math.PI * 2);
+      this.ctx.arc(centerX, centerY + 4, 18, 0, Math.PI * 2);
       this.ctx.fill();
       
       // 炸弹引线
@@ -720,25 +699,53 @@ export class GameUI {
           typeof this.ctx.lineTo === 'function' && 
           typeof this.ctx.stroke === 'function') {
         this.ctx.strokeStyle = '#8d6e63';
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 3;
         this.ctx.beginPath();
-        this.ctx.moveTo(centerX - 8, centerY - 6);
-        this.ctx.lineTo(centerX - 12, centerY - 12);
+        this.ctx.moveTo(centerX - 12, centerY - 8);
+        this.ctx.lineTo(centerX - 18, centerY - 18);
         this.ctx.stroke();
       }
       
       // 火花效果
       this.ctx.fillStyle = '#ff9800';
       this.ctx.beginPath();
-      this.ctx.arc(centerX - 12, centerY - 12, 2, 0, Math.PI * 2);
+      this.ctx.arc(centerX - 18, centerY - 18, 3, 0, Math.PI * 2);
       this.ctx.fill();
       
       // 高光效果
-      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
       this.ctx.beginPath();
-      this.ctx.arc(centerX - 4, centerY - 2, 4, 0, Math.PI * 2);
+      this.ctx.arc(centerX - 6, centerY - 2, 6, 0, Math.PI * 2);
       this.ctx.fill();
     }
+    
+    // 获取炸弹使用状态并显示使用次数（无背景）
+    const bombUsed = window.gameLogic?.bombUsed || false;
+    const remainingUses = bombUsed ? 0 : 1;
+    
+    // 在右下角显示纯数字（无背景）
+    const counterX = buttonX + buttonSize - 12;
+    const counterY = buttonY + buttonSize - 12;
+    
+    // 直接显示数字，无背景
+    this.ctx.fillStyle = remainingUses > 0 ? '#2196F3' : '#FF5722'; // 蓝色表示可用，橙色表示已用
+    this.ctx.font = 'bold 18px Arial, sans-serif'; // 稍微增大字体以提高可见性
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
+    
+    // 添加文字阴影以提高可读性
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    this.ctx.shadowBlur = 2;
+    this.ctx.shadowOffsetX = 1;
+    this.ctx.shadowOffsetY = 1;
+    
+    this.ctx.fillText(remainingUses.toString(), counterX, counterY);
+    
+    // 清除阴影设置
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 0;
     
     // 存储按钮区域用于点击检测
     this.bombButton = {

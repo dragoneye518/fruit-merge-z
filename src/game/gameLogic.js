@@ -64,6 +64,7 @@ export class GameLogic {
     // 历史最高连击与一次性道具状态
     this.highCombo = this.loadHighCombo ? this.loadHighCombo() : 0;
     this.powerUsed = false;
+    this.bombUsed = false; // 每局只能使用一次炸弹道具
     
     // 新增积分系统变量
     this.rapidDropCount = 0;
@@ -749,6 +750,12 @@ export class GameLogic {
         return;
       }
       
+      // 检查炸弹是否已使用
+      if (this.bombUsed) {
+        audioManager.playSound('CLICK');
+        return;
+      }
+      
       // 显示炸弹道具确认对话框
       this.showBombConfirmDialog();
       audioManager.playSound('CLICK');
@@ -816,6 +823,7 @@ export class GameLogic {
     
     this.confirmDialog = {
       visible: true,
+      type: 'bomb', // 标识对话框类型
       title: '使用炸弹道具',
       message: '确定要使用炸弹清除水果吗？\n此道具每局只能使用一次！',
       x: dialogX,
@@ -846,12 +854,65 @@ export class GameLogic {
   
   // 执行炸弹道具功能
   executeBombAction() {
+    if (this.bombUsed) {
+      return; // 防止重复使用
+    }
+    
+    // 标记炸弹已使用
+    this.bombUsed = true;
+    
     try {
-      // 清除当前所有水果（不影响世界边界），游戏继续
-      this.fruitManager.clear();
-      if (this.physicsEngine) {
+      const allBodies = this.physicsEngine.bodies || [];
+      const bodiesToRemove = [];
+      
+      // 获取危险线Y坐标和地面Y坐标
+      const dangerLineY = GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18);
+      const groundTopY = this.physicsEngine.getGroundTopY();
+      
+      // 筛选出需要清除的水果：
+      // 1. 排除当前正在下落的水果（如果存在且速度较快）
+      // 2. 清除所有其他已经掉落到危险线以下的水果
+      for (const body of allBodies) {
+        // 检查是否是当前正在快速下落的水果
+        const isCurrentDropping = this.currentDroppingFruit && 
+                                 this.currentDroppingFruit.id === body.id;
+        const isFastFalling = body.velocity && Math.abs(body.velocity.y) > 50;
+        
+        // 如果是当前正在快速下落的水果，跳过不清除
+        if (isCurrentDropping && isFastFalling) {
+          console.log(`[Bomb] Skipping current dropping fruit: ${body.id}, velocity: ${body.velocity.y.toFixed(2)}`);
+          continue;
+        }
+        
+        // 清除所有在危险线以下的水果（已经掉落的水果）
+        const fruitBottomY = body.position.y + body.radius;
+        if (fruitBottomY > dangerLineY) {
+          bodiesToRemove.push(body);
+        }
+      }
+      
+      console.log(`[Bomb] Removing ${bodiesToRemove.length} dropped fruits out of ${allBodies.length} total`);
+      console.log(`[Bomb] Danger line Y: ${dangerLineY}, Ground Y: ${groundTopY}`);
+      
+      // 移除选中的水果
+      for (const body of bodiesToRemove) {
+        body.isMarkedForRemoval = true;
+      }
+      
+      // 清理水果管理器中对应的水果对象
+      this.fruitManager.fruits = this.fruitManager.fruits.filter(fruit => 
+        !fruit.body.isMarkedForRemoval
+      );
+      
+      // 清理物理引擎中的刚体
+      this.physicsEngine.cleanupBodies();
+      
+      // 如果当前下落的水果被清除了，重置相关状态
+      if (this.currentDroppingFruit && this.currentDroppingFruit.isMarkedForRemoval) {
+        this.currentDroppingFruit = null;
         this.physicsEngine.activeBody = null;
       }
+      
       // 安全复位危险状态与连击计时器
       this.dangerTimer = 0;
       this.isDangerous = false;
@@ -884,7 +945,7 @@ export class GameLogic {
       }
       audioManager.playSound('POWER_USE');
     } catch (e) {
-      console.warn('[Bomb] Failed to clear fruits:', e);
+      console.warn('[Bomb] Failed to clear stable fruits:', e);
     }
   }
   
@@ -1645,6 +1706,7 @@ export class GameLogic {
 
     // 重置一次性道具状态
     this.powerUsed = false;
+    this.bombUsed = false; // 重置炸弹使用状态
     if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
       this.gameUI.buttons.power.disabled = false;
     }
@@ -1978,56 +2040,152 @@ export class GameLogic {
     this.ctx.save();
 
     // 绘制半透明背景遮罩
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // 绘制对话框背景
-    this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.strokeStyle = '#FF6B35';
-    this.ctx.lineWidth = 3;
-    this.ctx.fillRect(dialog.x, dialog.y, dialog.width, dialog.height);
-    this.ctx.strokeRect(dialog.x, dialog.y, dialog.width, dialog.height);
+    // 简约大方的对话框设计
+    const cornerRadius = 12;
+    
+    // 绘制对话框背景（纯白色，简洁）
+    this.ctx.fillStyle = '#ffffff';
+    this.roundRect(dialog.x, dialog.y, dialog.width, dialog.height, cornerRadius);
+    this.ctx.fill();
+    
+    // 极简边框
+    this.ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
 
-    // 绘制标题
-    this.ctx.fillStyle = '#FF6B35';
-    this.ctx.font = 'bold 24px Arial, sans-serif';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText(dialog.title, dialog.x + dialog.width / 2, dialog.y + 40);
+    // 标题和图标水平排列
+    const titleY = dialog.y + 60;
+    const titleText = '使用炸弹道具';
+    
+    // 测量文字宽度
+    this.ctx.font = 'bold 20px Arial, sans-serif';
+    const textWidth = this.ctx.measureText(titleText).width;
+    const iconSize = 24;
+    const spacing = 12;
+    const totalWidth = iconSize + spacing + textWidth;
+    
+    // 计算起始位置（居中）
+    const startX = dialog.x + (dialog.width - totalWidth) / 2;
+    const iconX = startX + iconSize / 2;
+    const textX = startX + iconSize + spacing;
+    
+    // 绘制炸弹图标（在文字左边）
+    this.ctx.fillStyle = '#2c2c2c';
+    this.ctx.beginPath();
+    this.ctx.arc(iconX, titleY, iconSize/2, 0, Math.PI * 2);
+    this.ctx.fill();
+    
+    // 炸弹引线
+    this.ctx.strokeStyle = '#8d6e63';
+    this.ctx.lineWidth = 2;
+    this.ctx.beginPath();
+    this.ctx.moveTo(iconX - 8, titleY - 10);
+    this.ctx.lineTo(iconX - 12, titleY - 16);
+    this.ctx.stroke();
+    
+    // 火花
+    this.ctx.fillStyle = '#ff9800';
+    this.ctx.beginPath();
+    this.ctx.arc(iconX - 12, titleY - 16, 2, 0, Math.PI * 2);
+    this.ctx.fill();
 
-    // 绘制消息文本
+    // 标题文字（在图标右边）
     this.ctx.fillStyle = '#333333';
-    this.ctx.font = '18px Arial, sans-serif';
+    this.ctx.font = 'bold 20px Arial, sans-serif';
+    this.ctx.textAlign = 'left';
+    this.ctx.textBaseline = 'middle';
+    this.ctx.fillText(titleText, textX, titleY);
+
+    // 简洁消息文本
+    this.ctx.fillStyle = '#666666';
+    this.ctx.font = '16px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
     const lines = dialog.message.split('\n');
+    const lineHeight = 22;
+    const startY = dialog.y + 100; // 调整消息文本位置，给标题留出更多空间
+    
     lines.forEach((line, index) => {
-      this.ctx.fillText(line, dialog.x + dialog.width / 2, dialog.y + 80 + index * 25);
+      if (line.includes('每局只能使用一次')) {
+        // 重要提示稍微突出
+        this.ctx.fillStyle = '#ff6b6b';
+        this.ctx.font = '14px Arial, sans-serif';
+      } else {
+        this.ctx.fillStyle = '#666666';
+        this.ctx.font = '16px Arial, sans-serif';
+      }
+      this.ctx.fillText(line, dialog.x + dialog.width / 2, startY + index * lineHeight);
     });
 
-    // 绘制确认按钮
+    // 极简按钮设计
     const confirmBtn = dialog.confirmBtn;
-    this.ctx.fillStyle = '#FF6B35';
-    this.ctx.fillRect(confirmBtn.x, confirmBtn.y, confirmBtn.width, confirmBtn.height);
-    this.ctx.strokeStyle = '#E55A2B';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(confirmBtn.x, confirmBtn.y, confirmBtn.width, confirmBtn.height);
+    const cancelBtn = dialog.cancelBtn;
+    const btnRadius = 6;
     
-    this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.font = 'bold 16px Arial, sans-serif';
+    // 确认按钮（简洁实心）
+    this.ctx.fillStyle = '#007AFF'; // iOS风格蓝色
+    this.roundRect(confirmBtn.x, confirmBtn.y, confirmBtn.width, confirmBtn.height, btnRadius);
+    this.ctx.fill();
+    
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.font = '16px Arial, sans-serif';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
     this.ctx.fillText('确认', confirmBtn.x + confirmBtn.width / 2, confirmBtn.y + confirmBtn.height / 2);
 
-    // 绘制取消按钮
-    const cancelBtn = dialog.cancelBtn;
-    this.ctx.fillStyle = '#CCCCCC';
-    this.ctx.fillRect(cancelBtn.x, cancelBtn.y, cancelBtn.width, cancelBtn.height);
-    this.ctx.strokeStyle = '#999999';
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeRect(cancelBtn.x, cancelBtn.y, cancelBtn.width, cancelBtn.height);
+    // 取消按钮（简洁边框）
+    this.ctx.fillStyle = 'transparent';
+    this.roundRect(cancelBtn.x, cancelBtn.y, cancelBtn.width, cancelBtn.height, btnRadius);
+    this.ctx.fill();
     
-    this.ctx.fillStyle = '#333333';
-    this.ctx.font = 'bold 16px Arial, sans-serif';
+    this.ctx.strokeStyle = '#007AFF';
+    this.ctx.lineWidth = 1;
+    this.ctx.stroke();
+    
+    this.ctx.fillStyle = '#007AFF';
+    this.ctx.font = '16px Arial, sans-serif';
     this.ctx.fillText('取消', cancelBtn.x + cancelBtn.width / 2, cancelBtn.y + cancelBtn.height / 2);
 
     this.ctx.restore();
+  }
+
+  // 辅助方法：绘制圆角矩形
+  roundRect(x, y, width, height, radius, topOnly = false, bottomOnly = false) {
+    if (typeof this.ctx.beginPath !== 'function') return;
+    
+    this.ctx.beginPath();
+    
+    if (topOnly) {
+      this.ctx.moveTo(x + radius, y);
+      this.ctx.lineTo(x + width - radius, y);
+      this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      this.ctx.lineTo(x + width, y + height);
+      this.ctx.lineTo(x, y + height);
+      this.ctx.lineTo(x, y + radius);
+      this.ctx.quadraticCurveTo(x, y, x + radius, y);
+    } else if (bottomOnly) {
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x + width, y);
+      this.ctx.lineTo(x + width, y + height - radius);
+      this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      this.ctx.lineTo(x + radius, y + height);
+      this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      this.ctx.lineTo(x, y);
+    } else {
+      this.ctx.moveTo(x + radius, y);
+      this.ctx.lineTo(x + width - radius, y);
+      this.ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      this.ctx.lineTo(x + width, y + height - radius);
+      this.ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      this.ctx.lineTo(x + radius, y + height);
+      this.ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      this.ctx.lineTo(x, y + radius);
+      this.ctx.quadraticCurveTo(x, y, x + radius, y);
+    }
+    
+    this.ctx.closePath();
   }
 
   // 渲染暂停覆盖层
@@ -2493,7 +2651,14 @@ export class GameLogic {
     if (x >= dialog.confirmBtn.x && x <= dialog.confirmBtn.x + dialog.confirmBtn.width &&
         y >= dialog.confirmBtn.y && y <= dialog.confirmBtn.y + dialog.confirmBtn.height) {
       audioManager.playSound('CLICK');
-      this.executePowerAction();
+      
+      // 根据对话框类型执行不同的操作
+      if (dialog.type === 'bomb') {
+        this.executeBombAction();
+      } else {
+        this.executePowerAction();
+      }
+      
       this.hideConfirmDialog();
       return;
     }
