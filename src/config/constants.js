@@ -56,20 +56,20 @@ export const GAME_CONFIG = {
   
   // 物理引擎参数
   PHYSICS: {
-    gravity: 1200,       // 重力（提高整体下落速度）
-    friction: 0.92,      // 摩擦力（降低以增加滑动）
-    restitution: 0.25,   // 弹性系数（增加弹性，让碰撞更有活力）
-    airResistance: 0.995, // 空气阻力（降低阻力，保持运动）
-    groundFriction: 0.92, // 地面摩擦（大幅降低，增加滑落速度）
-    wallFriction: 0.88,   // 墙壁摩擦（进一步降低，增加沿壁滑动）
-    maxVelocity: 400,    // 最大速度（提高最大速度）
-    settleThreshold: 8,  // 静止阈值（保持不变）
+    gravity: 1600,       // 重力（大幅提高掉落速度）
+    friction: 0.82,      // 摩擦力（进一步降低以增加滑动）
+    restitution: 0.45,   // 弹性系数（进一步增加弹性）
+    airResistance: 0.999, // 空气阻力（几乎无空气阻力）
+    groundFriction: 0.75, // 地面摩擦（大幅降低，显著增加滑落速度）
+    wallFriction: 0.70,   // 墙壁摩擦（大幅降低，增加沿壁滑动）
+    maxVelocity: 600,    // 最大速度（进一步提高）
+    settleThreshold: 5,  // 大幅降低静止阈值（从8降到5）
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.08, // 弹跳阻尼（大幅降低，保持碰撞活力）
-    groundBounceDamping: 0.12, // 地面弹跳阻尼（降低）
+    bounceDamping: 0.03, // 弹跳阻尼（极小碰撞阻尼）
+    groundBounceDamping: 0.05, // 地面弹跳阻尼（极小地面碰撞阻尼）
     sleepVelThreshold: 4,   // 睡眠速度阈值（保持不变）
     solverIterations: 3,    // 求解器迭代次数
-    stableContactSec: 0.15  // 接触稳定时间要求（保持0.15秒）
+    stableContactSec: 0.08  // 大幅降低接触稳定时间要求（从0.15降到0.08秒）
   },
   
   // 性能限制
@@ -82,7 +82,7 @@ export const GAME_CONFIG = {
   // 掉落行为参数（顶部上方生成 + 初速度）
   DROP: {
     spawnAboveTopPx: 60,    // 生成位置相对容器顶部向上偏移
-    initialVelocityY: 650,  // 提高初始下落速度，确保更快进入支撑
+    initialVelocityY: 850,  // 大幅提高初始下落速度
     sideJitterPx: 0         // 水平轻微扰动（可为0）
   },
 
