@@ -208,11 +208,65 @@ export class PhysicsEngine {
 
     for (const body of this.bodies) {
       const onGround = (body.position.y + body.radius >= groundY);
+      
+      // 检查是否有稳定的支撑（地面或其他水果）
+      let hasStableSupport = onGround;
+      let supportContactDuration = 0;
+      
+      if (!onGround) {
+        // 检查是否稳定地支撑在其他水果上
+        for (const otherBody of this.bodies) {
+          if (otherBody === body) continue;
+          
+          const dx = body.position.x - otherBody.position.x;
+          const dy = body.position.y - otherBody.position.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const minDistance = body.radius + otherBody.radius;
+          
+          // 如果接触且当前水果在上方
+          if (distance <= minDistance * 1.02 && dy < 0) {
+            // 初始化接触追踪
+            if (!body.supportContacts) body.supportContacts = new Map();
+            
+            const contactKey = otherBody.id || `body_${this.bodies.indexOf(otherBody)}`;
+            const existingContact = body.supportContacts.get(contactKey);
+            
+            if (existingContact) {
+              existingContact.duration += (this.lastDt || 0);
+              supportContactDuration = Math.max(supportContactDuration, existingContact.duration);
+            } else {
+              body.supportContacts.set(contactKey, { duration: 0, otherBody });
+            }
+            
+            // 如果接触时间足够长，认为是稳定支撑
+            const stableThreshold = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.35;
+            if (supportContactDuration >= stableThreshold) {
+              hasStableSupport = true;
+            }
+          }
+        }
+        
+        // 清理不再接触的支撑记录
+        if (body.supportContacts) {
+          for (const [key, contact] of body.supportContacts.entries()) {
+            const otherBody = contact.otherBody;
+            const dx = body.position.x - otherBody.position.x;
+            const dy = body.position.y - otherBody.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const minDistance = body.radius + otherBody.radius;
+            
+            if (distance > minDistance * 1.1 || dy >= 0) {
+              body.supportContacts.delete(key);
+            }
+          }
+        }
+      }
+      
       if (onGround) {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const groundFriction = (GAME_CONFIG?.PHYSICS?.groundFriction ?? 0.96); // 使用可配置摩擦，接近1保留更多水平速度
+        const groundFriction = (GAME_CONFIG?.PHYSICS?.groundFriction ?? 0.96);
         const groundBounceDamping = GAME_CONFIG.PHYSICS.groundBounceDamping;
 
         body.prevPosition.x = pos.x - (pos.x - prev.x) * groundFriction;
@@ -221,7 +275,7 @@ export class PhysicsEngine {
         if (!body.bottomContact) {
           body.bottomContact = true;
           body.bottomContactDuration = 0;
-          // 仅在满足速度阈值且冷却结束时触发落地特效
+          // 触发落地特效
           try {
             const vyAbs = Math.abs(body.velocity.y || 0);
             const speedThreshold = (GAME_CONFIG?.PHYSICS?.impactSpeedThreshold ?? 36);
@@ -238,9 +292,7 @@ export class PhysicsEngine {
               body.impactCooldown = cooldownMs;
             }
           } catch (_) {}
-          // 避免在抖音环境产生高频日志导致卡顿，仅在显式开启调试时输出
           if (!isDouyinEnv || (GAME_CONFIG?.DEBUG?.dyGroundLogs === true)) {
-            // eslint-disable-next-line no-console
             console.log('[Physics] Body contacted ground:', body.id, 'y:', body.position.y.toFixed(1));
           }
         } else {
@@ -251,6 +303,10 @@ export class PhysicsEngine {
           body.bottomContact = false;
           body.bottomContactDuration = 0;
         }
+        
+        // 更新支撑接触时长（用于稳定性判断）
+        body.bottomContactDuration = supportContactDuration;
+        
         const prev = body.prevPosition;
         const pos = body.position;
         const ar = GAME_CONFIG.PHYSICS.airResistance;
@@ -289,6 +345,7 @@ export class PhysicsEngine {
         const axis = bodyA.position.subtract(bodyB.position);
         const dist = axis.magnitude();
         const min_dist = (bodyA.radius + bodyB.radius) * 0.998;
+        
         if (dist < min_dist) {
           if (GAME_CONFIG?.DEBUG?.verboseCollisions) {
             console.log(`Collision: ${bodyA.id} vs ${bodyB.id}, overlap: ${(min_dist - dist).toFixed(2)}`);
@@ -296,72 +353,92 @@ export class PhysicsEngine {
 
           const normal = axis.normalize();
           const overlap = min_dist - dist;
+          
+          // 检查是否为稳定接触（减少不必要的分离力）
+          const stableThreshold = GAME_CONFIG?.PHYSICS?.stableContactSec ?? 0.35;
+          const aStable = bodyA.bottomContactDuration >= stableThreshold;
+          const bStable = bodyB.bottomContactDuration >= stableThreshold;
+          const bothStable = aStable && bStable;
+          
+          // 对于稳定接触的水果，使用更温和的分离
+          const separationFactor = bothStable ? 0.3 : 1.0;
+          const effectiveOverlap = overlap * separationFactor;
+          
           const totalMass = bodyA.mass + bodyB.mass;
-          const moveA = overlap * (bodyB.mass / totalMass);
-          const moveB = overlap * (bodyA.mass / totalMass);
+          const moveA = effectiveOverlap * (bodyB.mass / totalMass);
+          const moveB = effectiveOverlap * (bodyA.mass / totalMass);
 
           // 分离水果，避免穿透
           bodyA.position = bodyA.position.add(normal.multiply(moveA));
           bodyB.position = bodyB.position.subtract(normal.multiply(moveB));
 
-          // 主动添加滑落力！
-          const tangent = new Vector2(-normal.y, normal.x);
+          // 主动添加滑落力（仅对非稳定接触）
+          if (!bothStable) {
+            const tangent = new Vector2(-normal.y, normal.x);
+            const relVel = bodyA.velocity.subtract(bodyB.velocity);
+            const tangentSpeed = relVel.x * tangent.x + relVel.y * tangent.y;
 
-          // 计算相对速度
-          const relVel = bodyA.velocity.subtract(bodyB.velocity);
-          const tangentSpeed = relVel.x * tangent.x + relVel.y * tangent.y;
+            if (Math.abs(tangentSpeed) > 10) {
+              const slideForce = Math.min(Math.abs(tangentSpeed) * 2.5, 400);
+              const slideDirection = tangentSpeed > 0 ? tangent : tangent.multiply(-1);
+              const impulse = slideDirection.multiply(slideForce);
+              
+              bodyA.velocity = bodyA.velocity.add(impulse.multiply(bodyB.invMass));
+              bodyB.velocity = bodyB.velocity.subtract(impulse.multiply(bodyA.invMass));
 
-          // 如果有切向速度，添加主动滑落推力
-          if (Math.abs(tangentSpeed) > 10) {
-            // 大幅增加滑落力，让水果快速沿边缘滑落
-            const slideForce = Math.min(Math.abs(tangentSpeed) * 2.5, 400);
-            const slideDirection = tangentSpeed > 0 ? tangent : tangent.multiply(-1);
-
-            // 施加主动滑落力
-            const impulse = slideDirection.multiply(slideForce);
-            bodyA.velocity = bodyA.velocity.add(impulse.multiply(bodyB.invMass));
-            bodyB.velocity = bodyB.velocity.subtract(impulse.multiply(bodyA.invMass));
-
-            // 立即更新位置，实现快速滑落
-            const slideVelA = impulse.multiply(bodyB.invMass);
-            const slideVelB = impulse.multiply(-bodyA.invMass);
-            bodyA.prevPosition = bodyA.position.subtract(bodyA.velocity.subtract(slideVelA).multiply(0.016));
-            bodyB.prevPosition = bodyB.position.subtract(bodyB.velocity.subtract(slideVelB).multiply(0.016));
+              // 立即更新位置，实现快速滑落
+              const slideVelA = impulse.multiply(bodyB.invMass);
+              const slideVelB = impulse.multiply(-bodyA.invMass);
+              bodyA.prevPosition = bodyA.position.subtract(bodyA.velocity.subtract(slideVelA).multiply(0.016));
+              bodyB.prevPosition = bodyB.position.subtract(bodyB.velocity.subtract(slideVelB).multiply(0.016));
+            }
           }
 
-          // 碰撞耗能：在位置修正后，衰减两刚体的位移（从而降低下一帧速度），加速收敛
+          // 碰撞耗能：对稳定接触使用更强的阻尼
           try {
-            const damping = (GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.15);
+            const baseDamping = GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.15;
+            const damping = bothStable ? Math.min(baseDamping * 2.5, 0.8) : baseDamping;
+            
             if (damping > 0 && damping < 1) {
               const dispA = bodyA.position.subtract(bodyA.prevPosition);
               const dispB = bodyB.position.subtract(bodyB.prevPosition);
-              // 仅沿碰撞法线方向进行耗能，保留切向速度用于滑落
-              const dispAAlong = normal.multiply((dispA.x * normal.x + dispA.y * normal.y));
-              const dispBAlong = normal.multiply((dispB.x * normal.x + dispB.y * normal.y));
-              // 保留更多切向速度，让水果能沿边缘更快滑落
-              bodyA.prevPosition = bodyA.position.subtract(dispAAlong.multiply(damping));
-              bodyB.prevPosition = bodyB.position.subtract(dispBAlong.multiply(damping));
+              
+              if (bothStable) {
+                // 稳定接触：全方向阻尼，快速收敛
+                bodyA.prevPosition = bodyA.position.subtract(dispA.multiply(1 - damping));
+                bodyB.prevPosition = bodyB.position.subtract(dispB.multiply(1 - damping));
+              } else {
+                // 非稳定接触：仅法向阻尼，保留切向速度
+                const dispAAlong = normal.multiply((dispA.x * normal.x + dispA.y * normal.y));
+                const dispBAlong = normal.multiply((dispB.x * normal.x + dispB.y * normal.y));
+                bodyA.prevPosition = bodyA.position.subtract(dispAAlong.multiply(damping));
+                bodyB.prevPosition = bodyB.position.subtract(dispBAlong.multiply(damping));
+              }
             }
           } catch (_) { /* ignore collision damping errors */ }
-          // 仅在法向相对速度达到阈值且双方冷却结束时触发水果间碰撞特效
-          try {
-            const relVel = bodyA.velocity.subtract(bodyB.velocity);
-            const normalSpeed = Math.abs(relVel.x * normal.x + relVel.y * normal.y);
-            const speedThreshold = (GAME_CONFIG?.PHYSICS?.impactSpeedThreshold ?? 36);
-            const isDouyinEnv = typeof tt !== 'undefined';
-            const cooldownMs = isDouyinEnv ? 160 : 240;
-            if (normalSpeed >= speedThreshold && bodyA.impactCooldown <= 0 && bodyB.impactCooldown <= 0) {
-              this.emitImpact({
-                position: bodyA.position.add(bodyB.position).multiply(0.5),
-                strength: Math.min(overlap * 0.5, 20),
-                bodyA,
-                bodyB,
-                normal
-              });
-              bodyA.impactCooldown = cooldownMs;
-              bodyB.impactCooldown = cooldownMs;
-            }
-          } catch (_) { /* ignore impact gating errors */ }
+          
+          // 碰撞特效：稳定接触不触发特效，避免持续震动
+          if (!bothStable) {
+            try {
+              const relVel = bodyA.velocity.subtract(bodyB.velocity);
+              const normalSpeed = Math.abs(relVel.x * normal.x + relVel.y * normal.y);
+              const speedThreshold = (GAME_CONFIG?.PHYSICS?.impactSpeedThreshold ?? 36);
+              const isDouyinEnv = typeof tt !== 'undefined';
+              const cooldownMs = isDouyinEnv ? 160 : 240;
+              
+              if (normalSpeed >= speedThreshold && bodyA.impactCooldown <= 0 && bodyB.impactCooldown <= 0) {
+                this.emitImpact({
+                  position: bodyA.position.add(bodyB.position).multiply(0.5),
+                  strength: Math.min(overlap * 0.5, 20),
+                  bodyA,
+                  bodyB,
+                  normal
+                });
+                bodyA.impactCooldown = cooldownMs;
+                bodyB.impactCooldown = cooldownMs;
+              }
+            } catch (_) { /* ignore impact gating errors */ }
+          }
         }
       }
     }
