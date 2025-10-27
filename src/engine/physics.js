@@ -321,10 +321,14 @@ export class PhysicsEngine {
         body.position.y = groundY - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const groundFriction = (GAME_CONFIG?.PHYSICS?.groundFriction ?? 0.96);
+        const groundFriction = (GAME_CONFIG?.PHYSICS?.groundFriction ?? 0.92);
         const groundBounceDamping = GAME_CONFIG.PHYSICS.groundBounceDamping;
 
-        body.prevPosition.x = pos.x - (pos.x - prev.x) * groundFriction;
+        // 根据水果速度动态调整地面摩擦力
+        const speed = body.velocity.magnitude();
+        const dynamicGroundFriction = speed > 50 ? groundFriction * 0.95 : groundFriction; // 高速时减少摩擦
+
+        body.prevPosition.x = pos.x - (pos.x - prev.x) * dynamicGroundFriction;
         body.prevPosition.y = pos.y - (pos.y - prev.y) * groundBounceDamping;
 
         if (!body.bottomContact) {
@@ -374,16 +378,22 @@ export class PhysicsEngine {
         body.position.x = leftWallX + body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.96); // 使用可配置墙摩擦以提升沿壁滑动速度
-        body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
+        const speed = body.velocity.magnitude();
+        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.88);
+        // 高速时进一步减少墙壁摩擦，增加沿壁滑动
+        const dynamicWallFriction = speed > 40 ? wallFriction * 0.9 : wallFriction;
+        body.prevPosition.x = pos.x - (pos.x - prev.x) * dynamicWallFriction;
       }
 
       if (body.position.x + body.radius > rightWallX) {
         body.position.x = rightWallX - body.radius;
         const prev = body.prevPosition;
         const pos = body.position;
-        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.96); // 使用可配置墙摩擦以提升沿壁滑动速度
-        body.prevPosition.x = pos.x - (pos.x - prev.x) * wallFriction;
+        const speed = body.velocity.magnitude();
+        const wallFriction = (GAME_CONFIG?.PHYSICS?.wallFriction ?? 0.88);
+        // 高速时进一步减少墙壁摩擦，增加沿壁滑动
+        const dynamicWallFriction = speed > 40 ? wallFriction * 0.9 : wallFriction;
+        body.prevPosition.x = pos.x - (pos.x - prev.x) * dynamicWallFriction;
       }
 
       const speed = body.velocity.magnitude();
@@ -434,8 +444,9 @@ export class PhysicsEngine {
             const relVel = bodyA.velocity.subtract(bodyB.velocity);
             const tangentSpeed = relVel.x * tangent.x + relVel.y * tangent.y;
 
-            if (Math.abs(tangentSpeed) > 10) {
-              const slideForce = Math.min(Math.abs(tangentSpeed) * 2.5, 400);
+            // 大幅增强滑落力，降低触发阈值
+            if (Math.abs(tangentSpeed) > 5) {
+              const slideForce = Math.min(Math.abs(tangentSpeed) * 4.0, 600); // 增强滑落力
               const slideDirection = tangentSpeed > 0 ? tangent : tangent.multiply(-1);
               const impulse = slideDirection.multiply(slideForce);
               
@@ -448,12 +459,17 @@ export class PhysicsEngine {
               bodyA.prevPosition = bodyA.position.subtract(bodyA.velocity.subtract(slideVelA).multiply(0.016));
               bodyB.prevPosition = bodyB.position.subtract(bodyB.velocity.subtract(slideVelB).multiply(0.016));
             }
+            
+            // 额外的碰撞后推力，增加动态效果
+            const collisionImpulse = normal.multiply(overlap * 15); // 增强碰撞推力
+            bodyA.velocity = bodyA.velocity.add(collisionImpulse.multiply(bodyB.invMass * 0.3));
+            bodyB.velocity = bodyB.velocity.subtract(collisionImpulse.multiply(bodyA.invMass * 0.3));
           }
 
           // 碰撞耗能：对稳定接触使用更强的阻尼
           try {
-            const baseDamping = GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.15;
-            const damping = bothStable ? Math.min(baseDamping * 2.5, 0.8) : baseDamping;
+            const baseDamping = GAME_CONFIG?.PHYSICS?.bounceDamping ?? 0.08;
+            const damping = bothStable ? Math.min(baseDamping * 3.0, 0.8) : baseDamping;
             
             if (damping > 0 && damping < 1) {
               const dispA = bodyA.position.subtract(bodyA.prevPosition);
@@ -464,11 +480,11 @@ export class PhysicsEngine {
                 bodyA.prevPosition = bodyA.position.subtract(dispA.multiply(1 - damping));
                 bodyB.prevPosition = bodyB.position.subtract(dispB.multiply(1 - damping));
               } else {
-                // 非稳定接触：仅法向阻尼，保留切向速度
+                // 非稳定接触：仅轻微法向阻尼，保留更多切向速度
                 const dispAAlong = normal.multiply((dispA.x * normal.x + dispA.y * normal.y));
                 const dispBAlong = normal.multiply((dispB.x * normal.x + dispB.y * normal.y));
-                bodyA.prevPosition = bodyA.position.subtract(dispAAlong.multiply(damping));
-                bodyB.prevPosition = bodyB.position.subtract(dispBAlong.multiply(damping));
+                bodyA.prevPosition = bodyA.position.subtract(dispAAlong.multiply(damping * 0.5)); // 减少法向阻尼
+                bodyB.prevPosition = bodyB.position.subtract(dispBAlong.multiply(damping * 0.5));
               }
             }
           } catch (_) { /* ignore collision damping errors */ }

@@ -57,19 +57,19 @@ export const GAME_CONFIG = {
   // 物理引擎参数
   PHYSICS: {
     gravity: 1200,       // 重力（提高整体下落速度）
-    friction: 0.95,      // 摩擦力
-    restitution: 0.1,    // 弹性系数
-    airResistance: 0.988, // 空气阻力（增加阻力，帮助快速稳定）
-    groundFriction: 0.988, // 地面摩擦（增加摩擦，帮助稳定）
-    wallFriction: 0.988,   // 墙壁摩擦（增加摩擦）
-    maxVelocity: 300,    // 最大速度（降低最大速度）
-    settleThreshold: 8,  // 静止阈值（进一步降低）
+    friction: 0.92,      // 摩擦力（降低以增加滑动）
+    restitution: 0.25,   // 弹性系数（增加弹性，让碰撞更有活力）
+    airResistance: 0.995, // 空气阻力（降低阻力，保持运动）
+    groundFriction: 0.92, // 地面摩擦（大幅降低，增加滑落速度）
+    wallFriction: 0.88,   // 墙壁摩擦（进一步降低，增加沿壁滑动）
+    maxVelocity: 400,    // 最大速度（提高最大速度）
+    settleThreshold: 8,  // 静止阈值（保持不变）
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.15, // 弹跳阻尼（增加阻尼，减少弹跳）
-    groundBounceDamping: 0.20, // 地面弹跳阻尼（增加阻尼）
-    sleepVelThreshold: 4,   // 睡眠速度阈值（降低阈值）
+    bounceDamping: 0.08, // 弹跳阻尼（大幅降低，保持碰撞活力）
+    groundBounceDamping: 0.12, // 地面弹跳阻尼（降低）
+    sleepVelThreshold: 4,   // 睡眠速度阈值（保持不变）
     solverIterations: 3,    // 求解器迭代次数
-    stableContactSec: 0.15  // 接触稳定时间要求（降低到0.15秒）
+    stableContactSec: 0.15  // 接触稳定时间要求（保持0.15秒）
   },
   
   // 性能限制
