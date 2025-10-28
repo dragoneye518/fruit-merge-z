@@ -659,11 +659,13 @@ export class GameUI {
   renderBombButton() {
     this.ctx.save();
     
-    // 炸弹按钮位置：移动到屏幕右上角
+    // 炸弹按钮位置：放置在危险线下方，贴着危险线
     const buttonSize = 70;
-    const margin = 15; // 减小边距，更靠近右上角
+    const margin = 15;
     const buttonX = this.width - margin - buttonSize; // 靠右
-    const buttonY = margin; // 移动到顶部，距离顶部15像素
+    // 放置在危险线下方，贴着危险线
+    const dangerY = GAME_CONFIG.DANGER_LINE?.y || GAME_CONFIG.DROP_LINE_Y || 200;
+    const buttonY = dangerY + 5; // 危险线下方5像素，紧贴危险线
     
     // 添加调试日志
     console.log(`[BombButton] Rendering at x=${buttonX}, y=${buttonY}, size=${buttonSize}, canvas=${this.width}x${this.height}`);
@@ -720,7 +722,22 @@ export class GameUI {
     }
     
     // 获取炸弹使用状态并显示使用次数（无背景）
-    const bombUsed = window.gameLogic?.bombUsed || false;
+    const isDouyinEnv = typeof tt !== 'undefined';
+    let bombUsed = false;
+
+    // 抖音环境下，通过全局对象或事件系统获取炸弹状态
+    if (isDouyinEnv) {
+      // 尝试从全局存储中获取状态
+      const globalState = this.getGlobalBombState();
+      bombUsed = globalState?.bombUsed || false;
+    } else {
+      // 浏览器环境下，从实例获取状态
+      if (this.gameLogic && typeof this.gameLogic.getBombUsed === 'function') {
+        bombUsed = this.gameLogic.getBombUsed();
+      } else if (this.gameLogic?.bombUsed !== undefined) {
+        bombUsed = this.gameLogic.bombUsed;
+      }
+    }
     const remainingUses = bombUsed ? 0 : 1;
     
     // 在右下角显示纯数字（无背景）
@@ -1237,5 +1254,23 @@ export class GameUI {
     });
     
     this.ctx.restore();
+  }
+
+  // 安全获取全局炸弹状态，兼容抖音环境
+  getGlobalBombState() {
+    // 抖音环境下，尝试从 tt 的全局存储获取
+    if (typeof tt !== 'undefined' && tt.getStorageSync) {
+      try {
+        return {
+          bombUsed: tt.getStorageSync('BOMB_USED', false) || false
+        };
+      } catch (e) {
+        console.warn('[GameUI] Failed to get global bomb state from tt storage:', e);
+        return { bombUsed: false };
+      }
+    }
+
+    // 浏览器环境，返回默认状态
+    return { bombUsed: false };
   }
 }

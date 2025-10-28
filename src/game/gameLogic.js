@@ -65,6 +65,16 @@ export class GameLogic {
     this.highCombo = this.loadHighCombo ? this.loadHighCombo() : 0;
     this.powerUsed = false;
     this.bombUsed = false; // 每局只能使用一次炸弹道具
+
+    // 确保新游戏开始时抖音存储中的炸弹状态被重置
+    if (typeof tt !== 'undefined' && tt.setStorageSync) {
+      try {
+        tt.setStorageSync('BOMB_USED', false);
+        console.log('[Init] Bomb usage state initialized to false in tt storage');
+      } catch (e) {
+        console.warn('[Init] Failed to initialize bomb state in tt storage:', e);
+      }
+    }
     
     // 新增积分系统变量
     this.rapidDropCount = 0;
@@ -857,9 +867,19 @@ export class GameLogic {
     if (this.bombUsed) {
       return; // 防止重复使用
     }
-    
+
     // 标记炸弹已使用
     this.bombUsed = true;
+
+    // 同步炸弹使用状态到抖音存储（确保UI能正确显示）
+    if (typeof tt !== 'undefined' && tt.setStorageSync) {
+      try {
+        tt.setStorageSync('BOMB_USED', true);
+        console.log('[Bomb] Bomb usage state saved to tt storage');
+      } catch (e) {
+        console.warn('[Bomb] Failed to save bomb state to tt storage:', e);
+      }
+    }
     
     try {
       const allBodies = this.physicsEngine.bodies || [];
@@ -1707,6 +1727,16 @@ export class GameLogic {
     // 重置一次性道具状态
     this.powerUsed = false;
     this.bombUsed = false; // 重置炸弹使用状态
+
+    // 清除抖音存储中的炸弹状态（新游戏重置状态）
+    if (typeof tt !== 'undefined' && tt.setStorageSync) {
+      try {
+        tt.setStorageSync('BOMB_USED', false);
+        console.log('[Restart] Bomb usage state cleared from tt storage');
+      } catch (e) {
+        console.warn('[Restart] Failed to clear bomb state from tt storage:', e);
+      }
+    }
     if (this.gameUI && this.gameUI.buttons && this.gameUI.buttons.power) {
       this.gameUI.buttons.power.disabled = false;
     }
