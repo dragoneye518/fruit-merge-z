@@ -56,20 +56,21 @@ export const GAME_CONFIG = {
   
   // 物理引擎参数
   PHYSICS: {
-    gravity: 1600,       // 重力（大幅提高掉落速度）
-    friction: 0.82,      // 摩擦力（进一步降低以增加滑动）
-    restitution: 0.45,   // 弹性系数（进一步增加弹性）
-    airResistance: 0.999, // 空气阻力（几乎无空气阻力）
-    groundFriction: 0.75, // 地面摩擦（大幅降低，显著增加滑落速度）
-    wallFriction: 0.70,   // 墙壁摩擦（大幅降低，增加沿壁滑动）
-    maxVelocity: 600,    // 最大速度（进一步提高）
-    settleThreshold: 5,  // 大幅降低静止阈值（从8降到5）
+    gravity: 1800,       // 重力（进一步提高掉落速度）
+    friction: 0.75,      // 摩擦力（进一步降低以增加滑动）
+    restitution: 0.55,   // 弹性系数（增加弹性，减少粘连）
+    airResistance: 0.998, // 空气阻力（几乎无空气阻力）
+    groundFriction: 0.65, // 地面摩擦（进一步降低，显著增加滑落速度）
+    wallFriction: 0.60,   // 墙壁摩擦（进一步降低，增加沿壁滑动）
+    maxVelocity: 800,    // 最大速度（进一步提高）
+    settleThreshold: 3,  // 进一步降低静止阈值（从5降到3）
     mergeDistance: 2.0,  // 合成距离
-    bounceDamping: 0.03, // 弹跳阻尼（极小碰撞阻尼）
-    groundBounceDamping: 0.05, // 地面弹跳阻尼（极小地面碰撞阻尼）
-    sleepVelThreshold: 4,   // 睡眠速度阈值（保持不变）
-    solverIterations: 3,    // 求解器迭代次数
-    stableContactSec: 0.08  // 大幅降低接触稳定时间要求（从0.15降到0.08秒）
+    bounceDamping: 0.02, // 弹跳阻尼（更小的碰撞阻尼）
+    groundBounceDamping: 0.03, // 地面弹跳阻尼（更小的地面碰撞阻尼）
+    sleepVelThreshold: 2,   // 睡眠速度阈值（进一步降低）
+    solverIterations: 2,    // 求解器迭代次数（减少到2，提高性能）
+    stableContactSec: 0.05, // 进一步降低接触稳定时间要求（从0.08降到0.05秒）
+    impactSpeedThreshold: 25  // 降低碰撞特效触发阈值
   },
   
   // 性能限制
