@@ -975,7 +975,7 @@ export class GameLogic {
       
       // 视觉反馈：增强版炸弹特效
       const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
-      const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
+      const centerY = Math.floor(this.canvas.height / 2); // 爆炸中心设置在屏幕中央
       if (this.effectSystem) {
         // 使用新的增强版炸弹特效
         if (typeof this.effectSystem.createEnhancedBombExplosion === 'function') {
