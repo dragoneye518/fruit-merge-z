@@ -192,7 +192,7 @@ export const FRUIT_CONFIG = {
   SHANZHU: {
     id: 1,
     name: '山竹',
-    radius: 96,
+    radius: 80,
     color: '#8B4A8B', // 紫红色
     gradient: ['#8B4A8B', '#6B2C6B'],
     texture: 'assets/images/fruits/shanzhu.png',
@@ -203,7 +203,7 @@ export const FRUIT_CONFIG = {
   LANMEI: {
     id: 2,
     name: '蓝莓',
-    radius: 96,
+    radius: 80,
     color: '#4A90E2', // 蓝色
     gradient: ['#4A90E2', '#357ABD'],
     texture: 'assets/images/fruits/lanmei.png',
@@ -214,7 +214,7 @@ export const FRUIT_CONFIG = {
   PUTAO: {
     id: 3,
     name: '葡萄',
-    radius: 96,
+    radius: 80,
     color: '#9F7AEA', // 紫色
     gradient: ['#9F7AEA', '#805AD5'],
     texture: 'assets/images/fruits/putao.png',
@@ -225,7 +225,7 @@ export const FRUIT_CONFIG = {
   SANSHENG: {
     id: 4,
     name: '桑葚',
-    radius: 96,
+    radius: 80,
     color: '#4B0082', // 深紫色
     gradient: ['#4B0082', '#2F004F'],
     texture: 'assets/images/fruits/sansheng.png',
@@ -236,7 +236,7 @@ export const FRUIT_CONFIG = {
   CHENGZI: {
     id: 5,
     name: '橙子',
-    radius: 96,
+    radius: 80,
     color: '#FF8C00', // 橙色
     gradient: ['#FF8C00', '#FF7F00'],
     texture: 'assets/images/fruits/chengzi.png',
@@ -247,7 +247,7 @@ export const FRUIT_CONFIG = {
   PINGGUO: {
     id: 6,
     name: '苹果',
-    radius: 96,
+    radius: 80,
     color: '#FF6B6B', // 苹果红
     gradient: ['#FF6B6B', '#EE5A52'],
     texture: 'assets/images/fruits/pingguo.png',
@@ -258,7 +258,7 @@ export const FRUIT_CONFIG = {
   MIHUOTAO: {
     id: 7,
     name: '猕猴桃',
-    radius: 96,
+    radius: 80,
     color: '#68D391', // 猕猴桃绿
     gradient: ['#68D391', '#48BB78'],
     texture: 'assets/images/fruits/mihuotao.png',
@@ -269,7 +269,7 @@ export const FRUIT_CONFIG = {
   NIUYOUGUO: {
     id: 8,
     name: '牛油果',
-    radius: 96,
+    radius: 80,
     color: '#6B8E23', // 橄榄绿
     gradient: ['#6B8E23', '#556B2F'],
     texture: 'assets/images/fruits/niuyouguo.png',
@@ -280,7 +280,7 @@ export const FRUIT_CONFIG = {
   BAIXIANGGUO: {
     id: 9,
     name: '百香果',
-    radius: 96,
+    radius: 80,
     color: '#DAA520', // 金黄色
     gradient: ['#DAA520', '#B8860B'],
     texture: 'assets/images/fruits/baixiangguo.png',
@@ -291,7 +291,7 @@ export const FRUIT_CONFIG = {
   HUOLONGGUO: {
     id: 10,
     name: '火龙果',
-    radius: 96,
+    radius: 80,
     color: '#FF1493', // 深粉色
     gradient: ['#FF1493', '#DC143C'],
     texture: 'assets/images/fruits/huolongguo.png',
@@ -302,7 +302,7 @@ export const FRUIT_CONFIG = {
   BOLUO: {
     id: 11,
     name: '菠萝',
-    radius: 96,
+    radius: 80,
     color: '#FFCC00', // 金黄色
     gradient: ['#FFCC00', '#E0B000'],
     texture: 'assets/images/fruits/boluo.png',
@@ -313,7 +313,7 @@ export const FRUIT_CONFIG = {
   XIGUA: {
     id: 12,
     name: '西瓜',
-    radius: 96,
+    radius: 80,
     color: '#38A169', // 西瓜绿
     gradient: ['#38A169', '#2F855A'],
     texture: 'assets/images/fruits/xigua.png',
