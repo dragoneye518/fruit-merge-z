@@ -973,29 +973,44 @@ export class GameLogic {
       this.isDangerous = false;
       this.comboTimer = 0;
       
-      // 视觉反馈：爆炸特效
+      // 视觉反馈：增强版炸弹特效
       const centerX = (GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2));
       const centerY = (GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18));
       if (this.effectSystem) {
-        if (typeof this.effectSystem.createExplosion === 'function') {
-          this.effectSystem.createExplosion(centerX, centerY, { 
-            particleCount: 50, 
-            colors: ['#FF6B6B', '#FFD93D', '#FF8E53'], 
-            life: 1.5, 
-            speed: 300 
-          });
-        }
-        if (typeof this.effectSystem.createRingEffect === 'function') {
-          this.effectSystem.createRingEffect(centerX, centerY, { 
-            startRadius: 20, 
-            endRadius: 120, 
-            life: 0.8, 
-            color: '#FF6B6B', 
-            lineWidth: 4 
-          });
-        }
-        if (typeof this.effectSystem.triggerScreenShake === 'function') {
-          this.effectSystem.triggerScreenShake(6, 0.25);
+        // 使用新的增强版炸弹特效
+        if (typeof this.effectSystem.createEnhancedBombExplosion === 'function') {
+          this.effectSystem.createEnhancedBombExplosion(
+            centerX, 
+            centerY, 
+            this.canvas.width, 
+            this.canvas.height, 
+            {
+              intensity: 'high',
+              screenCoverage: true
+            }
+          );
+        } else {
+          // 降级到原有特效
+          if (typeof this.effectSystem.createExplosion === 'function') {
+            this.effectSystem.createExplosion(centerX, centerY, { 
+              particleCount: 50, 
+              colors: ['#FF6B6B', '#FFD93D', '#FF8E53'], 
+              life: 1.5, 
+              speed: 300 
+            });
+          }
+          if (typeof this.effectSystem.createRingEffect === 'function') {
+            this.effectSystem.createRingEffect(centerX, centerY, { 
+              startRadius: 20, 
+              endRadius: 120, 
+              life: 0.8, 
+              color: '#FF6B6B', 
+              lineWidth: 4 
+            });
+          }
+          if (typeof this.effectSystem.triggerScreenShake === 'function') {
+            this.effectSystem.triggerScreenShake(6, 0.25);
+          }
         }
       }
       audioManager.playSound('POWER_USE');

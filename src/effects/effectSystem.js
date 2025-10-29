@@ -297,6 +297,111 @@ export class EffectSystem {
     }
   }
   
+  // 增强版炸弹特效 - 全屏震撼效果
+  createEnhancedBombExplosion(x, y, canvasWidth, canvasHeight, options = {}) {
+    const effects = [];
+    
+    // 1. 屏幕闪光效果
+    const flashEffect = {
+      type: 'flash',
+      life: 0.15,
+      maxLife: 0.15,
+      alpha: 0.8,
+      color: '#FFFFFF'
+    };
+    effects.push(flashEffect);
+    
+    // 2. 多层冲击波效果
+    for (let i = 0; i < 3; i++) {
+      const waveEffect = {
+        type: 'shockwave',
+        x: x,
+        y: y,
+        life: 1.2 + i * 0.3,
+        maxLife: 1.2 + i * 0.3,
+        startRadius: 10 + i * 20,
+        endRadius: Math.max(canvasWidth, canvasHeight) * 0.8 + i * 50,
+        lineWidth: 8 - i * 2,
+        color: i === 0 ? '#FF4444' : i === 1 ? '#FF8844' : '#FFAA44',
+        delay: i * 0.1
+      };
+      effects.push(waveEffect);
+    }
+    
+    // 3. 大量粒子爆炸 - 覆盖全屏
+    const particleCount = 120;
+    const colors = ['#FF4444', '#FF6666', '#FF8844', '#FFAA44', '#FFD700', '#FFA500'];
+    
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.5;
+      const baseSpeed = 200 + Math.random() * 300;
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      const size = 3 + Math.random() * 6;
+      
+      this.particles.push(new Particle(x, y, {
+        velocityX: Math.cos(angle) * baseSpeed,
+        velocityY: Math.sin(angle) * baseSpeed,
+        color: color,
+        life: 1.5 + Math.random() * 1.0,
+        size: size,
+        type: Math.random() > 0.7 ? 'star' : 'circle',
+        glow: true,
+        glowSize: size * 2,
+        trail: Math.random() > 0.5,
+        trailLength: 8,
+        physics: 'normal',
+        friction: 0.95,
+        gravity: true,
+        accelerationY: 50 + Math.random() * 100
+      }));
+    }
+    
+    // 4. 火花粒子效果
+    for (let i = 0; i < 60; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 400 + Math.random() * 200;
+      
+      this.particles.push(new Particle(x, y, {
+        velocityX: Math.cos(angle) * speed,
+        velocityY: Math.sin(angle) * speed,
+        color: '#FFFF88',
+        life: 0.8 + Math.random() * 0.4,
+        size: 1 + Math.random() * 2,
+        type: 'spark',
+        glow: true,
+        glowSize: 8,
+        friction: 0.92,
+        gravity: false
+      }));
+    }
+    
+    // 5. 烟雾粒子效果
+    for (let i = 0; i < 40; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 80 + Math.random() * 120;
+      
+      this.particles.push(new Particle(x, y, {
+        velocityX: Math.cos(angle) * speed,
+        velocityY: Math.sin(angle) * speed - 50,
+        color: `rgba(100, 100, 100, ${0.3 + Math.random() * 0.4})`,
+        life: 2.0 + Math.random() * 1.0,
+        size: 8 + Math.random() * 12,
+        type: 'circle',
+        friction: 0.98,
+        gravity: false,
+        scaleSpeed: 2.0
+      }));
+    }
+    
+    // 将所有特效添加到特效列表
+    this.effects.push(...effects);
+    
+    // 触发强烈屏幕震动
+    this.triggerScreenShake(12, 0.6);
+    
+    return effects;
+  }
+  
   // 增强版合并特效：多样化粒子 + 更丰富的视觉效果
   createMergeEffect(x, y, fruitType, options = {}) {
     const fruitColor = FRUIT_CONFIG[fruitType].color;
@@ -884,6 +989,20 @@ export class EffectSystem {
     if (effect.life <= 0) return false;
     
     switch (effect.type) {
+      case 'flash':
+        // 屏幕闪光效果
+        effect.alpha = (effect.life / effect.maxLife) * 0.8;
+        break;
+      case 'shockwave':
+        // 冲击波效果
+        if (effect.delay > 0) {
+          effect.delay -= deltaTime;
+          return true;
+        }
+        const progress = 1 - (effect.life / effect.maxLife);
+        effect.currentRadius = effect.startRadius + (effect.endRadius - effect.startRadius) * progress;
+        effect.alpha = (effect.life / effect.maxLife) * 0.8;
+        break;
       case 'ring':
         effect.currentRadius += (effect.endRadius - effect.startRadius) * (deltaTime / effect.maxLife);
         effect.alpha = effect.life / effect.maxLife;
@@ -1002,6 +1121,12 @@ export class EffectSystem {
     this.ctx.globalAlpha = effect.alpha;
     
     switch (effect.type) {
+      case 'flash':
+        this.renderFlashEffect(effect);
+        break;
+      case 'shockwave':
+        this.renderShockwaveEffect(effect);
+        break;
       case 'ring':
         this.renderRingEffect(effect);
         break;
@@ -1029,6 +1154,32 @@ export class EffectSystem {
     }
     
     this.ctx.restore();
+  }
+
+  // 渲染屏幕闪光效果
+  renderFlashEffect(effect) {
+    this.ctx.fillStyle = effect.color;
+    this.ctx.fillRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
+  }
+
+  // 渲染冲击波效果
+  renderShockwaveEffect(effect) {
+    if (effect.delay > 0) return;
+    
+    this.ctx.strokeStyle = effect.color;
+    this.ctx.lineWidth = effect.lineWidth;
+    this.ctx.setLineDash([]);
+    
+    // 添加发光效果
+    this.ctx.shadowColor = effect.color;
+    this.ctx.shadowBlur = effect.lineWidth * 2;
+    
+    this.ctx.beginPath();
+    this.ctx.arc(effect.x, effect.y, effect.currentRadius, 0, Math.PI * 2);
+    this.ctx.stroke();
+    
+    // 清除阴影
+    this.ctx.shadowBlur = 0;
   }
   
   // 渲染光环特效
