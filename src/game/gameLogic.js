@@ -388,6 +388,18 @@ export class GameLogic {
       return;
     }
 
+    // 抖音小游戏炸弹功能测试：快速双击屏幕上半部分触发炸弹
+    const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+    if (this.gameState === GAME_STATES.PLAYING && y < 200 && !this.bombUsed) {
+      // 简单的双击检测：如果点击位置在上半部分，且有水果存在
+      const currentFruitCount = this.physicsEngine?.bodies?.length || 0;
+      if (currentFruitCount > 0) {
+        console.log('[BombTest] Quick bomb trigger detected via upper screen tap!');
+        this.executeBombAction();
+        return;
+      }
+    }
+
     let { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
     console.log(`[TouchEnd] Normalized coords: (${x.toFixed(1)}, ${y.toFixed(1)})`);
 
@@ -880,39 +892,55 @@ export class GameLogic {
         console.warn('[Bomb] Failed to save bomb state to tt storage:', e);
       }
     }
-    
+
+    // 立即更新UI状态，确保炸弹按钮显示为已使用
+    if (this.gameUI && this.gameUI.updateBombButton) {
+      try {
+        this.gameUI.updateBombButton();
+        console.log('[Bomb] UI bomb button updated immediately');
+      } catch (e) {
+        console.warn('[Bomb] Failed to update bomb button UI:', e);
+      }
+    }
+
     try {
       const allBodies = this.physicsEngine.bodies || [];
       const bodiesToRemove = [];
-      
-      // 获取危险线Y坐标和地面Y坐标
-      const dangerLineY = GAME_CONFIG?.DROP_LINE_Y ?? Math.floor(this.canvas.height * 0.18);
+
+      // 修复炸弹逻辑：使用投放线作为基准，清除所有已经稳定的水果
+      const dropLineY = GAME_CONFIG?.DROP_LINE_Y ?? 111;
       const groundTopY = this.physicsEngine.getGroundTopY();
-      
+
       // 筛选出需要清除的水果：
       // 1. 排除当前正在下落的水果（如果存在且速度较快）
-      // 2. 清除所有其他已经掉落到危险线以下的水果
+      // 2. 清除所有其他已经掉落的水果（使用更宽松的判断条件）
       for (const body of allBodies) {
         // 检查是否是当前正在快速下落的水果
-        const isCurrentDropping = this.currentDroppingFruit && 
+        const isCurrentDropping = this.currentDroppingFruit &&
                                  this.currentDroppingFruit.id === body.id;
-        const isFastFalling = body.velocity && Math.abs(body.velocity.y) > 50;
-        
+        const isFastFalling = body.velocity && Math.abs(body.velocity.y) > 30;
+
         // 如果是当前正在快速下落的水果，跳过不清除
         if (isCurrentDropping && isFastFalling) {
           console.log(`[Bomb] Skipping current dropping fruit: ${body.id}, velocity: ${body.velocity.y.toFixed(2)}`);
           continue;
         }
-        
-        // 清除所有在危险线以下的水果（已经掉落的水果）
-        const fruitBottomY = body.position.y + body.radius;
-        if (fruitBottomY > dangerLineY) {
+
+        // 修复清除逻辑：清除所有在投放线以下的水果（已经掉落的所有水果）
+        // 这样确保炸弹能清除所有已经投放的水果
+        const fruitCenterY = body.position.y;
+        const fruitRadius = body.radius || 48; // 获取水果半径，默认48
+        const fruitBottom = fruitCenterY + fruitRadius;
+
+        // 只要水果底部超过投放线，就认为是已经掉落的水果，应该被清除
+        if (fruitBottom > dropLineY + 10) { // 加10px容差
           bodiesToRemove.push(body);
+          console.log(`[Bomb] Marked fruit for removal: id=${body.id}, y=${fruitCenterY.toFixed(1)}, bottom=${fruitBottom.toFixed(1)}, dropLine=${dropLineY}`);
         }
       }
       
       console.log(`[Bomb] Removing ${bodiesToRemove.length} dropped fruits out of ${allBodies.length} total`);
-      console.log(`[Bomb] Danger line Y: ${dangerLineY}, Ground Y: ${groundTopY}`);
+      console.log(`[Bomb] Drop line Y: ${dropLineY}, Ground Y: ${groundTopY}`);
       
       // 移除选中的水果
       for (const body of bodiesToRemove) {
@@ -920,18 +948,25 @@ export class GameLogic {
       }
       
       // 清理水果管理器中对应的水果对象
-      this.fruitManager.fruits = this.fruitManager.fruits.filter(fruit => 
+      this.fruitManager.fruits = this.fruitManager.fruits.filter(fruit =>
         !fruit.body.isMarkedForRemoval
       );
-      
+
       // 清理物理引擎中的刚体
       this.physicsEngine.cleanupBodies();
-      
+
       // 如果当前下落的水果被清除了，重置相关状态
       if (this.currentDroppingFruit && this.currentDroppingFruit.isMarkedForRemoval) {
         this.currentDroppingFruit = null;
         this.physicsEngine.activeBody = null;
       }
+
+      // 强制解锁投放状态，确保炸弹使用后可以立即继续投放
+      this.canDrop = true;
+      this.dropCooldown = 0;
+      this.waitingForUserAction = true;
+
+      console.log('[Bomb] Bomb execution completed - drop state unlocked');
       
       // 安全复位危险状态与连击计时器
       this.dangerTimer = 0;
@@ -2756,5 +2791,16 @@ export class GameLogic {
     this.createPreviewFruit();
 
     console.log('Game started successfully - all drop states reset');
+  }
+
+  // 临时测试炸弹功能 - 直接调用炸弹功能
+  testBombFunction() {
+    console.log('[TEST] Triggering bomb function for testing...');
+    if (!this.bombUsed) {
+      this.executeBombAction();
+      console.log('[TEST] Bomb function executed successfully!');
+    } else {
+      console.log('[TEST] Bomb already used in this session');
+    }
   }
 }

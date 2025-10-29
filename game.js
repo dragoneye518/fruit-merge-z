@@ -431,18 +431,32 @@ class FruitMergeZGame {
   
   // 设置事件监听
   setupEventListeners() {
-    console.log('Setting up event listeners...');
+    console.log('Setting up event listeners... gameLogic:', !!this.gameLogic);
 
     // 抖音小游戏环境优先绑定全局触摸事件
     if (typeof tt !== 'undefined' && typeof tt.onTouchStart === 'function') {
       console.log('Setting up Douyin touch events');
       tt.onTouchStart((e) => {
+        console.log('[DouyinTouch] touchstart event received, gameLogic:', !!this.gameLogic);
         if (this.gameLogic) {
           const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
           if (touch) {
             const x = (touch.x ?? touch.clientX ?? touch.pageX);
             const y = (touch.y ?? touch.clientY ?? touch.pageY);
             console.log('[DouyinTouch] touchstart', { x, y });
+
+            // 添加炸弹按钮直接检测
+            const bombBtn = this.gameLogic?.gameUI?.bombButton;
+            if (bombBtn) {
+              const inBombArea = (x >= bombBtn.x - 20 && x <= bombBtn.x + bombBtn.width + 20 &&
+                                 y >= bombBtn.y - 20 && y <= bombBtn.y + bombBtn.height + 20);
+              if (inBombArea) {
+                console.log('[DouyinTouch] Bomb button directly detected!');
+                this.gameLogic.buttonPressed = 'bomb';
+                return;
+              }
+            }
+
             this.gameLogic.handleTouchStart(x, y);
             // 移除兜底机制 - 只有真正的touchend事件才应该投放水果
             // 清理任何之前的定时器
@@ -1614,6 +1628,17 @@ if (typeof window !== 'undefined') {
     console.log('Physics Engine Available:', !!(game.gameLogic && game.gameLogic.physicsEngine));
     console.log('Effect System Available:', !!(game.effectSystem));
     console.log('======================');
+  };
+
+  // 添加炸弹测试方法
+  window.testBomb = () => {
+    console.log('=== Testing Bomb Function ===');
+    if (game.gameLogic && typeof game.gameLogic.testBombFunction === 'function') {
+      game.gameLogic.testBombFunction();
+    } else {
+      console.log('Bomb test function not available');
+    }
+    console.log('============================');
   };
 }
 

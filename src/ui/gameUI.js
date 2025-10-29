@@ -659,13 +659,12 @@ export class GameUI {
   renderBombButton() {
     this.ctx.save();
     
-    // 炸弹按钮位置：放置在危险线下方，贴着危险线
+    // 炸弹按钮位置：放置在屏幕右上角，远离游戏操作区域
     const buttonSize = 70;
     const margin = 15;
     const buttonX = this.width - margin - buttonSize; // 靠右
-    // 放置在危险线下方，贴着危险线
-    const dangerY = GAME_CONFIG.DANGER_LINE?.y || GAME_CONFIG.DROP_LINE_Y || 200;
-    const buttonY = dangerY + 5; // 危险线下方5像素，紧贴危险线
+    // 固定在屏幕顶部，确保不与游戏区域重叠
+    const buttonY = 50; // 固定在屏幕顶部50像素处
     
     // 添加调试日志
     console.log(`[BombButton] Rendering at x=${buttonX}, y=${buttonY}, size=${buttonSize}, canvas=${this.width}x${this.height}`);
@@ -999,6 +998,8 @@ export class GameUI {
   }
   
   onTouchStart(x, y) {
+    console.log(`[GameUI] onTouchStart at (${x}, ${y})`);
+
     // 检查炸弹按钮
     const bombResult = this.checkButtonClick(x, y);
     if (bombResult && bombResult.type === 'bomb') {
@@ -1085,9 +1086,6 @@ export class GameUI {
   checkButtonClick(x, y) {
     const isDouyinEnv = typeof tt !== 'undefined';
 
-    // 添加调试日志
-    console.log(`[TouchDebug] Click at (${x}, ${y})`);
-    
     // 检查炸弹按钮点击 - 扩大点击区域
     if (this.bombButton) {
       // 扩大点击区域：上下左右各增加20像素的边距
@@ -1096,21 +1094,19 @@ export class GameUI {
       const expandedY = this.bombButton.y - expandedMargin;
       const expandedWidth = this.bombButton.width + (expandedMargin * 2);
       const expandedHeight = this.bombButton.height + (expandedMargin * 2);
-      
-      console.log(`[TouchDebug] Bomb button original bounds: x=${this.bombButton.x}, y=${this.bombButton.y}, width=${this.bombButton.width}, height=${this.bombButton.height}`);
-      console.log(`[TouchDebug] Bomb button expanded bounds: x=${expandedX}, y=${expandedY}, width=${expandedWidth}, height=${expandedHeight}`);
-      console.log(`[TouchDebug] Click in expanded bomb button? x: ${x >= expandedX && x <= expandedX + expandedWidth}, y: ${y >= expandedY && y <= expandedY + expandedHeight}`);
-      console.log(`[TouchDebug] Expanded X range: ${expandedX} <= ${x} <= ${expandedX + expandedWidth} = ${x >= expandedX && x <= expandedX + expandedWidth}`);
-      console.log(`[TouchDebug] Expanded Y range: ${expandedY} <= ${y} <= ${expandedY + expandedHeight} = ${y >= expandedY && y <= expandedY + expandedHeight}`);
-      
+
+      const inBombArea = (x >= expandedX && x <= expandedX + expandedWidth &&
+                         y >= expandedY && y <= expandedY + expandedHeight);
+
+      console.log(`[TouchDebug] Bomb button at (${this.bombButton.x}, ${this.bombButton.y}), touch at (${x}, ${y}) -> in area: ${inBombArea}`);
+
       // 使用扩大的点击区域进行检测
-      if (x >= expandedX && x <= expandedX + expandedWidth &&
-          y >= expandedY && y <= expandedY + expandedHeight) {
-        console.log(`[TouchDebug] Bomb button clicked in expanded area!`);
+      if (inBombArea) {
+        console.log(`[TouchDebug] Bomb button clicked!`);
         return { name: 'bomb', type: 'bomb' };
       }
     } else {
-      console.log(`[TouchDebug] Bomb button not found!`);
+      console.log(`[TouchDebug] Bomb button not initialized!`);
     }
 
     for (const [name, button] of Object.entries(this.buttons)) {
