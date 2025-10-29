@@ -95,7 +95,7 @@ export const GAME_CONFIG = {
     // 升级模式：相同水果碰撞后合成更高级水果
     MERGE_BEHAVIOR: 'upgrade',
     // 物理模式/自由投放的可生成水果列表（仅限可升级链条，最高级不直接出现）
-    STARTER_TYPES: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT'],
+    STARTER_TYPES: ['SHANZHU','LANMEI','PUTAO','SANSHENG','CHENGZI','PINGGUO','MIHUOTAO','NIUYOUGUO','BAIXIANGGUO'],
     // 消除得分倍率（相对该水果基础分）
     ELIMINATE_SCORE_MULTIPLIER: 1.0,
     // 是否因消除增加连击
@@ -117,7 +117,7 @@ export const GAME_CONFIG = {
       minMatch: 3,             // 至少三个消除
       scoreMultiplier: 1.0,    // 三消模式额外分数倍率
       // 可生成的水果类型（十种常见水果）
-      types: ['CHERRY','STRAWBERRY','GRAPE','LEMON','ORANGE','APPLE','KIWI','TOMATO','COCONUT','WATERMELON','BLUEBERRY','PEACH','PEAR','MANGO','PINEAPPLE']
+      types: ['SHANZHU','LANMEI','PUTAO','SANSHENG','CHENGZI','PINGGUO','MIHUOTAO','NIUYOUGUO','BAIXIANGGUO','HUOLONGGUO','BOLUO','XIGUA']
     },
     // 模式与道具配置
     MODES: {
@@ -156,16 +156,18 @@ export const GAME_CONFIG = {
     lockDelaySec: 0.25,
     // 将水果映射为不同大小的块（1x1、1x2、2x2）
     pieceMap: {
-      CHERRY: [[1]],
-      STRAWBERRY: [[1]],
-      GRAPE: [[1,1]],
-      LEMON: [[1],[1]],
-      ORANGE: [[1,1],[1,1]],
-      APPLE: [[1,1],[1,1]],
-      KIWI: [[1.1],[1,1]],
-      TOMATO: [[1,1]],
-      COCONUT: [[1,1],[1,1]],
-      WATERMELON: [[1,1],[1,1]]
+      SHANZHU: [[1]],
+      LANMEI: [[1]],
+      PUTAO: [[1,1]],
+      SANSHENG: [[1],[1]],
+      CHENGZI: [[1,1],[1,1]],
+      PINGGUO: [[1,1],[1,1]],
+      MIHUOTAO: [[1,1],[1,1]],
+      NIUYOUGUO: [[1,1]],
+      BAIXIANGGUO: [[1,1],[1,1]],
+      HUOLONGGUO: [[1,1],[1,1]],
+      BOLUO: [[1,1],[1,1]],
+      XIGUA: [[1,1],[1,1]]
     }
   },
 
@@ -185,171 +187,138 @@ export const GAME_CONFIG = {
   DANGER_TIMEOUT: 1.5,
 };
 
-// 水果配置 - 基于PRD但优化色彩设计
+// 水果配置 - 12种新水果，统一尺寸
 export const FRUIT_CONFIG = {
-  CHERRY: {
+  SHANZHU: {
     id: 1,
-    name: '樱桃',
-    radius: 32,
-    color: '#E53E3E', // 深红色
-    gradient: ['#E53E3E', '#C53030'],
-    texture: 'assets/images/fruits/cherry.png',
+    name: '山竹',
+    radius: 96,
+    color: '#8B4A8B', // 紫红色
+    gradient: ['#8B4A8B', '#6B2C6B'],
+    texture: 'assets/images/fruits/shanzhu.png',
     score: 1,
-    mass: 0.8,
-    nextLevel: 'STRAWBERRY'
+    mass: 1.0,
+    nextLevel: 'LANMEI'
   },
-  STRAWBERRY: {
+  LANMEI: {
     id: 2,
-    name: '草莓',
-    radius: 32,
-    color: '#F56565', // 亮红色
-    gradient: ['#F56565', '#E53E3E'],
-    texture: 'assets/images/fruits/strawberry.png',
+    name: '蓝莓',
+    radius: 96,
+    color: '#4A90E2', // 蓝色
+    gradient: ['#4A90E2', '#357ABD'],
+    texture: 'assets/images/fruits/lanmei.png',
     score: 3,
     mass: 1.0,
-    nextLevel: 'GRAPE'
+    nextLevel: 'PUTAO'
   },
-  GRAPE: {
+  PUTAO: {
     id: 3,
     name: '葡萄',
-    radius: 32,
+    radius: 96,
     color: '#9F7AEA', // 紫色
     gradient: ['#9F7AEA', '#805AD5'],
-    texture: 'assets/images/fruits/grape.png',
+    texture: 'assets/images/fruits/putao.png',
     score: 6,
-    mass: 1.3,
-    nextLevel: 'LEMON'
+    mass: 1.0,
+    nextLevel: 'SANSHENG'
   },
-  LEMON: {
+  SANSHENG: {
     id: 4,
-    name: '柠檬',
-    radius: 48,
-    color: '#F6E05E', // 柠檬黄
-    gradient: ['#F6E05E', '#ECC94B'],
-    texture: 'assets/images/fruits/lemon.png',
+    name: '桑葚',
+    radius: 96,
+    color: '#4B0082', // 深紫色
+    gradient: ['#4B0082', '#2F004F'],
+    texture: 'assets/images/fruits/sansheng.png',
     score: 10,
-    mass: 1.6,
-    nextLevel: 'ORANGE'
+    mass: 1.0,
+    nextLevel: 'CHENGZI'
   },
-  ORANGE: {
+  CHENGZI: {
     id: 5,
     name: '橙子',
-    radius: 64,
+    radius: 96,
     color: '#FF8C00', // 橙色
     gradient: ['#FF8C00', '#FF7F00'],
-    texture: 'assets/images/fruits/orange.png',
+    texture: 'assets/images/fruits/chengzi.png',
     score: 15,
-    mass: 2.0,
-    nextLevel: 'APPLE'
+    mass: 1.0,
+    nextLevel: 'PINGGUO'
   },
-  APPLE: {
+  PINGGUO: {
     id: 6,
     name: '苹果',
-    radius: 64,
+    radius: 96,
     color: '#FF6B6B', // 苹果红
     gradient: ['#FF6B6B', '#EE5A52'],
-    texture: 'assets/images/fruits/apple.png',
+    texture: 'assets/images/fruits/pingguo.png',
     score: 21,
-    mass: 2.5,
-    nextLevel: 'KIWI'
+    mass: 1.0,
+    nextLevel: 'MIHUOTAO'
   },
-  KIWI: {
+  MIHUOTAO: {
     id: 7,
     name: '猕猴桃',
-    radius: 48,
+    radius: 96,
     color: '#68D391', // 猕猴桃绿
     gradient: ['#68D391', '#48BB78'],
-    texture: 'assets/images/fruits/kiwi.png',
+    texture: 'assets/images/fruits/mihuotao.png',
     score: 28,
-    mass: 3.2,
-    nextLevel: 'TOMATO'
+    mass: 1.0,
+    nextLevel: 'NIUYOUGUO'
   },
-  TOMATO: {
+  NIUYOUGUO: {
     id: 8,
-    name: '番茄',
-    radius: 48,
-    color: '#FC8181', // 番茄红
-    gradient: ['#FC8181', '#F56565'],
-    texture: 'assets/images/fruits/tomato.png',
-    score: 36,
-    mass: 4.0,
-    nextLevel: 'COCONUT'
-  },
-  COCONUT: {
-    id: 9,
-    name: '椰子',
+    name: '牛油果',
     radius: 96,
-    color: '#A0522D', // 椰子棕
-    gradient: ['#A0522D', '#8B4513'],
-    texture: 'assets/images/fruits/coconut.png',
-    score: 45,
-    mass: 5.0,
-    nextLevel: 'WATERMELON'
+    color: '#6B8E23', // 橄榄绿
+    gradient: ['#6B8E23', '#556B2F'],
+    texture: 'assets/images/fruits/niuyouguo.png',
+    score: 36,
+    mass: 1.0,
+    nextLevel: 'BAIXIANGGUO'
   },
-  WATERMELON: {
+  BAIXIANGGUO: {
+    id: 9,
+    name: '百香果',
+    radius: 96,
+    color: '#DAA520', // 金黄色
+    gradient: ['#DAA520', '#B8860B'],
+    texture: 'assets/images/fruits/baixiangguo.png',
+    score: 45,
+    mass: 1.0,
+    nextLevel: 'HUOLONGGUO'
+  },
+  HUOLONGGUO: {
     id: 10,
-    name: '西瓜',
-    radius: 128,
-    color: '#38A169', // 西瓜绿
-    gradient: ['#38A169', '#2F855A'],
-    texture: 'assets/images/fruits/watermelon.png',
-    score: 45,
-    mass: 6.5,
-    nextLevel: null
+    name: '火龙果',
+    radius: 96,
+    color: '#FF1493', // 深粉色
+    gradient: ['#FF1493', '#DC143C'],
+    texture: 'assets/images/fruits/huolongguo.png',
+    score: 55,
+    mass: 1.0,
+    nextLevel: 'BOLUO'
   },
-  BLUEBERRY: {
+  BOLUO: {
     id: 11,
-    name: '蓝莓',
-    radius: 32,
-    color: '#4A90E2',
-    gradient: ['#4A90E2', '#357ABD'],
-    texture: 'assets/images/fruits/blueberry.png',
-    score: 2,
-    mass: 0.7,
-    nextLevel: null
-  },
-  PEACH: {
-    id: 12,
-    name: '桃子',
-    radius: 64,
-    color: '#FFA07A',
-    gradient: ['#FFA07A', '#FF7F50'],
-    texture: 'assets/images/fruits/peach.png',
-    score: 18,
-    mass: 2.2,
-    nextLevel: null
-  },
-  PEAR: {
-    id: 13,
-    name: '梨子',
-    radius: 64,
-    color: '#A3D170',
-    gradient: ['#A3D170', '#7FBF3F'],
-    texture: 'assets/images/fruits/pear.png',
-    score: 22,
-    mass: 2.8,
-    nextLevel: null
-  },
-  MANGO: {
-    id: 14,
-    name: '芒果',
-    radius: 64,
-    color: '#FFC04D',
-    gradient: ['#FFC04D', '#FFA72B'],
-    texture: 'assets/images/fruits/mango.png',
-    score: 26,
-    mass: 3.0,
-    nextLevel: null
-  },
-  PINEAPPLE: {
-    id: 15,
     name: '菠萝',
     radius: 96,
-    color: '#FFCC00',
+    color: '#FFCC00', // 金黄色
     gradient: ['#FFCC00', '#E0B000'],
-    texture: 'assets/images/fruits/pineapple.png',
-    score: 48,
-    mass: 5.4,
+    texture: 'assets/images/fruits/boluo.png',
+    score: 66,
+    mass: 1.0,
+    nextLevel: 'XIGUA'
+  },
+  XIGUA: {
+    id: 12,
+    name: '西瓜',
+    radius: 96,
+    color: '#38A169', // 西瓜绿
+    gradient: ['#38A169', '#2F855A'],
+    texture: 'assets/images/fruits/xigua.png',
+    score: 78,
+    mass: 1.0,
     nextLevel: null
   },
   // 特殊道具：炸弹与彩虹（不参与十种水果计数）

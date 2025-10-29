@@ -118,35 +118,39 @@ export class FruitRenderer {
     };
 
     switch (type) {
-      case 'LEMON':
+      case 'SANSHENG':
         segments(12, 0.85);
         ringSeeds(8, 0.42, 0.05);
         break;
-      case 'ORANGE':
+      case 'CHENGZI':
         segments(10, 0.85);
         ringSeeds(10, 0.46, 0.05);
         break;
-      case 'KIWI':
+      case 'MIHUOTAO':
         ringSeeds(20, 0.7, 0.04);
         ctx.fillStyle = 'rgba(255,255,255,0.35)';
         ctx.beginPath();
         ctx.arc(0, 0, radius * 0.26, 0, Math.PI * 2);
         ctx.fill();
         break;
-      case 'TOMATO':
+      case 'HUOLONGGUO':
         segments(8, 0.8);
         ringSeeds(12, 0.6, 0.06);
         break;
-      case 'APPLE':
+      case 'NIUYOUGUO':
+        segments(8, 0.8);
+        ringSeeds(12, 0.6, 0.06);
+        break;
+      case 'PINGGUO':
         ringSeeds(6, 0.38, 0.07);
         break;
-      case 'GRAPE':
+      case 'PUTAO':
         ringSeeds(10, 0.55, 0.05);
         break;
-      case 'CHERRY':
+      case 'SHANZHU':
         ringSeeds(6, 0.35, 0.08);
         break;
-      case 'WATERMELON':
+      case 'XIGUA':
         ringSeeds(14, 0.55, 0.06);
         break;
       default:

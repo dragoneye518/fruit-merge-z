@@ -114,7 +114,7 @@ export class FruitManager {
   }
 
   getRandomStarterFruit() {
-    const starterFruits = (GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES) || ['CHERRY', 'STRAWBERRY', 'GRAPE'];
+    const starterFruits = (GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES) || ['SHANZHU', 'LANMEI', 'PUTAO'];
     return starterFruits[Math.floor(Math.random() * starterFruits.length)];
   }
 

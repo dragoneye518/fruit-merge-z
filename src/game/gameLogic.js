@@ -1338,7 +1338,7 @@ export class GameLogic {
   
   // 获取随机初始水果类型
   getRandomStarterFruit() {
-    const starterFruits = (GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES) || ['CHERRY', 'STRAWBERRY', 'GRAPE', 'LEMON', 'ORANGE'];
+    const starterFruits = (GAME_CONFIG?.GAMEPLAY?.STARTER_TYPES) || ['SHANZHU', 'LANMEI', 'PUTAO', 'SANSHENG', 'CHENGZI'];
     return starterFruits[Math.floor(Math.random() * starterFruits.length)];
   }
   

@@ -314,16 +314,16 @@ export class ThreeFruit3DRenderer {
   getMaterialParams(type) {
     // 基于水果类型的材质参数
     switch (type) {
-      case 'LEMON':
-      case 'ORANGE':
+      case 'SANSHENG':
+      case 'CHENGZI':
         return { roughness: 0.35, metalness: 0.0, transmission: 0.12, thickness: 0.6 };
-      case 'GRAPE':
-      case 'CHERRY':
+      case 'PUTAO':
+      case 'SHANZHU':
         return { roughness: 0.4, metalness: 0.05, transmission: 0.08, thickness: 0.5 };
-      case 'KIWI':
-      case 'APPLE':
+      case 'MIHUOTAO':
+      case 'PINGGUO':
         return { roughness: 0.5, metalness: 0.02, transmission: 0.06, thickness: 0.5 };
-      case 'WATERMELON':
+      case 'XIGUA':
         return { roughness: 0.45, metalness: 0.02, transmission: 0.04, thickness: 0.7 };
       default:
         return { roughness: 0.5, metalness: 0.02, transmission: 0.06, thickness: 0.5 };
