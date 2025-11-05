@@ -225,6 +225,8 @@ export class EffectSystem {
     // 上限
     this.maxParticles = (typeof UI_THEME?.maxParticles === 'number') ? UI_THEME.maxParticles : 300;
     this.maxEffects = (typeof UI_THEME?.maxEffects === 'number') ? UI_THEME.maxEffects : 120;
+    // 最近一次炸弹爆炸的推荐时长（毫秒），用于音效对齐
+    this.lastBombDurationMs = 2000;
   }
   
   // 游戏结束特效：强震动 + 大量粒子 + 多重光环
@@ -399,6 +401,13 @@ export class EffectSystem {
     // 触发强烈屏幕震动
     this.triggerScreenShake(12, 0.6);
     
+    // 计算此次爆炸的建议渲染时长（毫秒）：取各组件的最大持续时间
+    const flashSec = 0.15;
+    const shockwaveMaxSec = Math.max(1.2 + 0.0, 1.5 + 0.1, 1.8 + 0.2); // life + delay
+    const particlesMaxSec = Math.max(1.5 + 1.0, 0.8 + 0.4, 2.0 + 1.0); // 爆裂、火花、烟雾最大寿命
+    const recommendedSec = Math.max(flashSec, shockwaveMaxSec, particlesMaxSec);
+    this.lastBombDurationMs = Math.floor(recommendedSec * 1000);
+
     return effects;
   }
   

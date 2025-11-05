@@ -343,11 +343,14 @@ export class GameLogic {
 
     // 只有在游戏进行中且等待用户操作时才更新投放预览位置（兼容性）
     if (this.gameState === GAME_STATES.PLAYING && this.waitingForUserAction && this.canDrop && this.previewActive) {
-      const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
-      const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
-      const dropLeft = centerX - width / 2;
-      const dropRight = centerX + width / 2;
-      this.previewX = Math.max(dropLeft, Math.min(dropRight, x));
+      // 依据屏幕左右边距与水果半径限制X范围，确保水果边缘可贴近屏幕边
+      const leftMargin = this.physicsEngine?.world?.leftMargin ?? 0;
+      const rightMargin = this.physicsEngine?.world?.rightMargin ?? 0;
+      const canvasWidth = this.canvas.width;
+      const radius = this.previewFruit?.radius ?? Math.round((FRUIT_CONFIG[this.currentFruitType]?.radius || 0) * (GAME_CONFIG?.SIZE?.radiusScale || 1));
+      const minX = leftMargin + radius;
+      const maxX = canvasWidth - rightMargin - radius;
+      this.previewX = Math.max(minX, Math.min(maxX, x));
       
       // 更新预生成水果的位置
       if (this.previewFruit) {
@@ -388,8 +391,10 @@ export class GameLogic {
       return;
     }
 
-    // 抖音小游戏炸弹功能测试：快速双击屏幕上半部分触发炸弹
+    // 归一化坐标（后续统一复用，避免重复声明）
     const { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
+
+    // 抖音小游戏炸弹功能测试：快速双击屏幕上半部分触发炸弹
     if (this.gameState === GAME_STATES.PLAYING && y < 200 && !this.bombUsed) {
       // 简单的双击检测：如果点击位置在上半部分，且有水果存在
       const currentFruitCount = this.physicsEngine?.bodies?.length || 0;
@@ -399,8 +404,6 @@ export class GameLogic {
         return;
       }
     }
-
-    let { x, y } = this.normalizeToCanvasCoords(clientX, clientY);
     console.log(`[TouchEnd] Normalized coords: (${x.toFixed(1)}, ${y.toFixed(1)})`);
 
     // 处理拖动结束
@@ -531,12 +534,14 @@ export class GameLogic {
 
     // 检查是否有有效的触摸开始位置（确保是按住-释放的操作）
     if (this.previewActive && this.touchStartX !== undefined && this.touchStartY !== undefined) {
-      // 计算投放位置 - 使用释放时的位置
-      const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
-      const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
-      const dropLeft = centerX - width / 2;
-      const dropRight = centerX + width / 2;
-      const dropX = Math.max(dropLeft, Math.min(dropRight, x));
+      // 计算投放位置 - 使用释放时的位置，并限制到屏幕边距+半径
+      const leftMargin = this.physicsEngine?.world?.leftMargin ?? 0;
+      const rightMargin = this.physicsEngine?.world?.rightMargin ?? 0;
+      const canvasWidth = this.canvas.width;
+      const radius = this.previewFruit?.radius ?? Math.round((FRUIT_CONFIG[this.currentFruitType]?.radius || 0) * (GAME_CONFIG?.SIZE?.radiusScale || 1));
+      const minX = leftMargin + radius;
+      const maxX = canvasWidth - rightMargin - radius;
+      const dropX = Math.max(minX, Math.min(maxX, x));
       
       console.log(`[TouchEnd] Processing drop request at (${dropX.toFixed(1)}, ${y.toFixed(1)})`);
       
@@ -584,11 +589,14 @@ export class GameLogic {
     // 创建新的预生成水果（不添加到物理世界）
     const fruitConfig = FRUIT_CONFIG[this.currentFruitType];
     if (fruitConfig) {
+      const radiusScale = (GAME_CONFIG?.SIZE?.radiusScale || 1);
+      const scaledRadius = Math.round(fruitConfig.radius * radiusScale);
       this.previewFruit = {
         type: this.currentFruitType,
         x: this.previewFruitX,
         y: this.previewFruitY,
-        radius: fruitConfig.radius,
+        // 使用与物理一致的缩放半径，确保预览与实际大小一致
+        radius: scaledRadius,
         color: fruitConfig.color,
         texture: fruitConfig.texture
       };
@@ -604,16 +612,24 @@ export class GameLogic {
   updateDragBounds() {
     if (!this.previewFruit) return;
     
-    const centerX = GAME_CONFIG?.GAME_AREA?.centerX ?? Math.floor(this.canvas.width / 2);
-    const width = GAME_CONFIG?.DROP_AREA?.width ?? Math.floor(this.canvas.width * 0.6);
     const radius = this.previewFruit.radius;
+    const leftMargin = this.physicsEngine?.world?.leftMargin ?? 0;
+    const rightMargin = this.physicsEngine?.world?.rightMargin ?? 0;
+    const canvasWidth = this.canvas.width;
     
     this.dragBounds = {
-      left: centerX - width / 2 + radius,
-      right: centerX + width / 2 - radius,
+      // 使用屏幕左右边距与半径，允许贴近屏幕边缘
+      left: leftMargin + radius,
+      right: canvasWidth - rightMargin - radius,
       top: this.previewFruitY - 20,
       bottom: this.previewFruitY + 20
     };
+
+    // 同步UI层的拖动边界，避免UI硬编码导致无法贴边
+    if (this.gameUI && this.gameUI.nextFruitDragState) {
+      this.gameUI.nextFruitDragState.minX = this.dragBounds.left;
+      this.gameUI.nextFruitDragState.maxX = this.dragBounds.right;
+    }
   }
 
   // 检查点是否在预生成水果内
@@ -989,6 +1005,11 @@ export class GameLogic {
               screenCoverage: true
             }
           );
+          // 播放炸弹爆炸音效，并与特效持续时间对齐
+          const durationMs = (this.effectSystem && typeof this.effectSystem.lastBombDurationMs === 'number')
+            ? this.effectSystem.lastBombDurationMs
+            : 3000;
+          audioManager.playSound('BOMB_EXPLOSION', { durationMs });
         } else {
           // 降级到原有特效
           if (typeof this.effectSystem.createExplosion === 'function') {
@@ -1011,9 +1032,11 @@ export class GameLogic {
           if (typeof this.effectSystem.triggerScreenShake === 'function') {
             this.effectSystem.triggerScreenShake(6, 0.25);
           }
+          // 降级模式下也播放音效，取一个合理的时长
+          audioManager.playSound('BOMB_EXPLOSION', { durationMs: 2000 });
         }
       }
-      audioManager.playSound('POWER_USE');
+      // 取消误用的 POWER_USE 音效，炸弹使用仅播放爆炸音效
     } catch (e) {
       console.warn('[Bomb] Failed to clear stable fruits:', e);
     }
@@ -1923,7 +1946,6 @@ export class GameLogic {
           // 增加速度条件：如果速度足够低，即使接触时间不够也可以解锁
           const speedSettled = speed < (GAME_CONFIG?.PHYSICS?.sleepVelThreshold ?? 2) * 0.8; // 速度低于阈值80%时
           // 添加超时兜底机制：水果掉落超过2秒强制解锁
-          const timeSinceDrop = (Date.now() - fruit.dropTime) / 1000;
           const timeThreshold = 2.0; // 2秒超时
 
           if (removed || settledByContact || speedSettled || timeSinceDrop > timeThreshold) {

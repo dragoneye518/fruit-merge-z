@@ -362,8 +362,33 @@ export class GameUI {
   
   renderHeader() {
     // this.renderTitle();
+    this.renderHeaderLogo();
     this.renderScore();
     // this.renderComboHeader(); // 暂时禁用以避免Canvas错误
+  }
+
+  // 在页眉中间绘制小型 logo（如已加载），未加载则静默跳过
+  renderHeaderLogo() {
+    const logo = imageLoader?.getImage?.('assets/images/logo/logo.png') || null;
+    if (!logo) return;
+
+    const targetHeight = 28; // 小型 logo 高度
+    const naturalW = logo.naturalWidth || logo.width || 140;
+    const naturalH = logo.naturalHeight || logo.height || 54;
+    const aspect = naturalW && naturalH ? (naturalW / naturalH) : (140 / 54);
+    const targetWidth = targetHeight * aspect;
+
+    const logoX = (this.width / 2) - (targetWidth / 2);
+    const logoY = 10;
+
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.95;
+    this.ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
+    this.ctx.shadowBlur = 4;
+    this.ctx.shadowOffsetX = 0;
+    this.ctx.shadowOffsetY = 2;
+    this.ctx.drawImage(logo, logoX, logoY, targetWidth, targetHeight);
+    this.ctx.restore();
   }
   
   renderTitle() {
@@ -374,7 +399,7 @@ export class GameUI {
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
     
-    const x = this.width / 2;
+    const titleX = this.width / 2;
     const y = 50;
     
     this.ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
@@ -384,15 +409,15 @@ export class GameUI {
     
     this.ctx.strokeStyle = '#8B4513';
     this.ctx.lineWidth = 4;
-    this.ctx.strokeText(titleText, x, y);
+    this.ctx.strokeText(titleText, titleX, y);
     
     this.ctx.strokeStyle = '#D2691E';
     this.ctx.lineWidth = 2;
-    this.ctx.strokeText(titleText, x, y);
+    this.ctx.strokeText(titleText, titleX, y);
     
     const titleGradient = this.ctx.createLinearGradient(
-      x, y - 16,
-      x, y + 16
+      titleX, y - 16,
+      titleX, y + 16
     );
     titleGradient.addColorStop(0, '#FFD700');
     titleGradient.addColorStop(0.5, '#FFA500');
@@ -400,17 +425,17 @@ export class GameUI {
     
     this.ctx.shadowColor = 'transparent';
     this.ctx.fillStyle = titleGradient;
-    this.ctx.fillText(titleText, x, y);
+    this.ctx.fillText(titleText, titleX, y);
     
     const highlightGradient = this.ctx.createLinearGradient(
-      x, y - 16,
-      x, y - 8
+      titleX, y - 16,
+      titleX, y - 8
     );
     highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
     highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
     
     this.ctx.fillStyle = highlightGradient;
-    this.ctx.fillText(titleText, x, y);
+    this.ctx.fillText(titleText, titleX, y);
     
     this.ctx.restore();
   }

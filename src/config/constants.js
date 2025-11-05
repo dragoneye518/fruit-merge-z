@@ -423,7 +423,9 @@ export const AUDIO_CONFIG = {
   MERGE: 'merge.mp3',
   DROP: 'drop.mp3',
   GAME_OVER: 'game_over.mp3',
-  BUTTON_CLICK: 'click.mp3'
+  BUTTON_CLICK: 'click.mp3',
+  // 炸弹爆炸音效（使用用户提供的资源路径）
+  BOMB_EXPLOSION: 'assets/voice/boom-voice.mp3'
 };
 
 // 音频行为设置（浏览器/Douyin资源缺失时的兜底）

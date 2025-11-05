@@ -4,6 +4,7 @@ class AudioManager {
   constructor() {
     this.sounds = {};
     this.isMuted = !!(AUDIO_SETTINGS && AUDIO_SETTINGS.defaultMuted);
+    this._timers = {};
     // 分音量控制：适度降低“冲击”相关的音量
     this.volumes = {
       BGM: (AUDIO_SETTINGS && typeof AUDIO_SETTINGS.bgmVolume === 'number') ? AUDIO_SETTINGS.bgmVolume : 0.6,
@@ -11,7 +12,8 @@ class AudioManager {
       DROP: 0.5,
       GAME_OVER: 0.7,
       BUTTON_CLICK: 0.5,
-      HIT: 0.4
+      HIT: 0.4,
+      BOMB_EXPLOSION: 0.8
     };
     this.loadSounds();
   }
@@ -34,7 +36,10 @@ class AudioManager {
         this.sounds[key] = this.createSilentAudio();
         continue;
       }
-      const path = `assets/audio/${AUDIO_CONFIG[key]}`;
+      const configured = AUDIO_CONFIG[key];
+      const path = (typeof configured === 'string' && configured.startsWith('assets/'))
+        ? configured
+        : `assets/audio/${configured}`;
       if (typeof tt !== 'undefined') {
         const audio = tt.createInnerAudioContext();
         audio.src = path;
@@ -62,11 +67,14 @@ class AudioManager {
     }
   }
 
-  playSound(key) {
+  // 播放音效，支持可选的时长、音量与循环控制
+  playSound(key, options = {}) {
     // 兼容旧代码中的 CLICK 命名
     if (key === 'CLICK') key = 'BUTTON_CLICK';
     if (this.isMuted || !this.sounds[key]) return;
-    const vol = (this.volumes && typeof this.volumes[key] === 'number') ? this.volumes[key] : 0.6;
+    const { durationMs, volume, loop } = options || {};
+    const baseVol = (this.volumes && typeof this.volumes[key] === 'number') ? this.volumes[key] : 0.6;
+    const vol = (typeof volume === 'number') ? volume : baseVol;
     
     if (typeof tt !== 'undefined') {
         try {
@@ -74,8 +82,24 @@ class AudioManager {
           if ('volume' in this.sounds[key]) {
             try { this.sounds[key].volume = vol; } catch (_) {}
           }
+          if (typeof loop === 'boolean') {
+            try { this.sounds[key].loop = !!loop; } catch (_) {}
+          }
           if (typeof this.sounds[key].seek === 'function') this.sounds[key].seek(0);
           this.sounds[key].play();
+          // 控制播放时长
+          if (typeof durationMs === 'number' && durationMs > 0) {
+            if (this._timers[key]) {
+              try { clearTimeout(this._timers[key]); } catch (_) {}
+            }
+            this._timers[key] = setTimeout(() => {
+              try {
+                if (typeof this.sounds[key]?.pause === 'function') this.sounds[key].pause();
+                if (typeof this.sounds[key]?.seek === 'function') this.sounds[key].seek(0);
+              } catch (_) {}
+              this._timers[key] = null;
+            }, durationMs);
+          }
         } catch (_) {
           // 忽略播放异常以保证游戏主循环稳定
         }
@@ -85,9 +109,25 @@ class AudioManager {
           if ('volume' in this.sounds[key]) {
             try { this.sounds[key].volume = vol; } catch (_) {}
           }
+          if (typeof loop === 'boolean') {
+            try { this.sounds[key].loop = !!loop; } catch (_) {}
+          }
           if ('currentTime' in this.sounds[key]) this.sounds[key].currentTime = 0;
           const r = this.sounds[key].play();
           if (r && typeof r.catch === 'function') r.catch(() => {});
+          // 控制播放时长
+          if (typeof durationMs === 'number' && durationMs > 0) {
+            if (this._timers[key]) {
+              try { clearTimeout(this._timers[key]); } catch (_) {}
+            }
+            this._timers[key] = setTimeout(() => {
+              try {
+                if (typeof this.sounds[key]?.pause === 'function') this.sounds[key].pause();
+                if ('currentTime' in this.sounds[key]) this.sounds[key].currentTime = 0;
+              } catch (_) {}
+              this._timers[key] = null;
+            }, durationMs);
+          }
         } catch (_) {
           // 忽略播放异常以保证游戏主循环稳定
         }

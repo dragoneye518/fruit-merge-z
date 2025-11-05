@@ -4,6 +4,7 @@ import { TetrisGame } from './src/game/tetris.js';
 import { EffectSystem } from './src/effects/effectSystem.js';
 import { douyinAPI } from './src/douyin/api.js';
 import { GAME_CONFIG, GAME_STATES } from './src/config/constants.js';
+import { imageLoader } from './src/utils/imageLoader.js';
 
 class FruitMergeZGame {
   constructor() {
@@ -441,15 +442,15 @@ class FruitMergeZGame {
         if (this.gameLogic) {
           const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
           if (touch) {
-            const x = (touch.x ?? touch.clientX ?? touch.pageX);
-            const y = (touch.y ?? touch.clientY ?? touch.pageY);
-            console.log('[DouyinTouch] touchstart', { x, y });
+            const touchX = (touch.x ?? touch.clientX ?? touch.pageX);
+            const touchY = (touch.y ?? touch.clientY ?? touch.pageY);
+            console.log('[DouyinTouch] touchstart', { x: touchX, y: touchY });
 
             // 添加炸弹按钮直接检测
             const bombBtn = this.gameLogic?.gameUI?.bombButton;
             if (bombBtn) {
-              const inBombArea = (x >= bombBtn.x - 20 && x <= bombBtn.x + bombBtn.width + 20 &&
-                                 y >= bombBtn.y - 20 && y <= bombBtn.y + bombBtn.height + 20);
+              const inBombArea = (touchX >= bombBtn.x - 20 && touchX <= bombBtn.x + bombBtn.width + 20 &&
+                                 touchY >= bombBtn.y - 20 && touchY <= bombBtn.y + bombBtn.height + 20);
               if (inBombArea) {
                 console.log('[DouyinTouch] Bomb button directly detected!');
                 this.gameLogic.buttonPressed = 'bomb';
@@ -457,7 +458,7 @@ class FruitMergeZGame {
               }
             }
 
-            this.gameLogic.handleTouchStart(x, y);
+            this.gameLogic.handleTouchStart(touchX, touchY);
             // 移除兜底机制 - 只有真正的touchend事件才应该投放水果
             // 清理任何之前的定时器
             if (this._douyinTapDropTimer) { 
@@ -471,9 +472,9 @@ class FruitMergeZGame {
         if (this.gameLogic) {
           const touch = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
           if (touch) {
-            const x = (touch.x ?? touch.clientX ?? touch.pageX);
-            const y = (touch.y ?? touch.clientY ?? touch.pageY);
-            this.gameLogic.handleTouchMove(x, y);
+            const touchX = (touch.x ?? touch.clientX ?? touch.pageX);
+            const touchY = (touch.y ?? touch.clientY ?? touch.pageY);
+            this.gameLogic.handleTouchMove(touchX, touchY);
           }
         }
       });
@@ -482,10 +483,10 @@ class FruitMergeZGame {
           if (this._douyinTapDropTimer) { clearTimeout(this._douyinTapDropTimer); this._douyinTapDropTimer = null; }
           const touch = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]);
           if (touch) {
-            const x = (touch.x ?? touch.clientX ?? touch.pageX);
-            const y = (touch.y ?? touch.clientY ?? touch.pageY);
-            console.log('[DouyinTouch] touchend', { x, y });
-            this.gameLogic.handleTouchEnd(x, y);
+            const touchX = (touch.x ?? touch.clientX ?? touch.pageX);
+            const touchY = (touch.y ?? touch.clientY ?? touch.pageY);
+            console.log('[DouyinTouch] touchend', { x: touchX, y: touchY });
+            this.gameLogic.handleTouchEnd(touchX, touchY);
             // 看门狗：首投后若仍锁定且世界已稳定，强制解锁，保障二次投放
             try {
               setTimeout(() => {
@@ -529,11 +530,11 @@ class FruitMergeZGame {
               this._douyinTapDropTimer = null;
             }
             const touch = (e.changedTouches && e.changedTouches[0]) || (e.touches && e.touches[0]) || {};
-            const x = (touch.x ?? touch.clientX ?? touch.pageX ?? 0);
-            const y = (touch.y ?? touch.clientY ?? touch.pageY ?? 0);
-            console.log('[DouyinTouch] touchcancel', { x, y });
+            const touchX = (touch.x ?? touch.clientX ?? touch.pageX ?? 0);
+            const touchY = (touch.y ?? touch.clientY ?? touch.pageY ?? 0);
+            console.log('[DouyinTouch] touchcancel', { x: touchX, y: touchY });
             // 将cancel视为一次触摸结束，保证投放不因事件缺失而卡壳
-            this.gameLogic.handleTouchEnd(x, y);
+            this.gameLogic.handleTouchEnd(touchX, touchY);
           }
         });
       }
@@ -617,11 +618,15 @@ class FruitMergeZGame {
       const imagePaths = Object.values(FRUIT_CONFIG)
         .map(fruit => fruit.texture)
         .filter(path => path);
+
+      // 追加UI相关图片：logo与splash
+      imagePaths.push('assets/images/logo/logo.png');
+      imagePaths.push('assets/images/logo/splash.png');
       
       // 预加载图片
       await imageLoader.preloadImages(imagePaths);
       
-      console.log(`Preloaded ${imagePaths.length} fruit images`);
+      console.log(`Preloaded ${imagePaths.length} images (fruits + UI)`);
       
     } catch (error) {
       console.warn('Failed to preload images:', error);
@@ -642,6 +647,9 @@ class FruitMergeZGame {
       const imagePaths = Object.values(FRUIT_CONFIG)
         .map(fruit => fruit.texture)
         .filter(path => path);
+      // 追加UI相关图片：logo与splash
+      imagePaths.push('assets/images/logo/logo.png');
+      imagePaths.push('assets/images/logo/splash.png');
       
       if (imagePaths.length === 0) {
         console.warn('No images to preload');
@@ -663,7 +671,7 @@ class FruitMergeZGame {
         }
       }
       
-      console.log(`Preloaded ${imagePaths.length} fruit images`);
+      console.log(`Preloaded ${imagePaths.length} images (fruits + UI)`);
       
     } catch (error) {
       console.warn('Failed to preload images:', error);
@@ -695,38 +703,61 @@ class FruitMergeZGame {
   showStartScreen() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // 绘制背景渐变
+    // 背景：先绘制柔和渐变，再叠加splash图片
     const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
     gradient.addColorStop(0, '#FFE082');
     gradient.addColorStop(0.5, '#FFCC02');
     gradient.addColorStop(1, '#FF8F00');
-    
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // 绘制splash全屏图（如已加载）
+    {
+      const splash = imageLoader?.getImage?.('assets/images/logo/splash.png') || null;
+      if (splash) {
+        this.ctx.drawImage(splash, 0, 0, this.canvas.width, this.canvas.height);
+      }
+    }
     
-    // 绘制游戏标题
+    // 绘制logo（居中，并带轻微阴影），若未加载则回退到标题文字
     this.ctx.save();
-    this.ctx.font = 'bold 48px Arial, sans-serif';
-    this.ctx.fillStyle = '#FFFFFF';
-    this.ctx.strokeStyle = '#FF6B35';
-    this.ctx.lineWidth = 4;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
-    
-    this.ctx.strokeText('合成新水果', centerX, centerY - 50);
-    this.ctx.fillText('合成新水果', centerX, centerY - 50);
+    {
+      const logo = imageLoader?.getImage?.('assets/images/logo/logo.png') || null;
+      if (logo) {
+        const naturalW = logo.naturalWidth || logo.width || 300;
+        const naturalH = logo.naturalHeight || logo.height || 100;
+        const targetW = Math.min(this.canvas.width * 0.6, 260);
+        const aspect = naturalW && naturalH ? (naturalW / naturalH) : 2.6;
+        const targetH = targetW / aspect;
+        this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
+        this.ctx.shadowBlur = 12;
+        this.ctx.drawImage(logo, centerX - targetW / 2, centerY - targetH - 10, targetW, targetH);
+      } else {
+        // 文本回退
+        this.ctx.font = 'bold 48px Arial, sans-serif';
+        this.ctx.fillStyle = '#FFFFFF';
+        this.ctx.strokeStyle = '#FF6B35';
+        this.ctx.lineWidth = 4;
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.strokeText('合成新水果', centerX, centerY - 50);
+        this.ctx.fillText('合成新水果', centerX, centerY - 50);
+      }
+    }
     
     // 绘制开始提示
     this.ctx.font = '24px Arial, sans-serif';
     this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
     this.ctx.fillText('点击屏幕开始游戏', centerX, centerY + 50);
     
     // 绘制版本信息
     this.ctx.font = '14px Arial, sans-serif';
     this.ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    this.ctx.textAlign = 'center';
+    this.ctx.textBaseline = 'middle';
     this.ctx.fillText('v1.0.0', centerX, this.canvas.height - 30);
     
     this.ctx.restore();
