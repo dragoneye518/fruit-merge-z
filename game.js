@@ -87,14 +87,29 @@ class FruitMergeZGame {
     
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // 绘制背景渐变
-    const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    gradient.addColorStop(0, '#4A90E2');
-    gradient.addColorStop(0.5, '#357ABD');
-    gradient.addColorStop(1, '#1E5F99');
-    
-    this.ctx.fillStyle = gradient;
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    // 优先绘制指定的splash背景；若未加载则回退到渐变并触发懒加载
+    const splashPath = 'assets/images/logo/splash.png';
+    const splashImg = imageLoader?.getImage?.(splashPath) || null;
+    if (splashImg) {
+      // 全屏绘制splash
+      this.ctx.drawImage(splashImg, 0, 0, this.canvas.width, this.canvas.height);
+    } else {
+      // 回退背景渐变
+      const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+      gradient.addColorStop(0, '#4A90E2');
+      gradient.addColorStop(0.5, '#357ABD');
+      gradient.addColorStop(1, '#1E5F99');
+      this.ctx.fillStyle = gradient;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      // 触发一次懒加载，避免重复并尽快切换到splash背景
+      if (!this._splashLoading) {
+        this._splashLoading = true;
+        Promise.resolve()
+          .then(() => imageLoader?.loadImage?.(splashPath))
+          .catch(() => {})
+          .finally(() => { this._splashLoading = false; });
+      }
+    }
     
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
