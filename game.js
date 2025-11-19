@@ -87,40 +87,58 @@ class FruitMergeZGame {
     
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     
-    // 优先绘制指定的splash背景；若未加载则回退到渐变并触发懒加载
-    const splashPath = 'assets/images/logo/splash.png';
-    const splashImg = imageLoader?.getImage?.(splashPath) || null;
-    if (splashImg) {
-      // 全屏绘制splash
-      this.ctx.drawImage(splashImg, 0, 0, this.canvas.width, this.canvas.height);
+    // 背景：使用 splash.png 铺满（允许拉伸作为背景），未加载时回退到渐变并触发懒加载
+    const bgPath = 'assets/images/logo/splash.png';
+    const bannerPath = 'assets/images/merge_fruits.png';
+    const bgImg = imageLoader?.getImage?.(bgPath) || null;
+    const bannerImg = imageLoader?.getImage?.(bannerPath) || null;
+    if (bgImg) {
+      this.ctx.drawImage(bgImg, 0, 0, this.canvas.width, this.canvas.height);
     } else {
-      // 回退背景渐变
       const gradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
       gradient.addColorStop(0, '#4A90E2');
       gradient.addColorStop(0.5, '#357ABD');
       gradient.addColorStop(1, '#1E5F99');
       this.ctx.fillStyle = gradient;
       this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      // 触发一次懒加载，避免重复并尽快切换到splash背景
-      if (!this._splashLoading) {
-        this._splashLoading = true;
+      if (!this._splashBgLoading) {
+        this._splashBgLoading = true;
         Promise.resolve()
-          .then(() => imageLoader?.loadImage?.(splashPath))
+          .then(() => imageLoader?.loadImage?.(bgPath))
           .catch(() => {})
-          .finally(() => { this._splashLoading = false; });
+          .finally(() => { this._splashBgLoading = false; });
+      }
+    }
+
+    // 前景：叠加游戏图 banner，不拉伸，只按比例缩小并居中
+    if (bannerImg) {
+      const iw = bannerImg.naturalWidth || bannerImg.width || 256;
+      const ih = bannerImg.naturalHeight || bannerImg.height || 147;
+      const maxW = this.canvas.width * 0.8;
+      const maxH = this.canvas.height * 0.4;
+      const scale = Math.min(1, Math.min(maxW / iw, maxH / ih));
+      const w = Math.floor(iw * scale);
+      const h = Math.floor(ih * scale);
+      const x = Math.floor((this.canvas.width - w) / 2);
+      const y = Math.floor((this.canvas.height - h) / 2) - 30; // 稍上移避免遮挡进度条
+      this.ctx.drawImage(bannerImg, x, y, w, h);
+    } else {
+      if (!this._bannerLoading) {
+        this._bannerLoading = true;
+        Promise.resolve()
+          .then(() => imageLoader?.loadImage?.(bannerPath))
+          .catch(() => {})
+          .finally(() => { this._bannerLoading = false; });
       }
     }
     
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
     
-    // 绘制游戏标题
+    // 加载UI绘制（不再显示标题文字）
     this.ctx.save();
-    this.ctx.font = 'bold 36px Arial, sans-serif';
-    this.ctx.fillStyle = '#FFFFFF';
     this.ctx.textAlign = 'center';
     this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('合成新水果', centerX, centerY - 80);
     
     // 绘制加载进度条背景
     const progressBarWidth = 300;
@@ -634,8 +652,9 @@ class FruitMergeZGame {
         .map(fruit => fruit.texture)
         .filter(path => path);
 
-      // 追加UI相关图片：logo与splash
+      // 追加UI相关图片：logo、启动banner与背景splash
       imagePaths.push('assets/images/logo/logo.png');
+      imagePaths.push('assets/images/merge_fruits.png');
       imagePaths.push('assets/images/logo/splash.png');
       
       // 预加载图片
@@ -662,8 +681,9 @@ class FruitMergeZGame {
       const imagePaths = Object.values(FRUIT_CONFIG)
         .map(fruit => fruit.texture)
         .filter(path => path);
-      // 追加UI相关图片：logo与splash
+      // 追加UI相关图片：logo、启动banner与背景splash
       imagePaths.push('assets/images/logo/logo.png');
+      imagePaths.push('assets/images/merge_fruits.png');
       imagePaths.push('assets/images/logo/splash.png');
       
       if (imagePaths.length === 0) {
@@ -725,39 +745,34 @@ class FruitMergeZGame {
     gradient.addColorStop(1, '#FF8F00');
     this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-    // 绘制splash全屏图（如已加载）
+    // 绘制启动游戏图（不拉伸，按比例缩小并居中）
     {
-      const splash = imageLoader?.getImage?.('assets/images/logo/splash.png') || null;
-      if (splash) {
-        this.ctx.drawImage(splash, 0, 0, this.canvas.width, this.canvas.height);
+      const banner = imageLoader?.getImage?.('assets/images/merge_fruits.png') || null;
+      const centerX = this.canvas.width / 2;
+      const centerY = this.canvas.height / 2;
+      if (banner) {
+        const iw = banner.naturalWidth || banner.width || 256;
+        const ih = banner.naturalHeight || banner.height || 147;
+        const maxW = this.canvas.width * 0.8;
+        const maxH = this.canvas.height * 0.5;
+        const scale = Math.min(1, Math.min(maxW / iw, maxH / ih));
+        const w = Math.floor(iw * scale);
+        const h = Math.floor(ih * scale);
+        this.ctx.drawImage(banner, centerX - w / 2, centerY - h / 2, w, h);
       }
     }
     
-    // 绘制logo（居中，并带轻微阴影），若未加载则回退到标题文字
+    // 文本标题已移除，仅保留提示与版本信息、左上角图标
     this.ctx.save();
     const centerX = this.canvas.width / 2;
     const centerY = this.canvas.height / 2;
+    
+    // 小尺寸游戏图标（仅作为图标展示，不作为背景/主视觉）
     {
-      const logo = imageLoader?.getImage?.('assets/images/logo/logo.png') || null;
-      if (logo) {
-        const naturalW = logo.naturalWidth || logo.width || 300;
-        const naturalH = logo.naturalHeight || logo.height || 100;
-        const targetW = Math.min(this.canvas.width * 0.6, 260);
-        const aspect = naturalW && naturalH ? (naturalW / naturalH) : 2.6;
-        const targetH = targetW / aspect;
-        this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
-        this.ctx.shadowBlur = 12;
-        this.ctx.drawImage(logo, centerX - targetW / 2, centerY - targetH - 10, targetW, targetH);
-      } else {
-        // 文本回退
-        this.ctx.font = 'bold 48px Arial, sans-serif';
-        this.ctx.fillStyle = '#FFFFFF';
-        this.ctx.strokeStyle = '#FF6B35';
-        this.ctx.lineWidth = 4;
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.strokeText('合成新水果', centerX, centerY - 50);
-        this.ctx.fillText('合成新水果', centerX, centerY - 50);
+      const icon = imageLoader?.getImage?.('assets/images/logo/logo.png') || null;
+      if (icon) {
+        const size = Math.min(64, Math.floor(this.canvas.width * 0.12));
+        this.ctx.drawImage(icon, 12, 12, size, size);
       }
     }
     
